@@ -19,7 +19,6 @@ trait Decoder[F[_], T, E, A]:
       def decode(t: T): F[Either[E, B]] = self.decode(t).map(_.map(f))
       def decodeAccumulating(t: T): F[ValidatedNel[E, B]] = self.decodeAccumulating(t).map(_.map(f))
   end map
-
   def flatMap[B](f: A => Decoder[F, T, E, B])(using Monad[F]): Decoder[F, T, E, B] =
     new Decoder[F, T, E, B]:
       def decode(t: T): F[Either[E, B]] = self.decode(t).flatMap {
@@ -31,6 +30,11 @@ trait Decoder[F[_], T, E, A]:
         case Invalid(e) => e.invalid[B].pure[F]
       }
   end flatMap
+  def mapError[EE](f: E => EE)(using Functor[F]): Decoder[F, T, EE, A] =
+    new Decoder[F, T, EE, A]:
+      def decode(t: T): F[Either[EE, A]] = self.decode(t).map(_.left.map(f))
+      def decodeAccumulating(t: T): F[ValidatedNel[EE, A]] = self.decodeAccumulating(t).map(_.leftMap(_.map(f)))
+  end mapError
 end Decoder
 object Decoder extends DecoderEitherMigrationInstances
   with DecoderValidatedMigrationInstances

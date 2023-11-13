@@ -21,6 +21,12 @@ lazy val codec = (project in file("."))
     codecCore.js,
     codecCirce.jvm,
     codecCirce.js,
+    codecDoobie.jvm,
+    codecDoobie.js,
+    codecHttp4s.jvm,
+    codecHttp4s.js,
+    codecCiris.jvm,
+    codecCiris.js,
   )
   .settings(commonSettings)
   .settings(
@@ -49,6 +55,7 @@ lazy val codecCirce = (crossProject(JSPlatform, JVMPlatform) in file("codec-circ
   )
 
 lazy val codecDoobie = (crossProject(JSPlatform, JVMPlatform) in file("codec-doobie"))
+  .dependsOn(codecCore)
   .settings(commonSettings)
   .settings(
     name := "codec-doobie",
@@ -62,6 +69,7 @@ lazy val codecDoobie = (crossProject(JSPlatform, JVMPlatform) in file("codec-doo
   )
 
 lazy val codecHttp4s = (crossProject(JSPlatform, JVMPlatform) in file("codec-http4s"))
+  .dependsOn(codecCore)
   .settings(commonSettings)
   .settings(
     name := "codec-http4s",
@@ -71,6 +79,7 @@ lazy val codecHttp4s = (crossProject(JSPlatform, JVMPlatform) in file("codec-htt
   )
 
 lazy val codecCiris = (crossProject(JSPlatform, JVMPlatform) in file("codec-ciris"))
+  .dependsOn(codecCore)
   .settings(commonSettings)
   .settings(
     name := "codec-ciris",
