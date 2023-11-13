@@ -19,18 +19,18 @@ package object error:
   end NonEmptyObject
 
   sealed trait StrictDecodingFailure[A] extends DecodingFailure[A] with Label:
-    def msg: String
-    override def message: String = s"Strict decoding $label - $msg"
+    override def message: String = s"Strict decoding $label${lowPriorityMessage.fold("")(msg => s" - $msg")}"
   end StrictDecodingFailure
 
   case class UnexpectedFields[A](value: A, label: String, unexpectedFields: List[String], expectedFields: List[String])
     extends StrictDecodingFailure[A]:
-    def msg = s"unexpected fields: ${unexpectedFields.mkString(", ")}; valid fields: ${expectedFields.mkString(", ")}."
+    override def lowPriorityMessage =
+      Some(s"unexpected fields: ${unexpectedFields.mkString(", ")}; valid fields: ${expectedFields.mkString(", ")}.")
   end UnexpectedFields
 
   case class NotSingleKeyObject[A](value: A, label: String, constructorNames: List[String])
     extends StrictDecodingFailure[A]:
-    def msg = s"expected a single key object with one of: $constructorNames."
+    override def lowPriorityMessage = Some(s"expected a single key object with one of: $constructorNames.")
   end NotSingleKeyObject
 
   case class NoSuchType[A](value: A, label: String, typeName: String) extends DecodingFailure[A] with Label:
