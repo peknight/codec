@@ -40,4 +40,5 @@ object Decoder extends DecoderEitherMigrationInstances
   with DecoderValidatedMigrationInstances
   with DecoderValidatedNelMigrationInstances
   with DecoderMigrationInstances
+  with DecoderErrorMigrationInstances
   with DecoderLowPriorityInstances
