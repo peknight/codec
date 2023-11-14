@@ -1,9 +1,8 @@
 package com.peknight.codec
 
-import com.peknight.error.Error.{Label, Value}
+import com.peknight.error.Error.Label
 
 package object error:
-  sealed trait DecodingFailure[A] extends com.peknight.error.codec.DecodingFailure with Value[A]
 
   sealed trait WrongType[A] extends DecodingFailure[A] with com.peknight.error.std.WrongType:
     def expectedType: String
@@ -24,13 +23,14 @@ package object error:
 
   case class UnexpectedFields[A](value: A, label: String, unexpectedFields: List[String], expectedFields: List[String])
     extends StrictDecodingFailure[A]:
-    override def lowPriorityMessage =
+    override protected def lowPriorityMessage: Option[String] =
       Some(s"unexpected fields: ${unexpectedFields.mkString(", ")}; valid fields: ${expectedFields.mkString(", ")}.")
   end UnexpectedFields
 
   case class NotSingleKeyObject[A](value: A, label: String, constructorNames: List[String])
     extends StrictDecodingFailure[A]:
-    override def lowPriorityMessage = Some(s"expected a single key object with one of: $constructorNames.")
+    override protected def lowPriorityMessage: Option[String] =
+      Some(s"expected a single key object with one of: $constructorNames.")
   end NotSingleKeyObject
 
   case class NoSuchType[A](value: A, label: String, typeName: String) extends DecodingFailure[A] with Label:
