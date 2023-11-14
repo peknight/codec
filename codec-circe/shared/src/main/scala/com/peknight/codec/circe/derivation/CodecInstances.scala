@@ -2,14 +2,14 @@ package com.peknight.codec.circe.derivation
 
 import cats.Id
 import com.peknight.codec.circe.instances
-import com.peknight.codec.circe.instances.{CodecObjectInstances, DecodingFailureMigrationInstances}
+import com.peknight.codec.circe.instances.{CodecObjectOpsInstances, DecodingFailureMigrationInstances}
 import com.peknight.codec.circe.syntax.codec.asCirceCodec
 import com.peknight.codec.configuration.CodecConfiguration
 import com.peknight.codec.derivation.CodecInstances as CodecCodecInstances
 import com.peknight.generic.Generic
 import io.circe.*
 
-object CodecInstances extends CodecObjectInstances
+object CodecInstances extends CodecObjectOpsInstances
   with DecodingFailureMigrationInstances
   with instances.EncoderInstances
   with instances.DecoderInstances:

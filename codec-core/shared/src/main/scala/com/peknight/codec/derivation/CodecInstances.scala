@@ -8,11 +8,11 @@ import com.peknight.codec.error.DecodingFailure
 import com.peknight.generic.Generic
 import com.peknight.generic.migration.id.Migration
 
-object CodecInstances:
+trait CodecInstances:
   def derived[F[_], S, T, E, A](using configuration: CodecConfiguration)(using
     monad: Monad[F],
-    encodeObject: EncodeObject[S],
-    decodeObject: DecodeObject[T],
+    encodeObject: EncodeObjectOps[S],
+    decodeObject: DecodeObjectOps[T],
     failure: Migration[DecodingFailure[T], E],
     stringEncoder: Encoder[F, S, String],
     stringOptionDecoder: Decoder[F, T, E, Option[String]],
@@ -29,24 +29,24 @@ object CodecInstances:
 
   private[this] def derivedProduct[F[_]: Applicative, S, T, E, A](
     configuration: CodecConfiguration,
-    encodeObject: EncodeObject[S],
-    decodeObject: DecodeObject[T],
+    encodeObject: EncodeObjectOps[S],
+    decodeObject: DecodeObjectOps[T],
     failure: Migration[DecodingFailure[T], E],
     encoders: Generic.Product.Instances[[X] =>> Encoder[F, S, X], A],
     decoders: Generic.Product.Instances[[X] =>> Decoder[F, T, E, X], A]
   ): Codec[F, S, T, E, A] =
     new Codec[F, S, T, E, A]:
-      def encode(a: A): F[S] = EncoderInstances.encodeProduct(a, configuration, encodeObject, encoders)
+      def encode(a: A): F[S] = EncoderDerivationInstances.encodeProduct(a, configuration, encodeObject, encoders)
       def decode(t: T): F[Either[E, A]] =
-        DecoderInstances.decodeProductEither(t, configuration, decodeObject, failure, decoders)
+        DecoderDerivationInstances.decodeProductEither(t, configuration, decodeObject, failure, decoders)
       def decodeAccumulating(t: T): F[ValidatedNel[E, A]] =
-        DecoderInstances.decodeProductValidatedNel(t, configuration, decodeObject, failure, decoders)
+        DecoderDerivationInstances.decodeProductValidatedNel(t, configuration, decodeObject, failure, decoders)
   end derivedProduct
 
   private[this] def derivedSum[F[_]: Monad, S, T, E, A](
     configuration0: CodecConfiguration,
-    encodeObject: EncodeObject[S],
-    decodeObject: DecodeObject[T],
+    encodeObject: EncodeObjectOps[S],
+    decodeObject: DecodeObjectOps[T],
     failure: Migration[DecodingFailure[T], E],
     stringEncoder: Encoder[F, S, String],
     stringOptionDecoder: Decoder[F, T, E, Option[String]],
@@ -56,10 +56,11 @@ object CodecInstances:
     new Codec[F, S, T, E, A] with SumEncoder[F, S, A] with SumDecoder[F, T, E, A]:
       def configuration: DecoderConfiguration = configuration0
       def decoders: Generic.Sum.Instances[[X] =>> Decoder[F, T, E, X], A] = decoders0
-      def encode(a: A): F[S] = EncoderInstances.encodeSum(a, configuration0, encodeObject, stringEncoder, encoders)
+      def encode(a: A): F[S] = EncoderDerivationInstances.encodeSum(a, configuration0, encodeObject, stringEncoder, encoders)
       def decode(t: T): F[Either[E, A]] =
-        DecoderInstances.decodeSumEither(t, configuration0, decodeObject, failure, stringOptionDecoder, decoders0)
+        DecoderDerivationInstances.decodeSumEither(t, configuration0, decodeObject, failure, stringOptionDecoder, decoders0)
       def decodeAccumulating(t: T): F[ValidatedNel[E, A]] =
-        DecoderInstances.decodeSumValidatedNel(t, configuration0, decodeObject, failure, stringOptionDecoder, decoders0)
+        DecoderDerivationInstances.decodeSumValidatedNel(t, configuration0, decodeObject, failure, stringOptionDecoder, decoders0)
   end derivedSum
 end CodecInstances
+object CodecInstances extends CodecInstances

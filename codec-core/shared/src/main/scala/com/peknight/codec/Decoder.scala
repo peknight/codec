@@ -8,6 +8,7 @@ import cats.syntax.flatMap.*
 import cats.syntax.functor.*
 import cats.syntax.validated.*
 import cats.{Functor, Monad}
+import com.peknight.codec.derivation.DecoderDerivationInstances
 import com.peknight.codec.instances.*
 
 trait Decoder[F[_], T, E, A]:
@@ -41,4 +42,5 @@ object Decoder extends DecoderEitherMigrationInstances
   with DecoderValidatedNelMigrationInstances
   with DecoderMigrationInstances
   with DecoderErrorMigrationInstances
+  with DecoderDerivationInstances
   with DecoderLowPriorityInstances

@@ -1,11 +1,11 @@
 package com.peknight.codec.circe.instances
 
 import cats.Foldable
-import com.peknight.codec.derivation.CodecObject
+import com.peknight.codec.derivation.CodecObjectOps
 import io.circe.{ACursor, Json, JsonObject}
 
-trait CodecObjectInstances:
-  given codecObject: CodecObject[Json, ACursor] with
+trait CodecObjectOpsInstances:
+  given codecObjectOps: CodecObjectOps[Json, ACursor] with
     def encodeContains(b: Json, key: String): Boolean = b.asObject.exists(_.contains(key))
     def empty: Json = Json.fromJsonObject(JsonObject.empty)
     override def singleton(label: String, value: Json): Json = Json.fromJsonObject(JsonObject.singleton(label, value))
@@ -17,7 +17,7 @@ trait CodecObjectInstances:
     def decodeContains(c: ACursor, key: String): Boolean = c.focus.exists(_.asObject.exists(_.contains(key)))
     def keys(c: ACursor): Option[List[String]] = c.keys.map(_.toList)
     def downField(c: ACursor, field: String): ACursor = c.downField(field)
-  end codecObject
+  end codecObjectOps
 
-end CodecObjectInstances
-object CodecObjectInstances extends CodecObjectInstances
+end CodecObjectOpsInstances
+object CodecObjectOpsInstances extends CodecObjectOpsInstances

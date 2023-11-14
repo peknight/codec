@@ -1,9 +1,6 @@
 package com.peknight.codec.derivation
 
 import cats.Applicative
-import cats.syntax.apply.*
-import cats.syntax.functor.*
-import cats.syntax.traverse.*
 import com.peknight.codec.Encoder
 import com.peknight.codec.configuration.EncoderConfiguration
 import com.peknight.generic.Generic
@@ -13,72 +10,11 @@ trait EncoderInstances:
   given derivedEncoder[F[_], S, A](using
     configuration: EncoderConfiguration,
     applicative: Applicative[F],
-    encodeObject: EncodeObject[S],
+    encodeObject: EncodeObjectOps[S],
     stringEncoder: Encoder[F, S, String],
     instances: => Generic.Instances[[X] =>> Encoder[F, S, X], A]
   ): LowPriority[Encoder[F, S, A]] =
-    LowPriority(EncoderInstances.derived[F, S, A])
+    LowPriority(EncoderDerivationInstances.derived[F, S, A])
 
 end EncoderInstances
-object EncoderInstances extends EncoderInstances:
-  def derived[F[_], S, A](using configuration: EncoderConfiguration)(using
-                                                                     applicative: Applicative[F],
-                                                                     encodeObject: EncodeObject[S],
-                                                                     stringEncoder: Encoder[F, S, String],
-                                                                     instances: => Generic.Instances[[X] =>> Encoder[F, S, X], A]
-  ): Encoder[F, S, A] =
-    instances.derive(
-      inst ?=> derivedProduct[F, S, A](configuration, encodeObject, inst),
-      inst ?=> derivedSum[F, S, A](configuration, encodeObject, stringEncoder, inst)
-    )
-
-  private[this] def derivedProduct[F[_]: Applicative, S, A](
-    configuration: EncoderConfiguration,
-    encodeObject: EncodeObject[S],
-    instances: => Generic.Product.Instances[[X] =>> Encoder[F, S, X], A]
-  ): Encoder[F, S, A] =
-    (a: A) => encodeProduct(a, configuration, encodeObject, instances)
-
-  private[this] def derivedSum[F[_]: Applicative, S, A](
-    configuration: EncoderConfiguration,
-    encodeObject: EncodeObject[S],
-    stringEncoder: Encoder[F, S, String],
-    instances: => Generic.Sum.Instances[[X] =>> Encoder[F, S, X], A]
-  ): SumEncoder[F, S, A] =
-    (a: A) => encodeSum(a, configuration, encodeObject, stringEncoder, instances)
-
-  private[derivation] def encodeProduct[F[_]: Applicative, S, A](
-    a: A,
-    configuration: EncoderConfiguration,
-    encodeObject: EncodeObject[S],
-    instances: => Generic.Product.Instances[[X] =>> Encoder[F, S, X], A]
-  ): F[S] =
-    instances.foldRightWithLabel(a)(List.empty[F[(String, S)]]) {
-      [X] => (encoder: Encoder[F, S, X], x: X, label: String, acc: List[F[(String, S)]]) =>
-        encoder.encode(x).map((configuration.transformMemberNames(label), _)) :: acc
-    }.sequence.map(encodeObject.fromFoldable)
-
-  private[derivation] def encodeSum[F[_]: Applicative, S, A](
-    a: A,
-    configuration: EncoderConfiguration,
-    encodeObject: EncodeObject[S],
-    stringEncoder: Encoder[F, S, String],
-    instances: => Generic.Sum.Instances[[X] =>> Encoder[F, S, X], A]
-  ): F[S] =
-    val constructorName = configuration.transformConstructorNames(instances.label(a))
-    val encoder = instances.instance(a)
-    (
-      encoder.encode(a),
-      stringEncoder.encode(constructorName)
-    ).mapN { (b, encodedConstructorName) =>
-      val sum = encoder match
-        case e: SumEncoder[F, S, ?] => true
-        case _ => configuration.discriminator.exists(discriminator => encodeObject.encodeContains(b, discriminator))
-      if sum then b
-      else
-        configuration.discriminator match
-          case Some(discriminator) => encodeObject.prepend(b, (discriminator, encodedConstructorName))
-          case _ => encodeObject.singleton(constructorName, b)
-    }
-
-end EncoderInstances
+object EncoderInstances extends EncoderInstances
