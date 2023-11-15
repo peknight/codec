@@ -13,8 +13,11 @@ end Encoder
 object Encoder extends EncoderMigrationInstances with EncoderDerivationInstances with EncoderLowPriorityInstances:
   trait AsObject[F[_]: Functor, S, A] extends Encoder[F, S, A]:
     type Object
-    protected def aux: EncodeObject.Aux[S, Object]
-    def encode(a: A): F[S] = encodeObject(a).map(aux.to)
+    protected def objectType: ObjectType.Aux[S, Object]
+    def encode(a: A): F[S] = encodeObject(a).map(objectType.to)
     def encodeObject(a: A): F[Object]
+  end AsObject
+  object AsObject:
+    type Aux[F[_], S, O, A] = AsObject[F, S, A] { type Object = O }
   end AsObject
 end Encoder

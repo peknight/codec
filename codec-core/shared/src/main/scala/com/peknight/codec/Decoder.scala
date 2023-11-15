@@ -13,15 +13,21 @@ import com.peknight.codec.instances.*
 
 trait Decoder[F[_], T, E, A]:
   self =>
+  type Sum
+  protected def cursorType: CursorType.Aux[T, Sum]
   def decode(t: T): F[Either[E, A]]
   def decodeAccumulating(t: T): F[ValidatedNel[E, A]]
   def map[B](f: A => B)(using Functor[F]): Decoder[F, T, E, B] =
     new Decoder[F, T, E, B]:
+      type Sum = self.Sum
+      protected def cursorType: CursorType.Aux[T, Sum] = self.cursorType
       def decode(t: T): F[Either[E, B]] = self.decode(t).map(_.map(f))
       def decodeAccumulating(t: T): F[ValidatedNel[E, B]] = self.decodeAccumulating(t).map(_.map(f))
   end map
   def flatMap[B](f: A => Decoder[F, T, E, B])(using Monad[F]): Decoder[F, T, E, B] =
     new Decoder[F, T, E, B]:
+      type Sum = self.Sum
+      protected def cursorType: CursorType.Aux[T, Sum] = self.cursorType
       def decode(t: T): F[Either[E, B]] = self.decode(t).flatMap {
         case Right(a) => f(a).decode(t)
         case Left(e) => e.asLeft[B].pure[F]
@@ -33,6 +39,8 @@ trait Decoder[F[_], T, E, A]:
   end flatMap
   def mapError[EE](f: E => EE)(using Functor[F]): Decoder[F, T, EE, A] =
     new Decoder[F, T, EE, A]:
+      type Sum = self.Sum
+      protected def cursorType: CursorType.Aux[T, Sum] = self.cursorType
       def decode(t: T): F[Either[EE, A]] = self.decode(t).map(_.left.map(f))
       def decodeAccumulating(t: T): F[ValidatedNel[EE, A]] = self.decodeAccumulating(t).map(_.leftMap(_.map(f)))
   end mapError
@@ -43,4 +51,6 @@ object Decoder extends DecoderEitherMigrationInstances
   with DecoderMigrationInstances
   with DecoderErrorMigrationInstances
   with DecoderDerivationInstances
-  with DecoderLowPriorityInstances
+  with DecoderLowPriorityInstances:
+  type Aux[F[_], S, T, E, A] = Decoder[F, T, E, A] { type Sum = S }
+end Decoder
