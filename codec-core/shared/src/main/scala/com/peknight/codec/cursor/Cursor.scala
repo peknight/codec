@@ -1,3 +1,5 @@
 package com.peknight.codec.cursor
 
-trait Cursor[S]
+trait Cursor[S]:
+  def value: Option[S]
+

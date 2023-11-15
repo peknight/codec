@@ -2,7 +2,7 @@ package com.peknight.codec.circe.derivation
 
 import cats.Id
 import com.peknight.codec.circe.instances
-import com.peknight.codec.circe.instances.{CodecObjectOpsInstances, DecodingFailureMigrationInstances}
+import com.peknight.codec.circe.instances.{DecodeObjectOpsInstances, DecodingFailureMigrationInstances, EncodeObjectOpsInstances}
 import com.peknight.codec.circe.syntax.codec.asCirceDecoder
 import com.peknight.codec.configuration.DecoderConfiguration
 import com.peknight.codec.derivation.DecoderDerivationInstances as CodecDecoderInstances
@@ -15,7 +15,8 @@ trait DecoderInstances:
   : Exported[Decoder[A]] = Exported(DecoderInstances.derived[A])
 end DecoderInstances
 object DecoderInstances extends DecoderInstances
-  with CodecObjectOpsInstances
+  with EncodeObjectOpsInstances
+  with DecodeObjectOpsInstances
   with DecodingFailureMigrationInstances
   with instances.DecoderInstances:
   def derived[A](using configuration: DecoderConfiguration)(using instances: => Generic.Instances[Decoder, A])
