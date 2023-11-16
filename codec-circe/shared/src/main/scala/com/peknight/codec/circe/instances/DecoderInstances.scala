@@ -6,8 +6,8 @@ import com.peknight.generic.Generic
 import io.circe.{ACursor, DecodingFailure, Decoder as CirceDecoder}
 
 trait DecoderInstances:
-  given stringOptionDecoder: Decoder[ACursor, DecodingFailure, Option[String]] =
-    CirceDecoder.decodeOption[String].asDecoder
+  given circeDecoder[A](using decoder: CirceDecoder[A]): Decoder[ACursor, DecodingFailure, A] =
+    decoder.asDecoder
 
   given genericDecoderInstances[A](using instances: => Generic.Instances[CirceDecoder, A])
   : Generic.Instances[[X] =>> Decoder[ACursor, DecodingFailure, X], A] =

@@ -6,7 +6,7 @@ import com.peknight.generic.Generic
 import io.circe.{Json, Encoder as CirceEncoder}
 
 trait EncoderInstances:
-  given stringEncoder: Encoder[Json, String] = CirceEncoder.encodeString.asEncoder
+  given circeEncoder[A](using encoder: CirceEncoder[A]): Encoder[Json, A] = encoder.asEncoder
   given genericEncoderInstances[A](using instances: => Generic.Instances[CirceEncoder, A])
   : Generic.Instances[[X] =>> Encoder[Json, X], A] =
     instances.mapK[[X] =>> Encoder[Json, X]]([X] => (encoder: CirceEncoder[X]) => encoder.asEncoder)

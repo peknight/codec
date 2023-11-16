@@ -8,40 +8,44 @@ import cats.syntax.functor.*
 import cats.syntax.validated.*
 import cats.{Applicative, Monad}
 import com.peknight.cats.ext.instances.applicative.given
-import com.peknight.codec.Decoder
 import com.peknight.codec.configuration.DecoderConfiguration
 import com.peknight.codec.error.*
+import com.peknight.codec.Decoder
 import com.peknight.generic.Generic
 import com.peknight.generic.migration.id.Migration
 
-trait DecoderDerivationInstances:
-  def derived[F[_], T, E, A](using configuration: DecoderConfiguration)(using
+trait DecoderDerivation:
+  def derived[F[_], S, O, T, E, A](using configuration: DecoderConfiguration)(using
     monad: Monad[F],
-    decodeObjectOps: DecodeObjectOps[T],
+    cursorType: CursorType.Aux[T, S],
+    objectType: ObjectType.Aux[S, O],
     failure: Migration[DecodingFailure[T], E],
     stringOptionDecoder: Decoder[F, T, E, Option[String]],
     instances: => Generic.Instances[[X] =>> Decoder[F, T, E, X], A]
   ): Decoder[F, T, E, A] =
     instances.derive(
-      inst ?=> derivedProduct[F, T, E, A](configuration, decodeObjectOps, failure, inst),
-      inst ?=> derivedSum[F, T, E, A](configuration, decodeObjectOps, failure, stringOptionDecoder, inst)
+      inst ?=> derivedProduct[F, S, O, T, E, A](configuration, cursorType, objectType, failure, inst),
+      inst ?=> derivedSum[F, S, O, T, E, A](configuration, cursorType, objectType, failure, stringOptionDecoder, inst)
     )
 
-  private[this] def derivedProduct[F[_] : Applicative, T, E, A](
+  private[this] def derivedProduct[F[_] : Applicative, S, O, T, E, A](
     configuration: DecoderConfiguration,
-    decodeObjectOps: DecodeObjectOps[T],
+    cursorType: CursorType.Aux[T, S],
+    objectType: ObjectType.Aux[S, O],
     failure: Migration[DecodingFailure[T], E],
     instances: => Generic.Product.Instances[[X] =>> Decoder[F, T, E, X], A]
   ): Decoder[F, T, E, A] =
     new Decoder[F, T, E, A]:
-      def decode(t: T): F[Either[E, A]] = decodeProductEither(t, configuration, decodeObjectOps, failure, instances)
+      def decode(t: T): F[Either[E, A]] =
+        decodeProductEither(t, configuration, cursorType, objectType, failure, instances)
       def decodeAccumulating(t: T): F[ValidatedNel[E, A]] =
-        decodeProductValidatedNel(t, configuration, decodeObjectOps, failure, instances)
+        decodeProductValidatedNel(t, configuration, cursorType, objectType, failure, instances)
   end derivedProduct
 
-  private[this] def derivedSum[F[_] : Monad, T, E, A](
+  private[this] def derivedSum[F[_] : Monad, S, O, T, E, A](
     configuration0: DecoderConfiguration,
-    decodeObjectOps: DecodeObjectOps[T],
+    cursorType: CursorType.Aux[T, S],
+    objectType: ObjectType.Aux[S, O],
     failure: Migration[DecodingFailure[T], E],
     stringOptionDecoder: Decoder[F, T, E, Option[String]],
     instances: => Generic.Sum.Instances[[X] =>> Decoder[F, T, E, X], A]
@@ -50,22 +54,24 @@ trait DecoderDerivationInstances:
       def configuration: DecoderConfiguration = configuration0
       def decoders: Generic.Sum.Instances[[X] =>> Decoder[F, T, E, X], A] = instances
       def decode(t: T): F[Either[E, A]] =
-        decodeSumEither(t, configuration0, decodeObjectOps, failure, stringOptionDecoder, instances)
+        decodeSumEither(t, configuration0, cursorType, objectType, failure, stringOptionDecoder, instances)
       def decodeAccumulating(t: T): F[ValidatedNel[E, A]] =
-        decodeSumValidatedNel(t, configuration0, decodeObjectOps, failure, stringOptionDecoder, instances)
+        decodeSumValidatedNel(t, configuration0, cursorType, objectType, failure, stringOptionDecoder, instances)
   end derivedSum
 
-  private[derivation] def decodeProductEither[F[_] : Applicative, T, E, A](
+  private[derivation] def decodeProductEither[F[_] : Applicative, S, O, T, E, A](
     t: T,
     configuration: DecoderConfiguration,
-    decodeObjectOps: DecodeObjectOps[T],
+    cursorType: CursorType.Aux[T, S],
+    objectType: ObjectType.Aux[S, O],
     failure: Migration[DecodingFailure[T], E],
     instances: => Generic.Product.Instances[[X] =>> Decoder[F, T, E, X], A]
   ): F[Either[E, A]] =
-    decodeProduct[F, [X] =>> Either[E, X], T, E, A](
+    decodeProduct[F, [X] =>> Either[E, X], S, O, T, E, A](
       t,
       configuration,
-      decodeObjectOps,
+      cursorType,
+      objectType,
       failure,
       _.asLeft[A],
       [X] => (result: Either[E, X]) => result.isRight,
@@ -73,17 +79,19 @@ trait DecoderDerivationInstances:
       instances
     )
 
-  private[derivation] def decodeProductValidatedNel[F[_] : Applicative, T, E, A](
+  private[derivation] def decodeProductValidatedNel[F[_] : Applicative, S, O, T, E, A](
     t: T,
     configuration: DecoderConfiguration,
-    decodeObjectOps: DecodeObjectOps[T],
+    cursorType: CursorType.Aux[T, S],
+    objectType: ObjectType.Aux[S, O],
     failure: Migration[DecodingFailure[T], E],
     instances: => Generic.Product.Instances[[X] =>> Decoder[F, T, E, X], A]
   ): F[ValidatedNel[E, A]] =
-    decodeProduct[F, [X] =>> ValidatedNel[E, X], T, E, A](
+    decodeProduct[F, [X] =>> ValidatedNel[E, X], S, O, T, E, A](
       t,
       configuration,
-      decodeObjectOps,
+      cursorType,
+      objectType,
       failure,
       _.invalidNel[A],
       [X] => (result: ValidatedNel[E, X]) => result.isValid,
@@ -91,18 +99,20 @@ trait DecoderDerivationInstances:
       instances
     )
 
-  private[derivation] def decodeSumEither[F[_] : Monad, T, E, A](
+  private[derivation] def decodeSumEither[F[_] : Monad, S, O, T, E, A](
     t: T,
     configuration: DecoderConfiguration,
-    decodeObjectOps: DecodeObjectOps[T],
+    cursorType: CursorType.Aux[T, S],
+    objectType: ObjectType.Aux[S, O],
     failure: Migration[DecodingFailure[T], E],
     stringOptionDecoder: Decoder[F, T, E, Option[String]],
     instances: => Generic.Sum.Instances[[X] =>> Decoder[F, T, E, X], A]
   ): F[Either[E, A]] =
-    decodeSum[F, [X] =>> Either[E, X], T, E, A](
+    decodeSum[F, [X] =>> Either[E, X], S, O, T, E, A](
       t,
       configuration,
-      decodeObjectOps,
+      cursorType,
+      objectType,
       failure,
       stringOptionDecoder,
       _.asLeft[A],
@@ -110,18 +120,20 @@ trait DecoderDerivationInstances:
       instances
     )
 
-  private[derivation] def decodeSumValidatedNel[F[_] : Monad, T, E, A](
+  private[derivation] def decodeSumValidatedNel[F[_] : Monad, S, O, T, E, A](
     t: T,
     configuration: DecoderConfiguration,
-    decodeObjectOps: DecodeObjectOps[T],
+    cursorType: CursorType.Aux[T, S],
+    objectType: ObjectType.Aux[S, O],
     failure: Migration[DecodingFailure[T], E],
     stringOptionDecoder: Decoder[F, T, E, Option[String]],
     instances: => Generic.Sum.Instances[[X] =>> Decoder[F, T, E, X], A]
   ): F[ValidatedNel[E, A]] =
-    decodeSum[F, [X] =>> ValidatedNel[E, X], T, E, A](
+    decodeSum[F, [X] =>> ValidatedNel[E, X], S, O, T, E, A](
       t,
       configuration,
-      decodeObjectOps,
+      cursorType,
+      objectType,
       failure,
       stringOptionDecoder,
       _.invalidNel[A],
@@ -129,31 +141,34 @@ trait DecoderDerivationInstances:
       instances
     )
 
-  private[this] def decodeProduct[F[_] : Applicative, G[_] : Applicative, T, E, A](
+  private[this] def decodeProduct[F[_] : Applicative, G[_] : Applicative, S, O, T, E, A](
     t: T,
     configuration: DecoderConfiguration,
-    decodeObjectOps: DecodeObjectOps[T],
+    cursorType: CursorType.Aux[T, S],
+    objectType: ObjectType.Aux[S, O],
     failure: Migration[DecodingFailure[T], E],
     asLeft: E => G[A],
     isRight: [X] => G[X] => Boolean,
     decode: [X] => Decoder[F, T, E, X] => T => F[G[X]],
     instances: => Generic.Product.Instances[[X] =>> Decoder[F, T, E, X], A]
   ): F[G[A]] =
-    if decodeObjectOps.isObject(t) then
+    if cursorType.focus(t).exists(objectType.isObject) then
       if configuration.strictDecoding then
         val expectedFields = instances.labels.toList.asInstanceOf[List[String]] ++ configuration.discriminator
         val expectedFieldsSet = expectedFields.toSet
-        val unexpectedFields = decodeObjectOps.keys(t).map(_.filterNot(expectedFieldsSet)).getOrElse(Nil)
+        val unexpectedFields = cursorType.focus(t).flatMap(objectType.asObject).map(o => objectType.keys(o).toList)
+          .map(_.filterNot(expectedFieldsSet)).getOrElse(Nil)
         if unexpectedFields.nonEmpty then
           asLeft(failure.migrate(UnexpectedFields(t, instances.label, unexpectedFields, expectedFields))).pure[F]
-        else handleDecodeProduct(t, configuration, decodeObjectOps, decode.asInstanceOf, isRight, instances)
-      else handleDecodeProduct(t, configuration, decodeObjectOps, decode.asInstanceOf, isRight, instances)
+        else handleDecodeProduct(t, configuration, cursorType, objectType, decode.asInstanceOf, isRight, instances)
+      else handleDecodeProduct(t, configuration, cursorType, objectType, decode.asInstanceOf, isRight, instances)
     else asLeft(failure.migrate(NotObject(t))).pure[F]
 
-  private[this] def handleDecodeProduct[F[_] : Applicative, G[_] : Applicative, T, E, A](
+  private[this] def handleDecodeProduct[F[_] : Applicative, G[_] : Applicative, S, O, T, E, A](
     t: T,
     configuration: DecoderConfiguration,
-    decodeObjectOps: DecodeObjectOps[T],
+    cursorType: CursorType.Aux[T, S],
+    objectType: ObjectType.Aux[S, O],
     decode: [X] => Decoder[F, T, E, X] => T => F[G[X]],
     isRight: [X] => G[X] => Boolean,
     instances: => Generic.Product.Instances[[X] =>> Decoder[F, T, E, X], A]
@@ -161,19 +176,21 @@ trait DecoderDerivationInstances:
     instances.constructWithLabelDefault[[X] =>> F[G[X]]] {
       [X] => (decoder: Decoder[F, T, E, X], label: String, defaultOpt: Option[X]) =>
         val key = configuration.transformMemberNames(label)
-        val current = decodeObjectOps.downField(t, key)
+        val current = cursorType.downField(t, key)
         decode(decoder)(current).map(result => defaultOpt
           .filter(_ => configuration.useDefaults &&
-            (!decodeObjectOps.contains(t, key) || (!isRight(result) && decodeObjectOps.isNull(current)))
+            (!cursorType.focus(t).exists(s => objectType.asObject(s).exists(o => objectType.contains(o, key))) ||
+              (!isRight(result) && cursorType.focus(current).exists(objectType.isNull)))
           )
           .fold(result)(_.pure[G])
         )
     }
 
-  private[this] def decodeSum[F[_] : Monad, G[_], T, E, A](
+  private[this] def decodeSum[F[_] : Monad, G[_], S, O, T, E, A](
     t: T,
     configuration: DecoderConfiguration,
-    decodeObjectOps: DecodeObjectOps[T],
+    cursorType: CursorType.Aux[T, S],
+    objectType: ObjectType.Aux[S, O],
     failure: Migration[DecodingFailure[T], E],
     stringOptionDecoder: Decoder[F, T, E, Option[String]],
     asLeft: E => G[A],
@@ -182,17 +199,17 @@ trait DecoderDerivationInstances:
   ): F[G[A]] =
     configuration.discriminator match
       case Some(discriminator) =>
-        val current = decodeObjectOps.downField(t, discriminator)
-        stringOptionDecoder.decode(current).flatMap {
+        val discriminatorT = cursorType.downField(t, discriminator)
+        stringOptionDecoder.decode(discriminatorT).flatMap {
           case Right(Some(sumTypeName)) =>
-            handleDecodeSum[F, G, T, E, A](t, sumTypeName, configuration, decodeObjectOps, failure, asLeft,
-              decode.asInstanceOf, instances)
+            handleDecodeSum[F, G, T, E, A](t, sumTypeName, configuration, failure, asLeft, decode.asInstanceOf,
+              instances)
           case Right(None) =>
-            asLeft(failure.migrate(NoDiscriminatorField(current, instances.label, discriminator))).pure[F]
+            asLeft(failure.migrate(NoDiscriminatorField(discriminatorT, instances.label, discriminator))).pure[F]
           case Left(failure) => asLeft(failure).pure[F]
         }
       case _ =>
-        decodeObjectOps.keys(t) match
+        cursorType.focus(t).flatMap(objectType.asObject).map(o => objectType.keys(o).toList) match
           case None => asLeft(failure.migrate(NotObject(t))).pure[F]
           case Some(Nil) => asLeft(failure.migrate(NonEmptyObject(t, instances.label))).pure[F]
           case Some(sumTypeName :: tail) =>
@@ -201,15 +218,14 @@ trait DecoderDerivationInstances:
                 .map(configuration.transformConstructorNames)
               asLeft(failure.migrate(NotSingleKeyObject(t, instances.label, constructorNames))).pure[F]
             else
-              handleDecodeSum[F, G, T, E, A](t, sumTypeName, configuration, decodeObjectOps, failure, asLeft,
-                decode.asInstanceOf, instances)
+              handleDecodeSum[F, G, T, E, A](t, sumTypeName, configuration, failure, asLeft, decode.asInstanceOf,
+                instances)
   end decodeSum
 
   private[this] def handleDecodeSum[F[_] : Applicative, G[_], T, E, A](
     t: T,
     sumTypeName: String,
     configuration: DecoderConfiguration,
-    decodeObjectOps: DecodeObjectOps[T],
     failure: Migration[DecodingFailure[T], E],
     asLeft: E => G[A],
     decode: Decoder[F, T, E, A] => T => F[G[A]],
@@ -230,6 +246,6 @@ trait DecoderDerivationInstances:
             map ++ decodersDict(d.configuration, d.decoders.asInstanceOf)
           case _ => map + (configuration.transformConstructorNames(label) -> decoder)
     }
-end DecoderDerivationInstances
+end DecoderDerivation
 
-object DecoderDerivationInstances extends DecoderDerivationInstances
+object DecoderDerivation extends DecoderDerivation
