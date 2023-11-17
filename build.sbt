@@ -51,6 +51,7 @@ lazy val codecCirce = (crossProject(JSPlatform, JVMPlatform) in file("codec-circ
     name := "codec-circe",
     libraryDependencies ++= Seq(
       "io.circe" %%% "circe-core" % circeVersion,
+      "org.scalatest" %%% "scalatest" % scalaTestVersion % Test,
     ),
   )
 
@@ -94,6 +95,7 @@ val circeVersion = "0.14.6"
 val doobieVersion = "1.0.0-RC4"
 val http4sVersion = "1.0.0-M34"
 val cirisVersion = "3.2.0"
+val scalaTestVersion = "3.2.16"
 val pekVersion = "0.1.0-SNAPSHOT"
 val pekGenericVersion = pekVersion
 val pekExtVersion = pekVersion

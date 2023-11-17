@@ -10,6 +10,7 @@ import cats.syntax.validated.*
 import cats.{Functor, Monad}
 import com.peknight.codec.derivation.DecoderDerivation
 import com.peknight.codec.instances.*
+import com.peknight.generic.priority.PriorityInstances
 
 trait Decoder[F[_], T, E, A]:
   self =>
@@ -31,6 +32,17 @@ trait Decoder[F[_], T, E, A]:
         case Invalid(e) => e.invalid[B].pure[F]
       }
   end flatMap
+  def emap[B](f: A => Either[E, B])(using Functor[F]): Decoder[F, T, E, B] =
+    new Decoder[F, T, E, B]:
+      def decode(t: T): F[Either[E, B]] = self.decode(t).map {
+        case Right(a) => f(a)
+        case Left(e) => e.asLeft[B]
+      }
+      def decodeAccumulating(t: T): F[ValidatedNel[E, B]] = self.decodeAccumulating(t).map {
+        case Valid(a) => f(a).toValidatedNel
+        case Invalid(e) => e.invalid[B]
+      }
+  end emap
   def mapError[EE](f: E => EE)(using Functor[F]): Decoder[F, T, EE, A] =
     new Decoder[F, T, EE, A]:
       def decode(t: T): F[Either[EE, A]] = self.decode(t).map(_.left.map(f))
@@ -43,4 +55,4 @@ object Decoder extends DecoderEitherMigrationInstances
   with DecoderMigrationInstances
   with DecoderErrorMigrationInstances
   with DecoderDerivation
-  with DecoderLowPriorityInstances
+  with PriorityInstances
