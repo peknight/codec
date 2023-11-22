@@ -25,9 +25,9 @@ trait EnumDecoderDerivation:
     new EnumDecoder[F, T, E, A]:
       def generic: Generic.Sum[A] = generic0
       def decode(t: T): F[Either[E, A]] =
-        decodeEnumEither[F, T, E, A, generic0.Repr](t, configuration, failure, stringDecoder, generic, singletons)
+        decodeEnumEither[F, T, E, A, generic0.Repr](t, configuration, failure, stringDecoder, generic0, singletons)
       def decodeAccumulating(t: T): F[ValidatedNel[E, A]] =
-        decodeEnumValidatedNel[F, T, E, A, generic0.Repr](t, configuration, failure, stringDecoder, generic, singletons)
+        decodeEnumValidatedNel[F, T, E, A, generic0.Repr](t, configuration, failure, stringDecoder, generic0, singletons)
   end derived
 
   private[derivation] def decodeEnumEither[F[_]: Functor, T, E, A, Repr <: Tuple](

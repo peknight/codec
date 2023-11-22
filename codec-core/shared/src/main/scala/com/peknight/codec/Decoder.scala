@@ -10,7 +10,6 @@ import cats.syntax.validated.*
 import cats.{Functor, Monad}
 import com.peknight.codec.derivation.DecoderDerivation
 import com.peknight.codec.instances.*
-import com.peknight.generic.priority.PriorityInstances
 
 trait Decoder[F[_], T, E, A]:
   self =>
@@ -55,4 +54,4 @@ object Decoder extends DecoderEitherMigrationInstances
   with DecoderMigrationInstances
   with DecoderErrorMigrationInstances
   with DecoderDerivation
-  with PriorityInstances
+  with DecoderPriorityInstances

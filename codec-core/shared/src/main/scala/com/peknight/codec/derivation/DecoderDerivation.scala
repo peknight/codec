@@ -252,7 +252,7 @@ trait DecoderDerivation:
             map ++ decodersDict(d.configuration, d.decoders.asInstanceOf)
           case e: EnumDecoder[_, _, _, _] =>
             map ++ e.generic.labels.toList.asInstanceOf[List[String]]
-              .map(label => (configuration.transformConstructorNames, e))
+              .map(label => (configuration.transformConstructorNames(label), e))
               .toMap.asInstanceOf[Map[String, Decoder[F, T, E, ?]]]
           case _ =>
             map + (configuration.transformConstructorNames(label) -> decoder)

@@ -3,6 +3,12 @@ package com.peknight.codec.circe
 import com.peknight.codec.circe.OuterSum.*
 import com.peknight.codec.circe.derivation.CodecDerivation
 import com.peknight.codec.circe.derivation.all.given
+// import com.peknight.codec.derivation.all.given
+// import com.peknight.codec.circe.derivation.CursorTypeInstances.given
+// import com.peknight.codec.circe.derivation.ObjectTypeInstances.given
+// import com.peknight.codec.circe.derivation.DecodingFailureMigrationInstances.given
+// import com.peknight.codec.circe.instances.EncoderInstances.given
+// import com.peknight.codec.circe.instances.DecoderInstances.given
 import com.peknight.codec.configuration.CodecConfiguration
 import io.circe.Codec
 import org.scalatest.flatspec.AnyFlatSpec

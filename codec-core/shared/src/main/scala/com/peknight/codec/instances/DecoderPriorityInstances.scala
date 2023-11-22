@@ -1,0 +1,3 @@
+package com.peknight.codec.instances
+
+trait DecoderPriorityInstances extends DecoderHighPriorityInstances
