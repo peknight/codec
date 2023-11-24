@@ -2,10 +2,14 @@ package com.peknight.codec.circe
 
 sealed trait OuterSum
 object OuterSum:
-  sealed trait InnerSum extends OuterSum
-  case object A extends InnerSum
-  case object B extends InnerSum
+  sealed trait EnumSum extends OuterSum
+  case object A extends EnumSum
+  case object B extends EnumSum
 
-  case object C extends OuterSum
-  case class D(d: String) extends OuterSum
+  sealed trait InnerSum extends OuterSum
+  case object C extends InnerSum
+  case class D(d: String) extends InnerSum
+
+  case object E extends OuterSum
+  case class F(f: String) extends OuterSum
 end OuterSum

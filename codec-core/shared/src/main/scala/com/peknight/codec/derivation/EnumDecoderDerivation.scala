@@ -19,15 +19,15 @@ trait EnumDecoderDerivation:
     functor: Functor[F],
     failure: Migration[DecodingFailure[T], E],
     stringDecoder: Decoder[F, T, E, String],
-    generic0: Generic.Sum[A]
+    generic: Generic.Sum[A]
   ): EnumDecoder[F, T, E, A] =
-    val singletons = summonAllSingletons[generic0.Repr](generic0.label)
+    val singletons = summonAllSingletons[generic.Repr](generic.label)
     new EnumDecoder[F, T, E, A]:
-      def generic: Generic.Sum[A] = generic0
+      def decoders: Map[String, Decoder[F, T, E, _]] = enumDecodersDict[F, T, E, A](this, configuration, generic)
       def decode(t: T): F[Either[E, A]] =
-        decodeEnumEither[F, T, E, A, generic0.Repr](t, configuration, failure, stringDecoder, generic0, singletons)
+        decodeEnumEither[F, T, E, A, generic.Repr](t, configuration, failure, stringDecoder, generic, singletons)
       def decodeAccumulating(t: T): F[ValidatedNel[E, A]] =
-        decodeEnumValidatedNel[F, T, E, A, generic0.Repr](t, configuration, failure, stringDecoder, generic0, singletons)
+        decodeEnumValidatedNel[F, T, E, A, generic.Repr](t, configuration, failure, stringDecoder, generic, singletons)
   end derived
 
   private[derivation] def decodeEnumEither[F[_]: Functor, T, E, A, Repr <: Tuple](
@@ -73,5 +73,15 @@ trait EnumDecoderDerivation:
       .find(tuple => configuration.transformConstructorNames(tuple._1) == caseName)
       .map(_._2)
       .fold(asLeft(failure.migrate(NoSuchEnum(t, generic.label, caseName))))(_.pure[G])
+
+  private[derivation] def enumDecodersDict[F[_], T, E, A](
+    decoder: Decoder[F, T, E, A],
+    configuration: DecoderConfiguration,
+    generic: Generic.Sum[A]
+  ): Map[String, Decoder[F, T, E, A]] =
+    generic.labels.toList.asInstanceOf[List[String]]
+      .map(label => (configuration.transformConstructorNames(label), decoder))
+      .toMap
+
 end EnumDecoderDerivation
 object EnumDecoderDerivation extends EnumDecoderDerivation

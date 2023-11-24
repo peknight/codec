@@ -46,7 +46,7 @@ trait DecoderDerivation:
   end derivedProduct
 
   private[this] def derivedSum[F[_] : Monad, S, O, T, E, A](
-    configuration0: DecoderConfiguration,
+    configuration: DecoderConfiguration,
     cursorType: CursorType.Aux[T, S],
     objectType: ObjectType.Aux[S, O],
     failure: Migration[DecodingFailure[T], E],
@@ -57,21 +57,21 @@ trait DecoderDerivation:
     instances.singletons.sequence match
       case Some(singletons) =>
         new EnumDecoder[F, T, E, A]:
-          def generic: Generic.Sum[A] = instances.generic
+          def decoders: Map[String, Decoder[F, T, E, _]] =
+            EnumDecoderDerivation.enumDecodersDict[F, T, E, A](this, configuration, instances.generic)
           def decode(t: T): F[Either[E, A]] =
-            EnumDecoderDerivation.decodeEnumEither(t, configuration0, failure, stringDecoder, instances.generic,
+            EnumDecoderDerivation.decodeEnumEither(t, configuration, failure, stringDecoder, instances.generic,
               singletons)
           def decodeAccumulating(t: T): F[ValidatedNel[E, A]] =
-            EnumDecoderDerivation.decodeEnumValidatedNel(t, configuration0, failure, stringDecoder, instances.generic,
+            EnumDecoderDerivation.decodeEnumValidatedNel(t, configuration, failure, stringDecoder, instances.generic,
               singletons)
       case _ =>
         new SumDecoder[F, T, E, A]:
-          def configuration: DecoderConfiguration = configuration0
-          def decoders: Generic.Sum.Instances[[X] =>> Decoder[F, T, E, X], A] = instances
+          def decoders: Map[String, Decoder[F, T, E, _]] = decodersDict[F, T, E, A](configuration, instances)
           def decode(t: T): F[Either[E, A]] =
-            decodeSumEither(t, configuration0, cursorType, objectType, failure, stringOptionDecoder, instances)
+            decodeSumEither(t, configuration, cursorType, objectType, failure, stringOptionDecoder, instances)
           def decodeAccumulating(t: T): F[ValidatedNel[E, A]] =
-            decodeSumValidatedNel(t, configuration0, cursorType, objectType, failure, stringOptionDecoder, instances)
+            decodeSumValidatedNel(t, configuration, cursorType, objectType, failure, stringOptionDecoder, instances)
   end derivedSum
 
   private[derivation] def decodeProductEither[F[_] : Applicative, S, O, T, E, A](
@@ -219,7 +219,7 @@ trait DecoderDerivation:
           case Right(Some(sumTypeName)) =>
             decodersDict(configuration, instances).get(sumTypeName) match
               case None => asLeft(failure.migrate(NoSuchType(t, instances.label, sumTypeName))).pure[F]
-              case Some(e: EnumDecoder[F, T, E, ?]) => decode(e.asInstanceOf[Decoder[F, T, E, A]])(discriminatorT)
+              case Some(e: EnumDecoder[F, T, E, _]) => decode(e.asInstanceOf[Decoder[F, T, E, A]])(discriminatorT)
               case Some(decoder) => decode(decoder.asInstanceOf[Decoder[F, T, E, A]])(t)
           case Right(None) =>
             asLeft(failure.migrate(NoDiscriminatorField(discriminatorT, instances.label, discriminator))).pure[F]
@@ -241,21 +241,15 @@ trait DecoderDerivation:
               )(decoder => decode(decoder.asInstanceOf[Decoder[F, T, E, A]])(cursor))
   end decodeSum
 
-  private[this] def decodersDict[F[_], T, E, A](
+  private[derivation] def decodersDict[F[_], T, E, A](
     configuration: DecoderConfiguration,
     instances: => Generic.Sum.Instances[[X] =>> Decoder[F, T, E, X], A]
-  ): Map[String, Decoder[F, T, E, ?]] =
-    instances.foldRightWithLabel(Map.empty[String, Decoder[F, T, E, ?]]) {
-      [X] => (decoder: Decoder[F, T, E, X], label: String, map: Map[String, Decoder[F, T, E, ?]]) =>
+  ): Map[String, Decoder[F, T, E, _]] =
+    instances.foldRightWithLabel(Map.empty[String, Decoder[F, T, E, _]]) {
+      [X] => (decoder: Decoder[F, T, E, X], label: String, map: Map[String, Decoder[F, T, E, _]]) =>
         decoder match
-          case d: SumDecoder[_, _, _, _] =>
-            map ++ decodersDict(d.configuration, d.decoders.asInstanceOf)
-          case e: EnumDecoder[_, _, _, _] =>
-            map ++ e.generic.labels.toList.asInstanceOf[List[String]]
-              .map(label => (configuration.transformConstructorNames(label), e))
-              .toMap.asInstanceOf[Map[String, Decoder[F, T, E, ?]]]
-          case _ =>
-            map + (configuration.transformConstructorNames(label) -> decoder)
+          case d: SumDecoder[F, T, E, X] => map ++ d.decoders
+          case d => map + (configuration.transformConstructorNames(label) -> d)
     }
 end DecoderDerivation
 

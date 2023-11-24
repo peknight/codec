@@ -4,7 +4,7 @@ import cats.data.ValidatedNel
 import cats.syntax.functor.*
 import cats.{Applicative, Monad}
 import com.peknight.codec.*
-import com.peknight.codec.configuration.{CodecConfiguration, DecoderConfiguration}
+import com.peknight.codec.configuration.CodecConfiguration
 import com.peknight.codec.error.DecodingFailure
 import com.peknight.generic.Generic
 import com.peknight.generic.migration.id.Migration
@@ -48,36 +48,37 @@ trait CodecDerivation:
   end derivedProduct
 
   private[this] def derivedSum[F[_]: Monad, S, O, T, E, A](
-    configuration0: CodecConfiguration,
+    configuration: CodecConfiguration,
     cursorType: CursorType.Aux[T, S],
     objectType: ObjectType.Aux[S, O],
     failure: Migration[DecodingFailure[T], E],
     stringEncoder: Encoder[F, S, String],
     stringDecoder: Decoder[F, T, E, String],
     stringOptionDecoder: Decoder[F, T, E, Option[String]],
-    generic0: Generic.Sum[A],
+    generic: Generic.Sum[A],
     encoders: Generic.Sum.Instances[[X] =>> Encoder[F, S, X], A],
     decoders0: Generic.Sum.Instances[[X] =>> Decoder[F, T, E, X], A]
   ): Codec[F, S, T, E, A] =
-    generic0.singletons.sequence match
+    generic.singletons.sequence match
       case Some(singletons) =>
         new Codec[F, S, T, E, A] with EnumDecoder[F, T, E, A]:
-          def generic: Generic.Sum[A] = generic0
-          def encode(a: A): F[S] = EnumEncoderDerivation.encodeEnum(a, configuration0, stringEncoder, generic0)
+          def decoders: Map[String, Decoder[F, T, E, _]] =
+            EnumDecoderDerivation.enumDecodersDict[F, T, E, A](this, configuration, generic)
+          def encode(a: A): F[S] = EnumEncoderDerivation.encodeEnum(a, configuration, stringEncoder, generic)
           def decode(t: T): F[Either[E, A]] =
-            EnumDecoderDerivation.decodeEnumEither(t, configuration0, failure, stringDecoder, generic0, singletons)
+            EnumDecoderDerivation.decodeEnumEither(t, configuration, failure, stringDecoder, generic, singletons)
           def decodeAccumulating(t: T): F[ValidatedNel[E, A]] =
-            EnumDecoderDerivation.decodeEnumValidatedNel(t, configuration0, failure, stringDecoder, generic0, singletons)
+            EnumDecoderDerivation.decodeEnumValidatedNel(t, configuration, failure, stringDecoder, generic, singletons)
       case _ =>
         new Codec[F, S, T, E, A] with SumEncoder[F, S, A] with SumDecoder[F, T, E, A]:
-          def configuration: DecoderConfiguration = configuration0
-          def decoders: Generic.Sum.Instances[[X] =>> Decoder[F, T, E, X], A] = decoders0
-          def encode(a: A): F[S] = EncoderDerivation.encodeSum(a, configuration0, objectType, stringEncoder, encoders)
+          def decoders: Map[String, Decoder[F, T, E, _]] =
+            DecoderDerivation.decodersDict[F, T, E, A](configuration, decoders0)
+          def encode(a: A): F[S] = EncoderDerivation.encodeSum(a, configuration, objectType, stringEncoder, encoders)
           def decode(t: T): F[Either[E, A]] =
-            DecoderDerivation.decodeSumEither(t, configuration0, cursorType, objectType, failure,
+            DecoderDerivation.decodeSumEither(t, configuration, cursorType, objectType, failure,
               stringOptionDecoder, decoders0)
           def decodeAccumulating(t: T): F[ValidatedNel[E, A]] =
-            DecoderDerivation.decodeSumValidatedNel(t, configuration0, cursorType, objectType, failure,
+            DecoderDerivation.decodeSumValidatedNel(t, configuration, cursorType, objectType, failure,
               stringOptionDecoder, decoders0)
   end derivedSum
 end CodecDerivation
