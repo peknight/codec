@@ -2,15 +2,18 @@ package com.peknight.codec.circe.syntax
 
 import cats.Id
 import cats.data.ValidatedNel
-import com.peknight.codec.id.{Decoder, Encoder, Codec}
-import io.circe.{ACursor, DecodingFailure, Json, Decoder as CirceDecoder, Encoder as CirceEncoder, Codec as CirceCodec}
+import com.peknight.codec.id.{Codec, Decoder, Encoder}
+import io.circe.{ACursor, DecodingFailure, Json}
 
 trait CirceSyntax:
-  extension [A] (encoder: CirceEncoder[A])
-    def asEncoder: Encoder[Json, A] = encoder.apply(_)
+  extension [A] (encoder: io.circe.Encoder[A])
+    def asEncoder: Encoder[Json, A] =
+      encoder match
+        case e: com.peknight.codec.circe.Encoder[A] => e.encoder
+        case _ => encoder.apply(_)
   end extension
 
-  extension [A] (decoder: CirceDecoder[A])
+  extension [A] (decoder: io.circe.Decoder[A])
     def asDecoder: Decoder[ACursor, DecodingFailure, A] =
       new Decoder[ACursor, DecodingFailure, A]:
         def decode(t: ACursor): Id[Either[DecodingFailure, A]] =
@@ -20,7 +23,7 @@ trait CirceSyntax:
     end asDecoder
   end extension
 
-  extension [A] (codec: CirceCodec[A])
+  extension [A] (codec: io.circe.Codec[A])
     def asCodec: Codec[Json, ACursor, DecodingFailure, A] =
       new Codec[Json, ACursor, DecodingFailure, A]:
         def encode(a: A): Id[Json] = codec.apply(a)
