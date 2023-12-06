@@ -19,7 +19,7 @@ end ObjectType
 object ObjectType:
   type Aux[S, O] = ObjectType[S] { type Obj = O }
   def apply[S](using objectType: ObjectType[S]): ObjectType[S] = objectType
-  def objectType[S](f: Object[S] => S, g: S => Option[Object[S]]): ObjectType[S] =
+  def apply[S](f: Object[S] => S, g: S => Option[Object[S]]): ObjectType[S] =
     new ObjectType[S]:
       type Obj = Object[S]
       def to(o: Object[S]): S = f(o)
@@ -31,5 +31,5 @@ object ObjectType:
       override def add(o: Object[S], key: String, value: S): Object[S] = o.add(key, value)
       override def keys(o: Object[S]): Iterable[String] = o.keys
       override def contains(o: Object[S], key: String): Boolean = o.contains(key)
-  end objectType
+  end apply
 end ObjectType

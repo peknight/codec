@@ -5,7 +5,7 @@ import cats.syntax.functor.*
 import cats.{Applicative, Functor}
 import com.peknight.codec.Encoder
 import com.peknight.codec.sum.StringType
-import com.peknight.generic.priority.HighPriority
+import com.peknight.generic.priority.{HighPriority, LowPriority}
 
 import java.net.URI
 import java.time.*
@@ -65,7 +65,7 @@ trait EncoderStringInstances:
     HighPriority((a: Currency) => a.getCurrencyCode.pure[F])
 
   given stringEncoder[F[_], S, A](using functor: Functor[F], encoder: Encoder[F, String, A], stringType: StringType[S])
-  : Encoder[F, S, A] with
-    def encode(a: A): F[S] = encoder.encode(a).map(str => stringType.to(str))
+  : LowPriority[Encoder[F, S, A]] =
+    LowPriority((a: A) => encoder.encode(a).map(str => stringType.to(str)))
   end stringEncoder
 end EncoderStringInstances

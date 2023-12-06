@@ -7,7 +7,7 @@ import cats.{Applicative, Functor}
 import com.peknight.codec.Encoder
 import com.peknight.codec.sum.ArrayType
 import com.peknight.generic.Generic
-import com.peknight.generic.priority.MidPriority
+import com.peknight.generic.priority.{LowPriority, MidPriority}
 
 trait EncoderVectorInstances:
   given encodeSeq[F[_], S, A](using Applicative[F], Encoder[F, S, A]): Encoder[F, Vector[S], Seq[A]] =
@@ -54,8 +54,8 @@ trait EncoderVectorInstances:
   end encodeTuple
 
   given vectorEncoder[F[_], S, A](using functor: Functor[F], encoder: Encoder[F, Vector[S], A], arrayType: ArrayType[S])
-  : Encoder[F, S, A] with
-    def encode(a: A): F[S] = encoder.encode(a).map(arr => arrayType.to(arrayType.fromArray(arr)))
+  : LowPriority[Encoder[F, S, A]] =
+    LowPriority((a: A) => encoder.encode(a).map(arr => arrayType.to(arrayType.fromArray(arr))))
   end vectorEncoder
 
 end EncoderVectorInstances

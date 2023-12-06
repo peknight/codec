@@ -2,6 +2,7 @@ package com.peknight.query
 
 import cats.Id
 import com.peknight.codec.Object
+import com.peknight.codec.sum.{ArrayType, NullType, ObjectType, StringType}
 import com.peknight.generic.migration.id.Isomorphism
 
 sealed trait Query derives CanEqual:
@@ -97,4 +98,9 @@ object Query:
   def fromValues(values: Iterable[Query]): Query = QArray(values.toVector)
   def fromObject(value: Object[Query]): Query = QObject(value)
   def fromString(value: String): Query = QValue(value)
+
+  given ArrayType[Query] = ArrayType[Query](Query.fromValues, _.asArray)
+  given NullType[Query] = NullType[Query](Query.Null, _.asNull)
+  given StringType[Query] = StringType[Query](Query.fromString, _.asValue)
+  given ObjectType[Query] = ObjectType[Query](Query.fromObject, _.asObject)
 end Query

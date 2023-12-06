@@ -8,6 +8,7 @@ import cats.syntax.traverse.*
 import cats.{Applicative, Functor}
 import com.peknight.codec.sum.ObjectType
 import com.peknight.codec.{Encoder, Object}
+import com.peknight.generic.priority.LowPriority
 
 import scala.collection.Map
 import scala.collection.immutable.Map as ImmutableMap
@@ -36,7 +37,7 @@ trait EncoderObjectInstances:
       }.map(Object.fromIterable)
 
   given objectEncoder[F[_], S, A](using functor: Functor[F], encoder: Encoder[F, Object[S], A], objectType: ObjectType[S])
-  : Encoder[F, S, A] with
-    def encode(a: A): F[S] = encoder.encode(a).map(obj => objectType.to(objectType.fromObject(obj)))
+  : LowPriority[Encoder[F, S, A]] =
+    LowPriority((a: A) => encoder.encode(a).map(obj => objectType.to(objectType.fromObject(obj))))
   end objectEncoder
 end EncoderObjectInstances

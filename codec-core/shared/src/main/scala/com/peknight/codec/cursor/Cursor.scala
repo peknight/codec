@@ -3,7 +3,6 @@ package com.peknight.codec.cursor
 import cats.syntax.either.*
 import cats.syntax.functor.*
 import cats.{Applicative, Eq, Functor}
-import com.peknight.codec.Object
 
 import scala.annotation.tailrec
 
