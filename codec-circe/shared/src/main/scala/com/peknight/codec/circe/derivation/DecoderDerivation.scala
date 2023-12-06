@@ -11,6 +11,7 @@ import io.circe.{ACursor, DecodingFailure, Json, JsonObject, Decoder as CirceDec
 
 trait DecoderDerivation extends CursorTypeInstances
   with ObjectTypeInstances
+  with NullTypeInstances
   with DecodingFailureMigrationInstances
   with DecoderInstances:
   def derived[A](using configuration: DecoderConfiguration)(using

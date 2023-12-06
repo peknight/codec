@@ -1,4 +1,4 @@
-package com.peknight.codec.derivation
+package com.peknight.codec.cursor
 
 trait CursorType[T]:
   type Sum

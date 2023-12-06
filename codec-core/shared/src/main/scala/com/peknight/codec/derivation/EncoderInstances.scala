@@ -3,6 +3,7 @@ package com.peknight.codec.derivation
 import cats.Applicative
 import com.peknight.codec.Encoder
 import com.peknight.codec.configuration.EncoderConfiguration
+import com.peknight.codec.sum.ObjectType
 import com.peknight.generic.Generic
 import com.peknight.generic.priority.LowPriority
 

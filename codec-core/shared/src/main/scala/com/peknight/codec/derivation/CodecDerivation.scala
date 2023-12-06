@@ -5,7 +5,9 @@ import cats.syntax.functor.*
 import cats.{Applicative, Monad}
 import com.peknight.codec.*
 import com.peknight.codec.configuration.CodecConfiguration
+import com.peknight.codec.cursor.CursorType
 import com.peknight.codec.error.DecodingFailure
+import com.peknight.codec.sum.{NullType, ObjectType}
 import com.peknight.generic.Generic
 import com.peknight.generic.migration.id.Migration
 import com.peknight.generic.tuple.syntax.sequence
@@ -15,6 +17,7 @@ trait CodecDerivation:
     monad: Monad[F],
     cursorType: CursorType.Aux[T, S],
     objectType: ObjectType.Aux[S, O],
+    nullType: NullType[S],
     failure: Migration[DecodingFailure[T], E],
     stringEncoder: Encoder[F, S, String],
     stringDecoder: Decoder[F, T, E, String],
@@ -24,7 +27,7 @@ trait CodecDerivation:
     decoders: => Generic.Instances[[X] =>> Decoder[F, T, E, X], A]
   ): Codec[F, S, T, E, A] =
     if generic.isProduct then
-      derivedProduct[F, S, O, T, E, A](configuration, cursorType, objectType, failure, encoders.asInstanceOf,
+      derivedProduct[F, S, O, T, E, A](configuration, cursorType, objectType, nullType, failure, encoders.asInstanceOf,
         decoders.asInstanceOf)
     else
       derivedSum[F, S, O, T, E, A](configuration, cursorType, objectType, failure, stringEncoder, stringDecoder,
@@ -34,6 +37,7 @@ trait CodecDerivation:
     configuration: CodecConfiguration,
     cursorType: CursorType.Aux[T, S],
     objectType: ObjectType.Aux[S, O],
+    nullType: NullType[S],
     failure: Migration[DecodingFailure[T], E],
     encoders: Generic.Product.Instances[[X] =>> Encoder[F, S, X], A],
     decoders: Generic.Product.Instances[[X] =>> Decoder[F, T, E, X], A]
@@ -41,9 +45,9 @@ trait CodecDerivation:
     new Codec[F, S, T, E, A]:
       def encode(a: A): F[S] = EncoderDerivation.encodeProduct(a, configuration, objectType, encoders)
       def decode(t: T): F[Either[E, A]] =
-        DecoderDerivation.decodeProductEither(t, configuration, cursorType, objectType, failure, decoders)
+        DecoderDerivation.decodeProductEither(t, configuration, cursorType, objectType, nullType, failure, decoders)
       def decodeAccumulating(t: T): F[ValidatedNel[E, A]] =
-        DecoderDerivation.decodeProductValidatedNel(t, configuration, cursorType, objectType, failure,
+        DecoderDerivation.decodeProductValidatedNel(t, configuration, cursorType, objectType, nullType, failure,
           decoders)
   end derivedProduct
 

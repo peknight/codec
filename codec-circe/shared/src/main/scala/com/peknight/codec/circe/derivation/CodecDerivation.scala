@@ -11,6 +11,7 @@ import io.circe.{ACursor, DecodingFailure, Json, JsonObject, Codec as CirceCodec
 
 trait CodecDerivation extends CursorTypeInstances
   with ObjectTypeInstances
+  with NullTypeInstances
   with DecodingFailureMigrationInstances
   with EncoderInstances
   with DecoderInstances:

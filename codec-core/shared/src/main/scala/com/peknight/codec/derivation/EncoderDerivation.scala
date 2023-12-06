@@ -4,8 +4,9 @@ import cats.Applicative
 import cats.syntax.apply.*
 import cats.syntax.functor.*
 import cats.syntax.traverse.*
-import com.peknight.codec.Encoder
 import com.peknight.codec.configuration.EncoderConfiguration
+import com.peknight.codec.sum.ObjectType
+import com.peknight.codec.{Encoder, Object}
 import com.peknight.generic.Generic
 import com.peknight.generic.tuple.syntax.forall
 
@@ -75,8 +76,8 @@ trait EncoderDerivation:
       else
         configuration.discriminator match
           case Some(discriminator) =>
-            objectType.asObject(s).fold(objectType.to(objectType.singleton(discriminator, s)))(obj =>
-              objectType.to(objectType.prepended(obj, (discriminator, encodedConstructorName)))
+            objectType.to(objectType.asObject(s).fold(objectType.singleton(discriminator, s))(obj =>
+              objectType.add(obj, discriminator, encodedConstructorName))
             )
           case _ => objectType.to(objectType.singleton(constructorName, s))
     }

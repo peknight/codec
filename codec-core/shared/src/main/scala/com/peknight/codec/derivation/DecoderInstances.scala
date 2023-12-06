@@ -3,7 +3,9 @@ package com.peknight.codec.derivation
 import cats.Monad
 import com.peknight.codec.Decoder
 import com.peknight.codec.configuration.DecoderConfiguration
+import com.peknight.codec.cursor.CursorType
 import com.peknight.codec.error.DecodingFailure
+import com.peknight.codec.sum.{NullType, ObjectType}
 import com.peknight.generic.Generic
 import com.peknight.generic.migration.id.Migration
 import com.peknight.generic.priority.LowPriority
@@ -14,6 +16,7 @@ trait DecoderInstances:
     monad: Monad[F],
     cursorType: CursorType.Aux[T, S],
     objectType: ObjectType.Aux[S, O],
+    nullType: NullType[S],
     failure: Migration[DecodingFailure[T], E],
     stringDecoder: Decoder[F, T, E, String],
     stringOptionDecoder: Decoder[F, T, E, Option[String]],

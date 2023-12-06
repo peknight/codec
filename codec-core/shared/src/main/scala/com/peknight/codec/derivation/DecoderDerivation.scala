@@ -10,7 +10,9 @@ import cats.{Applicative, Monad}
 import com.peknight.cats.ext.instances.applicative.given
 import com.peknight.codec.Decoder
 import com.peknight.codec.configuration.DecoderConfiguration
+import com.peknight.codec.cursor.CursorType
 import com.peknight.codec.error.*
+import com.peknight.codec.sum.{NullType, ObjectType}
 import com.peknight.generic.Generic
 import com.peknight.generic.migration.id.Migration
 import com.peknight.generic.tuple.syntax.sequence
@@ -20,13 +22,14 @@ trait DecoderDerivation:
     monad: Monad[F],
     cursorType: CursorType.Aux[T, S],
     objectType: ObjectType.Aux[S, O],
+    nullType: NullType[S],
     failure: Migration[DecodingFailure[T], E],
     stringDecoder: Decoder[F, T, E, String],
     stringOptionDecoder: Decoder[F, T, E, Option[String]],
     instances: => Generic.Instances[[X] =>> Decoder[F, T, E, X], A]
   ): Decoder[F, T, E, A] =
     instances.derive(
-      inst ?=> derivedProduct[F, S, O, T, E, A](configuration, cursorType, objectType, failure, inst),
+      inst ?=> derivedProduct[F, S, O, T, E, A](configuration, cursorType, objectType, nullType, failure, inst),
       inst ?=> derivedSum[F, S, O, T, E, A](configuration, cursorType, objectType, failure, stringDecoder,
         stringOptionDecoder, inst)
     )
@@ -35,14 +38,15 @@ trait DecoderDerivation:
     configuration: DecoderConfiguration,
     cursorType: CursorType.Aux[T, S],
     objectType: ObjectType.Aux[S, O],
+    nullType: NullType[S],
     failure: Migration[DecodingFailure[T], E],
     instances: => Generic.Product.Instances[[X] =>> Decoder[F, T, E, X], A]
   ): Decoder[F, T, E, A] =
     new Decoder[F, T, E, A]:
       def decode(t: T): F[Either[E, A]] =
-        decodeProductEither(t, configuration, cursorType, objectType, failure, instances)
+        decodeProductEither(t, configuration, cursorType, objectType, nullType, failure, instances)
       def decodeAccumulating(t: T): F[ValidatedNel[E, A]] =
-        decodeProductValidatedNel(t, configuration, cursorType, objectType, failure, instances)
+        decodeProductValidatedNel(t, configuration, cursorType, objectType, nullType, failure, instances)
   end derivedProduct
 
   private[this] def derivedSum[F[_] : Monad, S, O, T, E, A](
@@ -79,6 +83,7 @@ trait DecoderDerivation:
     configuration: DecoderConfiguration,
     cursorType: CursorType.Aux[T, S],
     objectType: ObjectType.Aux[S, O],
+    nullType: NullType[S],
     failure: Migration[DecodingFailure[T], E],
     instances: => Generic.Product.Instances[[X] =>> Decoder[F, T, E, X], A]
   ): F[Either[E, A]] =
@@ -87,6 +92,7 @@ trait DecoderDerivation:
       configuration,
       cursorType,
       objectType,
+      nullType,
       failure,
       _.asLeft[A],
       [X] => (result: Either[E, X]) => result.isRight,
@@ -99,6 +105,7 @@ trait DecoderDerivation:
     configuration: DecoderConfiguration,
     cursorType: CursorType.Aux[T, S],
     objectType: ObjectType.Aux[S, O],
+    nullType: NullType[S],
     failure: Migration[DecodingFailure[T], E],
     instances: => Generic.Product.Instances[[X] =>> Decoder[F, T, E, X], A]
   ): F[ValidatedNel[E, A]] =
@@ -107,6 +114,7 @@ trait DecoderDerivation:
       configuration,
       cursorType,
       objectType,
+      nullType,
       failure,
       _.invalidNel[A],
       [X] => (result: ValidatedNel[E, X]) => result.isValid,
@@ -161,6 +169,7 @@ trait DecoderDerivation:
     configuration: DecoderConfiguration,
     cursorType: CursorType.Aux[T, S],
     objectType: ObjectType.Aux[S, O],
+    nullType: NullType[S],
     failure: Migration[DecodingFailure[T], E],
     asLeft: E => G[A],
     isRight: [X] => G[X] => Boolean,
@@ -175,8 +184,11 @@ trait DecoderDerivation:
           .map(_.filterNot(expectedFieldsSet)).getOrElse(Nil)
         if unexpectedFields.nonEmpty then
           asLeft(failure.migrate(UnexpectedFields(t, instances.label, unexpectedFields, expectedFields))).pure[F]
-        else handleDecodeProduct(t, configuration, cursorType, objectType, decode.asInstanceOf, isRight, instances)
-      else handleDecodeProduct(t, configuration, cursorType, objectType, decode.asInstanceOf, isRight, instances)
+        else
+          handleDecodeProduct(t, configuration, cursorType, objectType, nullType, decode.asInstanceOf, isRight,
+            instances)
+      else
+        handleDecodeProduct(t, configuration, cursorType, objectType, nullType, decode.asInstanceOf, isRight, instances)
     else asLeft(failure.migrate(NotObject(t))).pure[F]
 
   private[this] def handleDecodeProduct[F[_] : Applicative, G[_] : Applicative, S, O, T, E, A](
@@ -184,6 +196,7 @@ trait DecoderDerivation:
     configuration: DecoderConfiguration,
     cursorType: CursorType.Aux[T, S],
     objectType: ObjectType.Aux[S, O],
+    nullType: NullType[S],
     decode: [X] => Decoder[F, T, E, X] => T => F[G[X]],
     isRight: [X] => G[X] => Boolean,
     instances: => Generic.Product.Instances[[X] =>> Decoder[F, T, E, X], A]
@@ -195,7 +208,7 @@ trait DecoderDerivation:
         decode(decoder)(current).map(result => defaultOpt
           .filter(_ => configuration.useDefaults &&
             (!cursorType.focus(t).exists(s => objectType.asObject(s).exists(o => objectType.contains(o, key))) ||
-              (!isRight(result) && cursorType.focus(current).exists(objectType.isNull)))
+              (!isRight(result) && cursorType.focus(current).exists(nullType.isNull)))
           )
           .fold(result)(_.pure[G])
         )
