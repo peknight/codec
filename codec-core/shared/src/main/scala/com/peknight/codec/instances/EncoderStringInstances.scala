@@ -66,6 +66,6 @@ trait EncoderStringInstances:
 
   given stringEncoder[F[_], S, A](using functor: Functor[F], encoder: Encoder[F, String, A], stringType: StringType[S])
   : Encoder[F, S, A] with
-    def encode(a: A): F[S] = encoder.encode(a).map(str => stringType.to(stringType.fromString(str)))
+    def encode(a: A): F[S] = encoder.encode(a).map(str => stringType.to(str))
   end stringEncoder
 end EncoderStringInstances
