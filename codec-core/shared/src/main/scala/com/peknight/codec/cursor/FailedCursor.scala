@@ -4,9 +4,11 @@ import cats.Applicative
 import cats.syntax.applicative.*
 import com.peknight.codec.sum.{ArrayType, ObjectType}
 
-class FailedCursor[S](lastCursorValue: SuccessCursor[S], lastOpValue: CursorOp) extends Cursor[S]:
-  def lastCursor: Option[SuccessCursor[S]] = Some(lastCursorValue)
-  def lastOp: Option[CursorOp] = Some(lastOpValue)
+trait FailedCursor[S] extends Cursor[S]:
+  protected[this] def lastCursorValue: SuccessCursor[S]
+  protected[this] def lastOpValue: CursorOp
+  protected[codec] def lastCursor: Option[SuccessCursor[S]] = Some(lastCursorValue)
+  protected[codec] def lastOp: Option[CursorOp] = Some(lastOpValue)
   def incorrectFocus(using ObjectType[S], ArrayType[S]): Boolean =
     (lastOpValue.requiresObject && !ObjectType[S].isObject(lastCursorValue.value)) ||
       (lastOpValue.requiresArray && !ArrayType[S].isArray(lastCursorValue.value))
@@ -36,4 +38,11 @@ class FailedCursor[S](lastCursorValue: SuccessCursor[S], lastOpValue: CursorOp) 
   def last: Cursor[S] = this
   def delete: Cursor[S] = this
   def field(k: String): Cursor[S] = this
+end FailedCursor
+object FailedCursor:
+  def apply[S](lastCursorValue0: SuccessCursor[S], lastOpValue0: CursorOp): FailedCursor[S] =
+    new FailedCursor[S]:
+      val lastCursorValue: SuccessCursor[S] = lastCursorValue0
+      val lastOpValue: CursorOp = lastOpValue0
+  end apply
 end FailedCursor

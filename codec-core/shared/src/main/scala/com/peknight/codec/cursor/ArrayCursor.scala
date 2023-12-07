@@ -2,9 +2,13 @@ package com.peknight.codec.cursor
 
 import com.peknight.codec.sum.ArrayType
 
-class ArrayCursor[S](array: Vector[S], indexValue: Int, parent: SuccessCursor[S], changed: Boolean,
-                     arrayType: ArrayType[S], lastCursorValue: SuccessCursor[S], val lastOp: Option[CursorOp])
-  extends SuccessCursor[S]:
+private[codec] trait ArrayCursor[S] extends SuccessCursor[S]:
+  protected[this] def array: Vector[S]
+  def indexValue: Int
+  def parent: SuccessCursor[S]
+  protected[this] def changed: Boolean
+  protected[this] def arrayType: ArrayType[S]
+  protected[this] def lastCursorValue: SuccessCursor[S]
   def lastCursor: Option[SuccessCursor[S]] = Some(lastCursorValue)
   def value: S = array(indexValue)
   def index: Option[Int] = Some(indexValue)
@@ -31,4 +35,18 @@ class ArrayCursor[S](array: Vector[S], indexValue: Int, parent: SuccessCursor[S]
     else ArrayCursor(array, indexValue + 1, parent, changed, arrayType, this, Some(CursorOp.MoveRight))
 
   def field(k: String): Cursor[S] = fail(CursorOp.Field(k))
+end ArrayCursor
+private[codec] object ArrayCursor:
+  def apply[S](array0: Vector[S], indexValue0: Int, parent0: SuccessCursor[S], changed0: Boolean,
+               arrayType0: ArrayType[S], lastCursorValue0: SuccessCursor[S], lastOp0: Option[CursorOp])
+  : ArrayCursor[S] =
+    new ArrayCursor[S]:
+      val array: Vector[S] = array0
+      val indexValue: Int = indexValue0
+      val parent: SuccessCursor[S] = parent0
+      val changed: Boolean = changed0
+      val arrayType: ArrayType[S] = arrayType0
+      val lastCursorValue: SuccessCursor[S] = lastCursorValue0
+      val lastOp: Option[CursorOp] = lastOp0
+  end apply
 end ArrayCursor

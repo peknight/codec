@@ -64,6 +64,3 @@ trait SuccessCursor[S] extends Cursor[S]:
 
   protected[this] def fail(op: CursorOp): Cursor[S] = FailedCursor(this, op)
 end SuccessCursor
-object SuccessCursor:
-  def from[S](value: S): SuccessCursor[S] = TopCursor(value, None, None)
-end SuccessCursor

@@ -3,13 +3,15 @@ package com.peknight.codec.cursor
 import cats.syntax.either.*
 import cats.syntax.functor.*
 import cats.{Applicative, Eq, Functor}
+import com.peknight.codec.path.{PathElem, PathToRoot}
 import com.peknight.codec.sum.{ArrayType, ObjectType}
+import com.peknight.codec.error.{CouldNotDecode, MissingField}
 
 import scala.annotation.tailrec
 
 trait Cursor[S]:
-  def lastCursor: Option[SuccessCursor[S]]
-  def lastOp: Option[CursorOp]
+  protected[codec] def lastCursor: Option[SuccessCursor[S]]
+  protected[codec] def lastOp: Option[CursorOp]
   def focus: Option[S]
   final def history: List[CursorOp] =
     @tailrec def go(cursor: Cursor[S], acc: List[CursorOp]): List[CursorOp] =
@@ -113,7 +115,76 @@ trait Cursor[S]:
    */
   def downField(k: String)(using ObjectType[S]): Cursor[S]
 
-  // TODO pathToRoot pathString
+  private[codec] def pathToRoot: PathToRoot =
+    def lastCursorParentOrLastCursor(cursor: Cursor[S]): Option[Cursor[S]] =
+      cursor.lastCursor.map {
+        case lastCursor: ArrayCursor[S] => lastCursor.parent
+        case lastCursor: ObjectCursor[S, _] => lastCursor.parent
+        case lastCursor => lastCursor
+      }
+    @tailrec def go(cursorOption: Option[Cursor[S]], acc: PathToRoot): PathToRoot =
+      cursorOption match
+        case None => acc
+        case Some(cursor) =>
+          if cursor.failed then
+            /*
+             * If the cursor is in a failed state, we lose context on what the
+             * attempted last position was. Since we usually want to know this
+             * for error reporting, we use the lastOp to attempt to recover that
+             * state. We only care about operations which imply a path to the
+             * root, such as a field selection.
+             */
+            cursor.lastOp match
+              case Some(CursorOp.Field(field)) =>
+                go(lastCursorParentOrLastCursor(cursor), PathElem.ObjectKey(field) +: acc)
+              case Some(CursorOp.DownField(field)) =>
+                // We tried to move down, and then that failed, so the field was missing.
+                go(lastCursorParentOrLastCursor(cursor), PathElem.ObjectKey(field) +: acc)
+              case Some(CursorOp.DownArray) =>
+                // We tried to move into an array, but it must have been empty.
+                go(lastCursorParentOrLastCursor(cursor), PathElem.ArrayIndex(0) +: acc)
+              case Some(CursorOp.DownN(n)) =>
+                // We tried to move into an array at index N, but there was no element there.
+                go(lastCursorParentOrLastCursor(cursor), PathElem.ArrayIndex(n) +: acc)
+              case Some(CursorOp.MoveLeft) =>
+                // We tried to move to before the start of the array.
+                go(lastCursorParentOrLastCursor(cursor), PathElem.ArrayIndex(-1) +: acc)
+              case Some(CursorOp.MoveRight) =>
+                cursor.lastCursor match
+                  case Some(lastCursor: ArrayCursor[S]) =>
+                    /*
+                     * We tried to move to past the end of the array. Longs are
+                     * used here for the very unlikely case that we tried to
+                     * move past Int.MaxValue which shouldn't be representable.
+                     */
+                    go(Some(lastCursor.parent), PathElem.ArrayIndex(lastCursor.indexValue.toLong + 1L) +: acc)
+                  // Invalid state
+                  case _ => go(cursor.lastCursor, acc)
+              case _ =>
+                /*
+                 * CursorOp.MoveUp or CursorOp.DeleteGoParent, both are move up
+                 * events.
+                 *
+                 * Recalling we are in a failed branch here, this should only
+                 * fail if we are already at the top of the tree or if the
+                 * cursor state is broken (will be fixed on 0.15.x), in either
+                 * case this is the only valid action to take.
+                 */
+                go(cursor.lastCursor, acc)
+          else
+            cursor match
+              case cursor: ArrayCursor[S] => go(Some(cursor.parent), PathElem.ArrayIndex(cursor.indexValue) +: acc)
+              case cursor: ObjectCursor[S, _] => go(Some(cursor.parent), PathElem.ObjectKey(cursor.keyValue) +: acc)
+              case cursor: TopCursor[S] => acc
+              case _ => go(cursor.lastCursor, acc)
+    go(Some(this), PathToRoot.empty)
+  end pathToRoot
+
+  /**
+   * Creates a JavaScript-style path string, e.g. ".foo.bar[3]".
+   */
+  def pathString: String = PathToRoot.toPathString(pathToRoot)
+
 
   /**
    * Attempt to decode the focus as an A.
@@ -156,6 +227,11 @@ trait Cursor[S]:
    */
   def replay(history: List[CursorOp])(using ObjectType[S], ArrayType[S]): Cursor[S] =
     history.foldRight(this)((op, c) => c.replayOne(op))
+
+  def toDecodingFailure: DecodingFailure[S] =
+    this match
+      case cursor: FailedCursor[S] if cursor.missingField => MissingField(cursor)
+      case _ => CouldNotDecode(this)
 end Cursor
 object Cursor:
   given [S](using eq: Eq[S]): Eq[Cursor[S]] with
@@ -167,5 +243,6 @@ object Cursor:
       val historyEq = CursorOp.eqCursorOpList.eqv(x.history, y.history)
       focusEq && historyEq
   end given
+  def from[S](value: S): SuccessCursor[S] = TopCursor(value, None, None)
 end Cursor
 
