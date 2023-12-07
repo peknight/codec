@@ -3,7 +3,7 @@ package com.peknight.codec.circe
 import cats.syntax.either.*
 import com.peknight.codec.circe.OuterSum.*
 import com.peknight.codec.circe.derivation.CodecDerivation
-import com.peknight.codec.circe.derivation.all.given
+import com.peknight.codec.circe.instances.all.given
 import com.peknight.codec.configuration.CodecConfiguration
 import io.circe.Decoder.Result
 import io.circe.{Codec, DecodingFailure}

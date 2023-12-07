@@ -1,4 +1,6 @@
-package com.peknight.codec.circe.derivation
+package com.peknight.codec.circe.instances
+
+import com.peknight.codec.circe.error.DecodingFailureMigration
 
 trait DecodingFailureMigrationInstances:
   given DecodingFailureMigration = DecodingFailureMigration

@@ -1,9 +1,9 @@
-package com.peknight.codec
+package com.peknight.codec.circe
 
-import com.peknight.codec.instances.{DecoderDerivationInstances, EncoderDerivationInstances}
+import com.peknight.codec.circe.instances.{DecoderDerivationInstances, EncoderDerivationInstances}
 
-package object derivation:
+package object instances:
   object all extends EncoderDerivationInstances with DecoderDerivationInstances
   object encoder extends EncoderDerivationInstances
   object decoder extends DecoderDerivationInstances
-end derivation
+end instances

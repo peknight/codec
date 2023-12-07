@@ -8,14 +8,14 @@ import cats.syntax.functor.*
 import cats.syntax.validated.*
 import cats.{Applicative, Functor}
 import com.peknight.codec.Decoder
-import com.peknight.codec.configuration.DecoderConfiguration
+import com.peknight.codec.configuration.Configuration
 import com.peknight.codec.error.{DecodingFailure, NoSuchEnum}
 import com.peknight.generic.Generic
 import com.peknight.generic.compiletime.summonAllSingletons
 import com.peknight.generic.migration.id.Migration
 
 trait EnumDecoderDerivation:
-  inline def derived[F[_], T, E, A](using configuration: DecoderConfiguration)(using
+  inline def derived[F[_], T, E, A](using configuration: Configuration)(using
     functor: Functor[F],
     failure: Migration[DecodingFailure[T], E],
     stringDecoder: Decoder[F, T, E, String],
@@ -32,7 +32,7 @@ trait EnumDecoderDerivation:
 
   private[derivation] def decodeEnumEither[F[_]: Functor, T, E, A, Repr <: Tuple](
     t: T,
-    configuration: DecoderConfiguration,
+    configuration: Configuration,
     failure: Migration[DecodingFailure[T], E],
     stringDecoder: Decoder[F, T, E, String],
     generic: Generic.Sum[A],
@@ -47,7 +47,7 @@ trait EnumDecoderDerivation:
 
   private[derivation] def decodeEnumValidatedNel[F[_]: Functor, T, E, A, Repr <: Tuple](
     t: T,
-    configuration: DecoderConfiguration,
+    configuration: Configuration,
     failure: Migration[DecodingFailure[T], E],
     stringDecoder: Decoder[F, T, E, String],
     generic: Generic.Sum[A],
@@ -63,7 +63,7 @@ trait EnumDecoderDerivation:
   private[this] def handleDecodeEnum[G[_]: Applicative, T, E, A, Repr <: Tuple](
     t: T,
     caseName: String,
-    configuration: DecoderConfiguration,
+    configuration: Configuration,
     failure: Migration[DecodingFailure[T], E],
     asLeft: E => G[A],
     generic: Generic.Sum[A],
@@ -76,7 +76,7 @@ trait EnumDecoderDerivation:
 
   private[derivation] def enumDecodersDict[F[_], T, E, A](
     decoder: Decoder[F, T, E, A],
-    configuration: DecoderConfiguration,
+    configuration: Configuration,
     generic: Generic.Sum[A]
   ): Map[String, Decoder[F, T, E, A]] =
     generic.labels.toList.asInstanceOf[List[String]]

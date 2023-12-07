@@ -1,12 +1,12 @@
 package com.peknight.codec.derivation
 
 import com.peknight.codec.Encoder
-import com.peknight.codec.configuration.EncoderConfiguration
+import com.peknight.codec.configuration.Configuration
 import com.peknight.generic.Generic
 import com.peknight.generic.compiletime.summonAllSingletons
 
 trait EnumEncoderDerivation:
-  inline def derived[F[_], S, A](using configuration: EncoderConfiguration)(using
+  inline def derived[F[_], S, A](using configuration: Configuration)(using
     stringEncoder: Encoder[F, S, String],
     generic: Generic.Sum[A]
   ): Encoder[F, S, A] =
@@ -16,7 +16,7 @@ trait EnumEncoderDerivation:
 
   private[derivation] def encodeEnum[F[_], S, A](
     a: A,
-    configuration: EncoderConfiguration,
+    configuration: Configuration,
     stringEncoder: Encoder[F, S, String],
     generic: Generic.Sum[A]
   ): F[S] =

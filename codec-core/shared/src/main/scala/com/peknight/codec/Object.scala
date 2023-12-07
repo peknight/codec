@@ -9,6 +9,7 @@ import cats.syntax.semigroup.*
 import cats.{Applicative, Foldable, Semigroup}
 
 trait Object[S]:
+  def applyUnsafe(key: String): S = apply(key).getOrElse(throw new NoSuchElementException(s"key not found: $key"))
   def apply(key: String): Option[S]
   def contains(key: String): Boolean
   def size: Int
@@ -51,6 +52,7 @@ object Object:
   def empty[S]: Object[S] = MapAndVectorObject[S](Map.empty, Vector.empty)
   def singleton[S](key: String, value: S): Object[S] = MapAndVectorObject[S](Map((key, value)), Vector(key))
   private[this] class MapAndVectorObject[S](fields: Map[String, S], orderedKeys: Vector[String]) extends Object[S]:
+    override def applyUnsafe(key: String): S = fields(key)
     def apply(key: String): Option[S] = fields.get(key)
     def contains(key: String): Boolean = fields.contains(key)
     def size: Int = fields.size

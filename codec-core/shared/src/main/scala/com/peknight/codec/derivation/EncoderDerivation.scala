@@ -4,9 +4,9 @@ import cats.Applicative
 import cats.syntax.apply.*
 import cats.syntax.functor.*
 import cats.syntax.traverse.*
+import com.peknight.codec.Encoder
 import com.peknight.codec.configuration.EncoderConfiguration
 import com.peknight.codec.sum.ObjectType
-import com.peknight.codec.{Encoder, Object}
 import com.peknight.generic.Generic
 import com.peknight.generic.tuple.syntax.forall
 

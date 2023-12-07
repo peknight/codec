@@ -6,7 +6,7 @@ import com.peknight.codec.id.Encoder
 
 trait EncoderSyntax:
   extension [F[_], S] (fs: F[S])
-    def encodeTo[A](using encoder: Encoder[S, A], contravariant: Contravariant[F]): F[A] =
+    def encodeTo[A](using contravariant: Contravariant[F], encoder: Encoder[S, A]): F[A] =
       fs.contramap[A](encoder.encode)
     def encodeTo[A](f: F[S] => (A => S) => F[A])(using encoder: Encoder[S, A]): F[A] =
       f(fs)(encoder.encode)

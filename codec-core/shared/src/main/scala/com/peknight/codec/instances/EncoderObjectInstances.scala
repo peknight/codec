@@ -8,7 +8,7 @@ import cats.syntax.traverse.*
 import cats.{Applicative, Functor}
 import com.peknight.codec.sum.ObjectType
 import com.peknight.codec.{Encoder, Object}
-import com.peknight.generic.priority.LowPriority
+import com.peknight.generic.priority.MidPriority
 
 import scala.collection.Map
 import scala.collection.immutable.Map as ImmutableMap
@@ -36,8 +36,8 @@ trait EncoderObjectInstances:
         case (k, v) => (keyEncoder.encode(k), valueEncoder.encode(v)).mapN((_, _))
       }.map(Object.fromIterable)
 
-  given objectEncoder[F[_], S, A](using functor: Functor[F], encoder: Encoder[F, Object[S], A], objectType: ObjectType[S])
-  : LowPriority[Encoder[F, S, A]] =
-    LowPriority((a: A) => encoder.encode(a).map(obj => objectType.to(objectType.fromObject(obj))))
+  given objectEncoder[F[_], S, A](using functor: Functor[F], encoder: Encoder[F, Object[S], A],
+                                  objectType: ObjectType[S]): MidPriority[Encoder[F, S, A]] =
+    MidPriority(encoder.encode(_).map(obj => objectType.to(objectType.fromObject(obj))))
   end objectEncoder
 end EncoderObjectInstances

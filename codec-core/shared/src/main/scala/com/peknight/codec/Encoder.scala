@@ -2,12 +2,12 @@ package com.peknight.codec
 
 import cats.data.Validated
 import cats.syntax.applicative.*
-import cats.syntax.functor.*
 import cats.syntax.foldable.*
+import cats.syntax.functor.*
 import cats.syntax.traverse.*
-import cats.{Applicative, Contravariant, Functor, Traverse, Foldable}
-import com.peknight.codec.derivation.EncoderDerivation
+import cats.{Applicative, Contravariant, Foldable, Functor, Traverse}
 import com.peknight.codec.instances.*
+import com.peknight.generic.priority.PriorityInstancesF2
 
 import java.time.format.DateTimeFormatter
 import java.time.temporal.TemporalAccessor
@@ -22,8 +22,8 @@ object Encoder extends EncoderStringInstances
   with EncoderObjectInstances
   with EncoderNullInstances
   with EncoderMigrationInstances
-  with EncoderDerivation
-  with EncoderPriorityInstances:
+  with EncoderDerivationInstances
+  with PriorityInstancesF2[Encoder]:
 
   def apply[F[_], S, A](using encoder: Encoder[F, S, A]): Encoder[F, S, A] = encoder
   def instance[F[_], S, A](f: A => F[S]): Encoder[F, S, A] = f(_)

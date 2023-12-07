@@ -1,10 +1,7 @@
 package com.peknight.codec.instances
 
 import cats.Applicative
-import cats.data.ValidatedNel
-import cats.syntax.applicative.*
-import com.peknight.codec.cursor.{Cursor, Decoder, Result, AccumulatingResult}
-import com.peknight.codec.error.DecodingFailure
+import com.peknight.codec.cursor.{AccumulatingResult, Cursor, Decoder, Result}
 
 trait DecoderCursorInstances:
   given decodeS[F[_]: Applicative, S]: Decoder[F, S, S] with

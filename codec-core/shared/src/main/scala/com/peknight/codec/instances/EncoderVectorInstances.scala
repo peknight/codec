@@ -7,7 +7,7 @@ import cats.{Applicative, Functor}
 import com.peknight.codec.Encoder
 import com.peknight.codec.sum.ArrayType
 import com.peknight.generic.Generic
-import com.peknight.generic.priority.{LowPriority, MidPriority}
+import com.peknight.generic.priority.{HighPriority, MidPriority}
 
 trait EncoderVectorInstances:
   given encodeSeq[F[_], S, A](using Applicative[F], Encoder[F, S, A]): Encoder[F, Vector[S], Seq[A]] =
@@ -42,8 +42,8 @@ trait EncoderVectorInstances:
     Encoder.vectorEncoder[F, S, A].contramap(a => a.head +: ev(a.tail).toVector)
 
   given encodeIterable[F[_], S, A, G[_]](using applicative: Applicative[F], encoder: Encoder[F, S, A],
-                                         ev: G[A] => Iterable[A]): MidPriority[Encoder[F, Vector[S], G[A]]] =
-    MidPriority(Encoder.vectorEncoder[F, S, A].contramap(a => ev(a).toVector))
+                                         ev: G[A] => Iterable[A]): HighPriority[Encoder[F, Vector[S], G[A]]] =
+    HighPriority(Encoder.vectorEncoder[F, S, A].contramap(a => ev(a).toVector))
 
   given encodeTuple[F[_], S, A <: Tuple](using applicative: Applicative[F],
                                          instances: => Generic.Product.Instances[[X] =>> Encoder[F, S, X], A])
@@ -54,8 +54,8 @@ trait EncoderVectorInstances:
   end encodeTuple
 
   given vectorEncoder[F[_], S, A](using functor: Functor[F], encoder: Encoder[F, Vector[S], A], arrayType: ArrayType[S])
-  : LowPriority[Encoder[F, S, A]] =
-    LowPriority((a: A) => encoder.encode(a).map(arr => arrayType.to(arrayType.fromArray(arr))))
+  : MidPriority[Encoder[F, S, A]] =
+    MidPriority(encoder.encode(_).map(arrayType.to))
   end vectorEncoder
 
 end EncoderVectorInstances

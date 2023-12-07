@@ -1,6 +1,6 @@
 package com.peknight.codec.configuration
 
-trait DecoderConfiguration extends Configuration:
+trait DecoderConfiguration extends BaseConfiguration:
   type This <: DecoderConfiguration
   def useDefaults: Boolean
   def strictDecoding: Boolean

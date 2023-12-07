@@ -6,7 +6,6 @@ trait StringType[S]:
   def isString(s: S): Boolean = asString(s).isDefined
 end StringType
 object StringType:
-  type Aux[S, T] = StringType[S] { type Str = T }
   def apply[S](f: String => S, g: S => Option[String]): StringType[S] =
     new StringType[S]:
       def to(s: String): S = f(s)

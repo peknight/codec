@@ -11,8 +11,8 @@ import cats.syntax.validated.*
 import cats.{Applicative, Apply, Functor, Monad}
 import com.peknight.cats.ext.instances.eitherT.given
 import com.peknight.codec.cursor.CursorType
-import com.peknight.codec.derivation.DecoderDerivation
 import com.peknight.codec.instances.*
+import com.peknight.generic.priority.PriorityInstancesF3
 
 trait Decoder[F[_], T, E, A]:
   self =>
@@ -163,13 +163,10 @@ object Decoder extends DecoderCursorInstances
   with DecoderStringInstances
   with DecoderVectorInstances
   with DecoderObjectInstances
-  with DecoderEitherMigrationInstances
-  with DecoderValidatedMigrationInstances
-  with DecoderValidatedNelMigrationInstances
+  with DecoderNullInstances
   with DecoderMigrationInstances
-  with DecoderErrorMigrationInstances
-  with DecoderDerivation
-  with DecoderPriorityInstances:
+  with DecoderDerivationInstances
+  with PriorityInstancesF3[Decoder]:
   def apply[F[_], T, E, A](using decoder: Decoder[F, T, E, A]): Decoder[F, T, E, A] = decoder
   def const[F[_]: Applicative, T, E, A](a: A): Decoder[F, T, E, A] =
     new Decoder[F, T, E, A]:

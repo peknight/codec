@@ -1,4 +1,4 @@
-package com.peknight.codec.circe.derivation
+package com.peknight.codec.circe.cursor
 
 import io.circe.{ACursor, Json}
 

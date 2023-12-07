@@ -3,6 +3,7 @@ package com.peknight.codec.cursor
 import cats.syntax.either.*
 import cats.syntax.functor.*
 import cats.{Applicative, Eq, Functor}
+import com.peknight.codec.sum.{ArrayType, ObjectType}
 
 import scala.annotation.tailrec
 
@@ -55,7 +56,7 @@ trait Cursor[S]:
   /**
    * If the focus is a S Array, return its elements
    */
-  def values: Option[Iterable[S]]
+  def values(using ArrayType[S]): Option[Iterable[S]]
 
   /**
    * If the focus is a value in a S array, return the key.
@@ -65,7 +66,7 @@ trait Cursor[S]:
   /**
    * If the focus is a S object, return tis field names in their original order.
    */
-  def keys: Option[Iterable[String]]
+  def keys(using ObjectType[S]): Option[Iterable[String]]
 
   /**
    * If the focus is a value in a S object, return the key.
@@ -95,12 +96,12 @@ trait Cursor[S]:
   /**
    * If the focus is a S array, move to its first element.
    */
-  def downArray: Cursor[S]
+  def downArray(using ArrayType[S]): Cursor[S]
 
   /**
    * If the focus is a S array, move to the element at the given index.
    */
-  def downN(n: Int): Cursor[S]
+  def downN(n: Int)(using ArrayType[S]): Cursor[S]
 
   /**
    * If the focus is a value in a S object, move to a sibling with the given key.
@@ -110,7 +111,7 @@ trait Cursor[S]:
   /**
    * If the focus is a S object, move to the value of the given key.
    */
-  def downField(k: String): Cursor[S]
+  def downField(k: String)(using ObjectType[S]): Cursor[S]
 
   // TODO pathToRoot pathString
 
@@ -122,13 +123,15 @@ trait Cursor[S]:
   /**
    * Attempt to decode the value at the given key in a S object as an A
    */
-  def get[F[_], A](k: String)(using d: Decoder[F, S, A]): F[Either[DecodingFailure[S], A]] = downField(k).as[F, A]
+  def get[F[_], A](k: String)(using Decoder[F, S, A], ObjectType[S]): F[Either[DecodingFailure[S], A]] =
+    downField(k).as[F, A]
 
   /**
    * Attempt to decode the value at the given key in a S object as an A. If the field k is missing,
    * then use the fallback instead.
    */
-  def getOrElse[F[_]: Functor, A](k: String)(fallback: => A)(using d: Decoder[F, S, Option[A]]): Result[F, S, A] =
+  def getOrElse[F[_]: Functor, A](k: String)(fallback: => A)(using Decoder[F, S, Option[A]], ObjectType[S])
+  : Result[F, S, A] =
     get[F, Option[A]](k).map {
       case Right(Some(a)) => a.asRight[DecodingFailure[S]]
       case Right(None) => fallback.asRight[DecodingFailure[S]]
@@ -138,7 +141,7 @@ trait Cursor[S]:
   /**
    * Replay an operation against this cursor.
    */
-  def replayOne(op: CursorOp): Cursor[S] = op match
+  def replayOne(op: CursorOp)(using ObjectType[S], ArrayType[S]): Cursor[S] = op match
     case CursorOp.MoveLeft => left
     case CursorOp.MoveRight => right
     case CursorOp.MoveUp => up
@@ -151,7 +154,8 @@ trait Cursor[S]:
   /**
    * Replay history (a list of operations in reverse "chronological" order) against this cursor.
    */
-  def replay(history: List[CursorOp]): Cursor[S] = history.foldRight(this)((op, c) => c.replayOne(op))
+  def replay(history: List[CursorOp])(using ObjectType[S], ArrayType[S]): Cursor[S] =
+    history.foldRight(this)((op, c) => c.replayOne(op))
 end Cursor
 object Cursor:
   given [S](using eq: Eq[S]): Eq[Cursor[S]] with
