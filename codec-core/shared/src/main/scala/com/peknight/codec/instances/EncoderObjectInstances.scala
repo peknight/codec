@@ -36,6 +36,11 @@ trait EncoderObjectInstances:
         case (k, v) => (keyEncoder.encode(k), valueEncoder.encode(v)).mapN((_, _))
       }.map(Object.fromIterable)
 
+  given encodeObject[F[_], S, O](using applicative: Applicative[F], objectType: ObjectType.Aux[S, O])
+  : Encoder[F, S, O] with
+    def encode(a: O): F[S] = objectType.to(a).pure[F]
+  end encodeObject
+
   given objectEncoder[F[_], S, A](using functor: Functor[F], encoder: Encoder[F, Object[S], A],
                                   objectType: ObjectType[S]): MidPriority[Encoder[F, S, A]] =
     MidPriority(encoder.encode(_).map(obj => objectType.to(objectType.fromObject(obj))))

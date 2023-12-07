@@ -3,9 +3,9 @@ package com.peknight.codec.cursor
 import cats.syntax.either.*
 import cats.syntax.functor.*
 import cats.{Applicative, Eq, Functor}
+import com.peknight.codec.error.{CouldNotDecode, DecodingFailure, MissingField}
 import com.peknight.codec.path.{PathElem, PathToRoot}
 import com.peknight.codec.sum.{ArrayType, ObjectType}
-import com.peknight.codec.error.{CouldNotDecode, MissingField}
 
 import scala.annotation.tailrec
 
@@ -189,24 +189,29 @@ trait Cursor[S]:
   /**
    * Attempt to decode the focus as an A.
    */
-  def as[F[_], A](using d: Decoder[F, S, A]): Result[F, S, A] = d.decode(this)
+  def as[F[_], A](using d: com.peknight.codec.Decoder[F, Cursor[S], DecodingFailure[Cursor[S]], A])
+  : F[Either[DecodingFailure[Cursor[S]], A]] =
+    d.decode(this)
 
   /**
    * Attempt to decode the value at the given key in a S object as an A
    */
-  def get[F[_], A](k: String)(using Decoder[F, S, A], ObjectType[S]): F[Either[DecodingFailure[S], A]] =
+  def get[F[_], A](k: String)
+                  (using com.peknight.codec.Decoder[F, Cursor[S], DecodingFailure[Cursor[S]], A], ObjectType[S])
+  : F[Either[DecodingFailure[Cursor[S]], A]] =
     downField(k).as[F, A]
 
   /**
    * Attempt to decode the value at the given key in a S object as an A. If the field k is missing,
    * then use the fallback instead.
    */
-  def getOrElse[F[_]: Functor, A](k: String)(fallback: => A)(using Decoder[F, S, Option[A]], ObjectType[S])
-  : Result[F, S, A] =
+  def getOrElse[F[_]: Functor, A](k: String)(fallback: => A)
+                                 (using com.peknight.codec.Decoder[F, Cursor[S], DecodingFailure[Cursor[S]], Option[A]],
+                                  ObjectType[S]): F[Either[DecodingFailure[Cursor[S]], A]] =
     get[F, Option[A]](k).map {
-      case Right(Some(a)) => a.asRight[DecodingFailure[S]]
-      case Right(None) => fallback.asRight[DecodingFailure[S]]
-      case left => left.asInstanceOf[Either[DecodingFailure[S], A]]
+      case Right(Some(a)) => a.asRight[DecodingFailure[Cursor[S]]]
+      case Right(None) => fallback.asRight[DecodingFailure[Cursor[S]]]
+      case left => left.asInstanceOf[Either[DecodingFailure[Cursor[S]], A]]
     }
 
   /**
@@ -228,7 +233,7 @@ trait Cursor[S]:
   def replay(history: List[CursorOp])(using ObjectType[S], ArrayType[S]): Cursor[S] =
     history.foldRight(this)((op, c) => c.replayOne(op))
 
-  def toDecodingFailure: DecodingFailure[S] =
+  def toDecodingFailure: DecodingFailure[Cursor[S]] =
     this match
       case cursor: FailedCursor[S] if cursor.missingField => MissingField(cursor)
       case _ => CouldNotDecode(this)
