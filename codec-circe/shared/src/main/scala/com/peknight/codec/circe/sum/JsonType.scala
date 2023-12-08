@@ -27,6 +27,7 @@ trait JsonType extends StringType[Json] with ArrayType[Json] with ObjectType[Jso
   override def keys(o: JsonObject): Iterable[String] = o.keys
   override def contains(o: JsonObject, key: String): Boolean = o.contains(key)
   override def remove(o: JsonObject, key: String): JsonObject = o.remove(key)
+  override def isEmpty(o: JsonObject): Boolean = o.isEmpty
   override def applyUnsafe(o: JsonObject, key: String): Json =
     o(key).getOrElse(throw new NoSuchElementException(s"key not found: $key"))
 

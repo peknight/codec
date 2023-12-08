@@ -7,7 +7,5 @@ import com.peknight.codec.cursor.{Cursor, Decoder, SuccessCursor}
 import com.peknight.codec.error.DecodingFailure
 
 trait DecoderCursorInstances:
-  given decodeS[F[_]: Applicative, S]: Decoder[F, S, S] with
-    def apply(t: SuccessCursor[S]): F[Either[DecodingFailure[Cursor[S]], S]] = t.value.asRight.pure
-  end decodeS
+  given decodeS[F[_]: Applicative, S]: Decoder[F, S, S] = Decoder.instance[F, S, S](_.value.asRight.pure)
 end DecoderCursorInstances

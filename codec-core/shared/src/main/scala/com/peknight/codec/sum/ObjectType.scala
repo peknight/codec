@@ -16,6 +16,7 @@ trait ObjectType[S]:
   def keys(o: Obj): Iterable[String] = toObject(o).keys
   def contains(o: Obj, key: String): Boolean = toObject(o).contains(key)
   def remove(o: Obj, key: String): Obj = fromObject(toObject(o).remove(key))
+  def isEmpty(o: Obj): Boolean = toObject(o).isEmpty
   def applyUnsafe(o: Obj, key: String): S = toObject(o).applyUnsafe(key)
 end ObjectType
 object ObjectType:
@@ -34,6 +35,7 @@ object ObjectType:
       override def keys(o: Object[S]): Iterable[String] = o.keys
       override def contains(o: Object[S], key: String): Boolean = o.contains(key)
       override def remove(o: Object[S], key: String): Object[S] = o.remove(key)
+      override def isEmpty(o: Object[S]): Boolean = o.isEmpty
       override def applyUnsafe(o: Object[S], key: String): S = o.applyUnsafe(key)
   end apply
 end ObjectType

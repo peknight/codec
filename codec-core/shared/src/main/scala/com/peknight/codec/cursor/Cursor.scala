@@ -3,7 +3,7 @@ package com.peknight.codec.cursor
 import cats.syntax.either.*
 import cats.syntax.functor.*
 import cats.{Applicative, Eq, Functor}
-import com.peknight.codec.error.{CouldNotDecode, DecodingFailure, MissingField}
+import com.peknight.codec.error.{CursorFailure, DecodingFailure, MissingField}
 import com.peknight.codec.path.{PathElem, PathToRoot}
 import com.peknight.codec.sum.{ArrayType, ObjectType}
 
@@ -236,7 +236,7 @@ trait Cursor[S]:
   def toDecodingFailure: DecodingFailure[Cursor[S]] =
     this match
       case cursor: FailedCursor[S] if cursor.missingField => MissingField(cursor)
-      case _ => CouldNotDecode(this)
+      case _ => CursorFailure(this)
 end Cursor
 object Cursor:
   given [S](using eq: Eq[S]): Eq[Cursor[S]] with
