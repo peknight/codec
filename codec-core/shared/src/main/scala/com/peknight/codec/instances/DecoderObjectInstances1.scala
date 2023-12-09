@@ -1,10 +1,7 @@
 package com.peknight.codec.instances
 
 import cats.Applicative
-import cats.syntax.applicative.*
-import cats.syntax.either.*
-import com.peknight.codec.cursor.{Cursor, Decoder, SuccessCursor}
-import com.peknight.codec.error.{DecodingFailure, NotNull}
+import com.peknight.codec.cursor.Decoder
 import com.peknight.codec.sum.{ArrayType, NullType, ObjectType}
 
 trait DecoderObjectInstances1 extends DecoderObjectInstances2:

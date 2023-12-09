@@ -5,12 +5,13 @@ import cats.data.ValidatedNel
 import cats.syntax.applicative.*
 import cats.syntax.either.*
 import cats.syntax.functor.*
-import cats.syntax.validated.*
-import com.peknight.codec.cursor.{Cursor, CursorDecoder, SuccessCursor}
-import com.peknight.codec.error.{DecodingFailure, NotNull, NotObject}
+import com.peknight.codec.cursor.CursorDecoder
+import com.peknight.codec.error.{DecodingFailure, NotObject, NotUnit}
 import com.peknight.codec.sum.{ArrayType, NullType, ObjectType}
 import com.peknight.codec.{Decoder, Object}
 import com.peknight.generic.priority.MidPriority
+
+import scala.collection.Map
 
 trait DecoderObjectInstances extends DecoderObjectInstances1:
 
@@ -29,8 +30,16 @@ trait DecoderObjectInstances extends DecoderObjectInstances1:
   given decodeObjectUnit[F[_]: Applicative, S]: Decoder[F, Object[S], DecodingFailure[Object[S]], Unit] =
     Decoder.instance[F, Object[S], DecodingFailure[Object[S]], Unit] { t =>
       if t.isEmpty then ().asRight.pure
-      else NotNull(t).asLeft.pure
+      else NotUnit(t).asLeft.pure
     }
+
+  given decodeMap[F[_], S, K, V, M[X, Y] <: Map[X, Y]](using keyDecoder: Decoder[F, String, DecodingFailure[String], K],
+                                                       valueDecoder: Decoder[F, S, DecodingFailure[S], V])
+  : Decoder[F, Object[S], DecodingFailure[Object[S]], M[K, V]] =
+    new Decoder[F, Object[S], DecodingFailure[Object[S]], M[K, V]]:
+      override def decode(t: Object[S]): F[Either[DecodingFailure[Object[S]], M[K, V]]] = ???
+      override def decodeAccumulating(t: Object[S]): F[ValidatedNel[DecodingFailure[Object[S]], M[K, V]]] = ???
+  end decodeMap
 
   given objectDecoder[F[_], S, A](using applicative: Applicative[F],
                                   decoder: Decoder[F, Object[S], DecodingFailure[Object[S]], A],

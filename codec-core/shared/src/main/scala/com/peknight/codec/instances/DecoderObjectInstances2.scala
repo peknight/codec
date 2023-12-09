@@ -5,7 +5,7 @@ import cats.syntax.applicative.*
 import cats.syntax.either.*
 import cats.syntax.functor.*
 import com.peknight.codec.cursor.{Cursor, Decoder, SuccessCursor}
-import com.peknight.codec.error.{DecodingFailure, NotNull}
+import com.peknight.codec.error.{DecodingFailure, NotUnit}
 import com.peknight.codec.sum.{ArrayType, NullType, ObjectType}
 
 trait DecoderObjectInstances2:
@@ -30,5 +30,5 @@ trait DecoderObjectInstances2:
   : F[Either[DecodingFailure[Cursor[S]], Unit]] =
     f(t.value) match
       case Some(_) => ().asRight.pure
-      case None => NotNull(t).asLeft.pure
+      case None => NotUnit(t).asLeft.pure
 end DecoderObjectInstances2

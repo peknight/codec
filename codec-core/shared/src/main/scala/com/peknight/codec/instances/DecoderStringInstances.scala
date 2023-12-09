@@ -3,12 +3,15 @@ package com.peknight.codec.instances
 import cats.data.ValidatedNel
 import cats.syntax.applicative.*
 import cats.syntax.either.*
+import cats.syntax.functor.*
 import cats.syntax.validated.*
 import cats.{Applicative, Functor}
 import com.peknight.codec.cursor.{Cursor, CursorDecoder, SuccessCursor}
 import com.peknight.codec.error.{DecodingFailure, ParsingTypeError, WrongClassTag}
 import com.peknight.codec.sum.StringType
+import com.peknight.generic.priority.HighPriority
 
+import java.net.URI
 import java.util.UUID
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
@@ -37,12 +40,15 @@ trait DecoderStringInstances:
   given decodeChar[F[_]: Applicative]: Decoder[F, Char] =
     instance[F, Char](t => if t.length == 1 then t.head.asRight.pure else WrongClassTag[String, Char](t).asLeft.pure)
 
-  private[this] def decodeNumber[F[_]: Applicative, A: ClassTag](f: BigDecimal => A): Decoder[F, A] =
+  private[this] def decodeWithTry[F[_]: Applicative, A: ClassTag](f: String => A): Decoder[F, A] =
     instance[F, A] { t =>
-      Try(f(BigDecimal(t))) match
+      Try(f(t)) match
         case Success(value) => value.asRight.pure
         case Failure(e) => ParsingTypeError[String, A](t, e).asLeft.pure
     }
+
+  private[this] def decodeNumber[F[_]: Applicative, A: ClassTag](f: BigDecimal => A): Decoder[F, A] =
+    decodeWithTry[F, A](t => f(BigDecimal(t)))
 
   given decodeFloat[F[_]: Applicative]: Decoder[F, Float] = decodeNumber[F, Float](_.toFloat)
   given decodeDouble[F[_]: Applicative]: Decoder[F, Double] = decodeNumber[F, Double](_.toDouble)
@@ -52,18 +58,17 @@ trait DecoderStringInstances:
   given decodeLong[F[_]: Applicative]: Decoder[F, Long] = decodeNumber[F, Long](_.toLong)
   given decodeBigInt[F[_]: Applicative]: Decoder[F, BigInt] = decodeNumber[F, BigInt](_.toBigInt)
   given decodeBigDecimal[F[_]: Applicative]: Decoder[F, BigDecimal] = decodeNumber[F, BigDecimal](identity)
+  given decodeUUID[F[_]: Applicative]: HighPriority[Decoder[F, UUID]] =
+    HighPriority(decodeWithTry[F, UUID](UUID.fromString))
+  given decodeURI[F[_]: Applicative]: HighPriority[Decoder[F, URI]] =
+    HighPriority(decodeWithTry[F, URI](t => new URI(t)))
 
-  given decodeUUID[F[_]: Applicative]: Decoder[F, UUID] = instance[F, UUID] { t =>
-    Try(UUID.fromString(t)) match
-      case Success(value) => value.asRight.pure
-      case Failure(e) => ???
-  }
-
-  given decodeString[F[_], S](using Applicative[F], StringType[S]): CursorDecoder[F, S, String] =
-    CursorDecoder.instance[F, S, String] { t =>
+  given stringDecoder[F[_], S, A](using applicative: Applicative[F], decoder: Decoder[F, A], stringType: StringType[S],
+                                  classTag: ClassTag[A]): CursorDecoder[F, S, A] =
+    CursorDecoder.instance[F, S, A] { t =>
       StringType[S].asString(t.value) match
-        case Some(s) => s.asRight.pure
-        case None => WrongClassTag[Cursor[S], String](t).asLeft.pure
+        case Some(s) => decoder.decode(s).map(_.left.map(_.as(t)))
+        case None => WrongClassTag[Cursor[S], A](t).asLeft.pure
     }
 
 end DecoderStringInstances

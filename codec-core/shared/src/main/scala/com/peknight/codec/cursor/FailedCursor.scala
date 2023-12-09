@@ -9,9 +9,11 @@ trait FailedCursor[S] extends Cursor[S]:
   protected[this] def lastOpValue: CursorOp
   protected[codec] def lastCursor: Option[SuccessCursor[S]] = Some(lastCursorValue)
   protected[codec] def lastOp: Option[CursorOp] = Some(lastOpValue)
-  def incorrectFocus(using ObjectType[S], ArrayType[S]): Boolean =
-    (lastOpValue.requiresObject && !ObjectType[S].isObject(lastCursorValue.value)) ||
-      (lastOpValue.requiresArray && !ArrayType[S].isArray(lastCursorValue.value))
+  def incorrectFocusO(using ObjectType[S]): Boolean =
+    lastOpValue.requiresObject && !ObjectType[S].isObject(lastCursorValue.value)
+  def incorrectFocusA(using ArrayType[S]): Boolean =
+    lastOpValue.requiresArray && !ArrayType[S].isArray(lastCursorValue.value)
+  def incorrectFocus(using ObjectType[S], ArrayType[S]): Boolean = incorrectFocusO || incorrectFocusA
   def missingField: Boolean =
     lastOpValue match
       case _: CursorOp.Field | _: CursorOp.DownField => true
