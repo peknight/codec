@@ -30,6 +30,7 @@ trait JsonType extends StringType[Json] with ArrayType[Json] with ObjectType[Jso
   override def isEmpty(o: JsonObject): Boolean = o.isEmpty
   override def applyUnsafe(o: JsonObject, key: String): Json =
     o(key).getOrElse(throw new NoSuchElementException(s"key not found: $key"))
+  override def toList(o: JsonObject): List[(String, Json)] = o.toList
 
   def unit: Json = Json.Null
   def asNull(s: Json): Option[Unit] = s.asNull

@@ -18,6 +18,7 @@ trait ObjectType[S]:
   def remove(o: Obj, key: String): Obj = fromObject(toObject(o).remove(key))
   def isEmpty(o: Obj): Boolean = toObject(o).isEmpty
   def applyUnsafe(o: Obj, key: String): S = toObject(o).applyUnsafe(key)
+  def toList(o: Obj): List[(String, S)] = toObject(o).toList
 end ObjectType
 object ObjectType:
   type Aux[S, O] = ObjectType[S] { type Obj = O }
@@ -37,5 +38,6 @@ object ObjectType:
       override def remove(o: Object[S], key: String): Object[S] = o.remove(key)
       override def isEmpty(o: Object[S]): Boolean = o.isEmpty
       override def applyUnsafe(o: Object[S], key: String): S = o.applyUnsafe(key)
+      override def toList(o: Object[S]): List[(String, S)] = o.toList
   end apply
 end ObjectType

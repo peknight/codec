@@ -1,12 +1,13 @@
 package com.peknight.codec
 
 import cats.data.Kleisli
+import cats.kernel.CommutativeMonoid
 import cats.syntax.applicative.*
 import cats.syntax.apply.*
 import cats.syntax.foldable.*
 import cats.syntax.functor.*
 import cats.syntax.semigroup.*
-import cats.{Applicative, Foldable, Semigroup}
+import cats.{Applicative, Eval, Foldable, Monad, Semigroup}
 
 trait Object[S]:
   def applyUnsafe(key: String): S = apply(key).getOrElse(throw new NoSuchElementException(s"key not found: $key"))
@@ -37,6 +38,8 @@ trait Object[S]:
           acc.add(key, value |+| r)
         }
     }
+  def foldLeft[B](b: B)(f: (B, (String, S)) => B): B
+  def foldLeftM[F[_]: Monad, B](b: B)(f: (B, (String, S)) => F[B]): F[B]
 end Object
 object Object:
   def apply[S](fields: (String, S)*): Object[S] = fromIterable(fields)
@@ -80,5 +83,10 @@ object Object:
         },
         orderedKeys
       )
+    def foldLeft[B](b: B)(f: (B, (String, S)) => B): B =
+      orderedKeys.foldLeft[B](b)((z, key) => f(z, (key, fields(key))))
+
+    def foldLeftM[G[_]: Monad, B](b: B)(f: (B, (String, S)) => G[B]): G[B] =
+      orderedKeys.foldLeftM[G, B](b)((z, key) => f(z, (key, fields(key))))
   end MapAndVectorObject
 end Object
