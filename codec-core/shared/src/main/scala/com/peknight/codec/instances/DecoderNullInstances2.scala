@@ -6,7 +6,8 @@ import cats.syntax.either.*
 import cats.syntax.functor.*
 import cats.syntax.option.*
 import com.peknight.codec.Decoder
-import com.peknight.codec.cursor.{Cursor, CursorDecoder, FailedCursor, SuccessCursor}
+import com.peknight.codec.cursor.Cursor.{FailedCursor, SuccessCursor}
+import com.peknight.codec.cursor.{Cursor, CursorDecoder}
 import com.peknight.codec.error.{DecodingFailure, MissingField, NotNull}
 import com.peknight.codec.sum.{ArrayType, NullType, ObjectType}
 

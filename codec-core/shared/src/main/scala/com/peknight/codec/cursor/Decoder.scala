@@ -2,10 +2,11 @@ package com.peknight.codec.cursor
 
 import cats.Applicative
 import cats.data.ValidatedNel
-import cats.syntax.functor.*
 import cats.syntax.applicative.*
 import cats.syntax.either.*
+import cats.syntax.functor.*
 import cats.syntax.validated.*
+import com.peknight.codec.cursor.Cursor.{FailedCursor, SuccessCursor}
 import com.peknight.codec.error.DecodingFailure
 
 object Decoder:

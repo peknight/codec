@@ -6,7 +6,7 @@ import cats.syntax.either.*
 import cats.syntax.functor.*
 import cats.syntax.validated.*
 import cats.{Applicative, Functor}
-import com.peknight.codec.cursor.{Cursor, CursorDecoder, SuccessCursor}
+import com.peknight.codec.cursor.{Cursor, CursorDecoder}
 import com.peknight.codec.error.{DecodingFailure, ParsingTypeError, WrongClassTag}
 import com.peknight.codec.sum.StringType
 import com.peknight.generic.priority.HighPriority

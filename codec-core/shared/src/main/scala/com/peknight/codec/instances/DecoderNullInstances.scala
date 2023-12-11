@@ -1,12 +1,13 @@
 package com.peknight.codec.instances
 
-import cats.{Applicative, Functor}
 import cats.syntax.applicative.*
 import cats.syntax.either.*
 import cats.syntax.functor.*
 import cats.syntax.option.*
+import cats.{Applicative, Functor}
 import com.peknight.codec.Decoder
-import com.peknight.codec.cursor.{Cursor, CursorDecoder, FailedCursor, SuccessCursor}
+import com.peknight.codec.cursor.Cursor.{FailedCursor, SuccessCursor}
+import com.peknight.codec.cursor.{Cursor, CursorDecoder}
 import com.peknight.codec.error.{DecodingFailure, MissingField, NotNull, WrongClassTag}
 import com.peknight.codec.sum.{ArrayType, NullType, ObjectType}
 

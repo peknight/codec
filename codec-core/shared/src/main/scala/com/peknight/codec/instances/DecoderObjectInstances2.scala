@@ -4,7 +4,8 @@ import cats.Applicative
 import cats.syntax.applicative.*
 import cats.syntax.either.*
 import cats.syntax.functor.*
-import com.peknight.codec.cursor.{Cursor, Decoder, SuccessCursor}
+import com.peknight.codec.cursor.Cursor.SuccessCursor
+import com.peknight.codec.cursor.{Cursor, Decoder}
 import com.peknight.codec.error.{DecodingFailure, NotUnit}
 import com.peknight.codec.sum.{ArrayType, NullType, ObjectType}
 

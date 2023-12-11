@@ -1,6 +1,7 @@
 package com.peknight.codec.cursor
 
 import cats.Applicative
+import com.peknight.codec.cursor.Cursor.SuccessCursor
 import com.peknight.codec.error.DecodingFailure
 
 object CursorDecoder:

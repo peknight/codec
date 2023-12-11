@@ -3,7 +3,7 @@ package com.peknight.codec.instances
 import cats.Applicative
 import cats.syntax.applicative.*
 import cats.syntax.either.*
-import com.peknight.codec.cursor.{Cursor, Decoder, SuccessCursor}
+import com.peknight.codec.cursor.{Cursor, Decoder}
 import com.peknight.codec.error.DecodingFailure
 
 trait DecoderCursorInstances:
