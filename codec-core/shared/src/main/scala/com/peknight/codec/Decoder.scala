@@ -8,6 +8,7 @@ import cats.syntax.either.*
 import cats.syntax.flatMap.*
 import cats.syntax.foldable.*
 import cats.syntax.functor.*
+import cats.syntax.option.*
 import cats.syntax.traverse.*
 import cats.syntax.validated.*
 import cats.{Applicative, Apply, Functor, Monad}
@@ -15,9 +16,9 @@ import com.peknight.cats.ext.instances.applicative.given
 import com.peknight.cats.ext.instances.eitherT.given
 import com.peknight.codec.cursor.Cursor.{FailedCursor, SuccessCursor}
 import com.peknight.codec.cursor.{Cursor, CursorType}
-import com.peknight.codec.error.{DecodingFailure, NotObject}
+import com.peknight.codec.error.{DecodingFailure, NotArray, NotObject}
 import com.peknight.codec.instances.*
-import com.peknight.codec.sum.ObjectType
+import com.peknight.codec.sum.{ArrayType, ObjectType}
 import com.peknight.generic.priority.PriorityInstancesF3
 
 import scala.collection.{Map, mutable}
@@ -214,12 +215,12 @@ object Decoder extends DecoderCursorInstances
       def decodeAccumulating(t: T): F[ValidatedNel[E, A]] = f(t).invalidNel[A].pure[F]
   end failed
 
-  private[codec] def decodeMapLike[F[_], S, O, K, V, M[X, Y] <: Map[X, Y]](builder: => mutable.Builder[(K, V), M[K, V]])(
+  private[codec] def decodeMap[F[_], S, K, V, M[X, Y] <: Map[X, Y]](builder: => mutable.Builder[(K, V), M[K, V]])(
     using
     monad: Monad[F],
     keyDecoder: Decoder[F, String, DecodingFailure, K],
     valueDecoder: Decoder[F, Cursor[S], DecodingFailure, V],
-    objectType: ObjectType.Aux[S, O]
+    objectType: ObjectType[S]
   ): Decoder[F, Cursor[S], DecodingFailure, M[K, V]] =
     new Decoder[F, Cursor[S], DecodingFailure, M[K, V]]:
       def decode(t: Cursor[S]): F[Either[DecodingFailure, M[K, V]]] =
@@ -254,5 +255,74 @@ object Decoder extends DecoderCursorInstances
             }.map(_.foldLeft(builder)(_ += _).result())
             case _ => NotObject.cursor(t).invalidNel.pure[F]
           case cursor: FailedCursor[S] => cursor.toDecodingFailure.invalidNel.pure[F]
-  end decodeMapLike
+  end decodeMap
+
+  private[codec] def decodeSeq[F[_], S, A, C[_]](builder: => mutable.Builder[A, C[A]])(using
+    monad: Monad[F],
+    decoder: Decoder[F, Cursor[S], DecodingFailure, A],
+    arrayType: ArrayType[S]
+  ): Decoder[F, Cursor[S], DecodingFailure, C[A]] =
+    new Decoder[F, Cursor[S], DecodingFailure, C[A]]:
+      def decode(t: Cursor[S]): F[Either[DecodingFailure, C[A]]] =
+        t match
+          case cursor: SuccessCursor[S] => cursor.downArray match
+            case arrayCursor: SuccessCursor[S] =>
+              type EitherF[T] = F[Either[DecodingFailure, T]]
+              Monad[EitherF].tailRecM[(Cursor[S], mutable.Builder[A, C[A]]), C[A]]((arrayCursor, builder)) {
+                case (arrayCursor: SuccessCursor[S], builder) => decoder.decode(arrayCursor).map {
+                  case Right(a) => ((arrayCursor.right, builder += a)).asLeft[C[A]].asRight[DecodingFailure]
+                  case Left(e) => e.asLeft[Either[(Cursor[S], mutable.Builder[A, C[A]]), C[A]]]
+                }
+                case (arrayCursor: FailedCursor[S], builder) => builder.result().asRight.pure[EitherF]
+              }
+            case arrayCursor: FailedCursor[S] if arrayType.isArray(cursor.value) => builder.result().asRight.pure[F]
+            case arrayCursor: FailedCursor[S] => NotArray.cursor(cursor).asLeft.pure[F]
+          case cursor: FailedCursor[S] => cursor.toDecodingFailure.asLeft.pure[F]
+      def decodeAccumulating(t: Cursor[S]): F[ValidatedNel[DecodingFailure, C[A]]] =
+        t match
+          case cursor: SuccessCursor[S] => cursor.downArray match
+            case arrayCursor: SuccessCursor[S] =>
+              type ValidatedNelF[T] = F[ValidatedNel[DecodingFailure, T]]
+              List.unfold[SuccessCursor[S], Cursor[S]](arrayCursor) {
+                case arrayCursor: SuccessCursor[S] => (arrayCursor, arrayCursor.right).some
+                case arrayCursor: FailedCursor[S] => none[(SuccessCursor[S], Cursor[S])]
+              }.traverse[ValidatedNelF, A](decoder.decodeAccumulating).map(_.foldLeft(builder)(_ += _).result())
+            case arrayCursor: FailedCursor[S] if arrayType.isArray(cursor.value) => builder.result().validNel.pure[F]
+            case arrayCursor: FailedCursor[S] => NotArray.cursor(cursor).invalidNel.pure[F]
+          case cursor: FailedCursor[S] => cursor.toDecodingFailure.invalidNel.pure[F]
+  end decodeSeq
+
+  private[codec] def decodeNonEmptySeq[F[_], S, A, C[_], N](builder: => mutable.Builder[A, C[A]])
+                                                           (create: (A, C[A]) => N)
+                                                           (using monad: Monad[F],
+                                                            decoder: Decoder[F, Cursor[S], DecodingFailure, A],
+                                                            arrayType: ArrayType[S])
+  : Decoder[F, Cursor[S], DecodingFailure, N] =
+    new Decoder[F, Cursor[S], DecodingFailure, N]:
+      def decode(t: Cursor[S]): F[Either[DecodingFailure, N]] =
+        t match
+          case cursor: SuccessCursor[S] =>
+            val arrayCursor = cursor.downArray
+            type EitherF[T] = F[Either[DecodingFailure, T]]
+            Monad[EitherF].flatMap(decoder.decode(arrayCursor))(head =>
+              Monad[EitherF].map(decodeSeq[F, S, A, C](builder).decode(arrayCursor.delete))(tail => create(head, tail))
+            )
+          case cursor: FailedCursor[S] => cursor.toDecodingFailure.asLeft.pure[F]
+      def decodeAccumulating(t: Cursor[S]): F[ValidatedNel[DecodingFailure, N]] =
+        t match
+          case cursor: SuccessCursor[S] =>
+            val arrayCursor = cursor.downArray
+            type ValidatedNelF[T] = F[ValidatedNel[DecodingFailure, T]]
+            Applicative[ValidatedNelF].map2(decoder.decodeAccumulating(arrayCursor),
+              decodeSeq[F, S, A, C](builder).decodeAccumulating(arrayCursor.delete))(create)
+          case cursor: FailedCursor[S] => cursor.toDecodingFailure.invalidNel.pure[F]
+  end decodeNonEmptySeq
+
+  private[codec] def decodeEither[F[_], S, A, B](leftKey: String, rightKey: String)(using
+    applicative: Applicative[F],
+    decodeA: Decoder[F, Cursor[S], DecodingFailure, A],
+    decodeB: Decoder[F, Cursor[S], DecodingFailure, B],
+    objectType: ObjectType[S],
+  ): Decoder[F, Cursor[S], DecodingFailure, Either[A, B]] =
+    cursor[F, S, Either[A, B]](t => ???)
 end Decoder

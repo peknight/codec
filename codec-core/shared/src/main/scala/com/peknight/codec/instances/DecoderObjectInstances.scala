@@ -1,6 +1,7 @@
 package com.peknight.codec.instances
 
-import cats.Applicative
+import cats.data.NonEmptyMap
+import cats.{Applicative, Monad, Order}
 import cats.syntax.applicative.*
 import cats.syntax.either.*
 import cats.syntax.functor.*
@@ -10,7 +11,7 @@ import com.peknight.codec.sum.{ArrayType, NullType, ObjectType}
 import com.peknight.codec.{Decoder, Object}
 import com.peknight.generic.priority.MidPriority
 
-import scala.collection.immutable.Map as ImmutableMap
+import scala.collection.immutable.{SortedMap, Map as ImmutableMap}
 
 trait DecoderObjectInstances extends DecoderObjectInstances1:
 
@@ -26,10 +27,17 @@ trait DecoderObjectInstances extends DecoderObjectInstances1:
     Decoder[F, Cursor[S], DecodingFailure, Unit] =
     Decoder.cursor[F, S, Unit](decodeUnit(_)(s => objectUnit(s).orElse(arrayUnit(s)).orElse(nullUnit(s))))
 
-  given decodeMap[F[_], S, O, K, V](using Monad[F], Decoder[F, String, DecodingFailure, K],
-                                    Decoder[F, Cursor[S], DecodingFailure, V], ObjectType.Aux[S, O])
+  given decodeMap[F[_], S, K, V](using Monad[F], Decoder[F, String, DecodingFailure, K],
+                                 Decoder[F, Cursor[S], DecodingFailure, V], ObjectType[S])
   : Decoder[F, Cursor[S], DecodingFailure, ImmutableMap[K, V]] =
-    Decoder.decodeMapLike[F, S, O, K, V, ImmutableMap](ImmutableMap.newBuilder[K, V])
+    Decoder.decodeMap[F, S, K, V, ImmutableMap](ImmutableMap.newBuilder[K, V])
+
+  given decodeNonEmptyMap[F[_], S, K, V](using monad: Monad[F], keyDecoder: Decoder[F, String, DecodingFailure, K],
+                                         valueDecoder: Decoder[F, Cursor[S], DecodingFailure, V],
+                                         objectType: ObjectType[S], order: Order[K])
+  : Decoder[F, Cursor[S], DecodingFailure, NonEmptyMap[K, V]] =
+    Decoder.decodeMap[F, S, K, V, SortedMap](SortedMap.newBuilder[K, V](Order.catsKernelOrderingForOrder(order)))
+      .emap(map => cursor => NonEmptyMap.fromMap(map).toRight(EmptyMap.cursor(cursor)))
 
   given decodeObjectUnit[F[_]: Applicative, S]: Decoder[F, Object[S], DecodingFailure, Unit] =
     Decoder.instance[F, Object[S], DecodingFailure, Unit] { t =>
