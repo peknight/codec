@@ -17,7 +17,7 @@ import com.peknight.generic.migration.id.Migration
 trait EnumDecoderDerivation:
   inline def derived[F[_], T, E, A](using configuration: Configuration)(using
     functor: Functor[F],
-    failure: Migration[DecodingFailure[T], E],
+    failure: Migration[DecodingFailure, E],
     stringDecoder: Decoder[F, T, E, String],
     generic: Generic.Sum[A]
   ): EnumDecoder[F, T, E, A] =
@@ -33,7 +33,7 @@ trait EnumDecoderDerivation:
   private[derivation] def decodeEnumEither[F[_]: Functor, T, E, A, Repr <: Tuple](
     t: T,
     configuration: Configuration,
-    failure: Migration[DecodingFailure[T], E],
+    failure: Migration[DecodingFailure, E],
     stringDecoder: Decoder[F, T, E, String],
     generic: Generic.Sum[A],
     singletons: Repr
@@ -48,7 +48,7 @@ trait EnumDecoderDerivation:
   private[derivation] def decodeEnumValidatedNel[F[_]: Functor, T, E, A, Repr <: Tuple](
     t: T,
     configuration: Configuration,
-    failure: Migration[DecodingFailure[T], E],
+    failure: Migration[DecodingFailure, E],
     stringDecoder: Decoder[F, T, E, String],
     generic: Generic.Sum[A],
     singletons: Repr
@@ -64,7 +64,7 @@ trait EnumDecoderDerivation:
     t: T,
     caseName: String,
     configuration: Configuration,
-    failure: Migration[DecodingFailure[T], E],
+    failure: Migration[DecodingFailure, E],
     asLeft: E => G[A],
     generic: Generic.Sum[A],
     singletons: Repr
@@ -72,7 +72,7 @@ trait EnumDecoderDerivation:
     generic.labels.zip(singletons).toList.asInstanceOf[List[(String, A)]]
       .find(tuple => configuration.transformConstructorNames(tuple._1) == caseName)
       .map(_._2)
-      .fold(asLeft(failure.migrate(NoSuchEnum(t, generic.label, caseName))))(_.pure[G])
+      .fold(asLeft(failure.migrate(NoSuchEnum(caseName).label(generic.label).value(t))))(_.pure[G])
 
   private[derivation] def enumDecodersDict[F[_], T, E, A](
     decoder: Decoder[F, T, E, A],

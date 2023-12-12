@@ -12,7 +12,7 @@ import com.peknight.generic.migration.id.Migration
 trait EnumCodecDerivation:
   inline def derived[F[_], S, T, E, A](using configuration: CodecConfiguration)(using
     functor: Functor[F],
-    failure: Migration[DecodingFailure[T], E],
+    failure: Migration[DecodingFailure, E],
     stringEncoder: Encoder[F, S, String],
     stringDecoder: Decoder[F, T, E, String],
     generic: Generic.Sum[A]

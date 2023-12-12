@@ -1,17 +1,21 @@
 package com.peknight.codec.circe.error
 
-import cats.Id
+import com.peknight.codec.circe.instances.CursorOpInstances.given
 import com.peknight.codec.error.DecodingFailure
+import com.peknight.codec.error.DecodingFailure.DecodingCommonFailure
 import com.peknight.error.std.WrongType
-import com.peknight.generic.migration.Migration
-import io.circe.ACursor
+import com.peknight.generic.migration.id.Migration
+import com.peknight.generic.migration.syntax.id.migration.migrateTo
 import io.circe.DecodingFailure.Reason.WrongTypeExpectation
+import io.circe.{ACursor, CursorOp, Json}
 
-trait DecodingFailureMigration extends Migration[Id, DecodingFailure[ACursor], io.circe.DecodingFailure]:
-  def migrate(failure: DecodingFailure[ACursor]): io.circe.DecodingFailure =
+trait DecodingFailureMigration extends Migration[DecodingFailure, io.circe.DecodingFailure]:
+  def migrate(failure: DecodingFailure): io.circe.DecodingFailure =
     failure match
-      case e: WrongType =>
-        io.circe.DecodingFailure(WrongTypeExpectation(e.expectedType, e.value.focus.get), e.value.history)
-      case _ => io.circe.DecodingFailure(failure.message, failure.value.history)
+      case DecodingCommonFailure(e: WrongType, _, Some(value: Json), _, Some(history)) =>
+        io.circe.DecodingFailure(WrongTypeExpectation(e.expectedType, value), history.map(_.migrateTo[CursorOp]))
+      case DecodingCommonFailure(e, _, _, _, Some(history)) =>
+        io.circe.DecodingFailure(e.message, history.map(_.migrateTo[CursorOp]))
+      case _ => io.circe.DecodingFailure(failure.message, List.empty[CursorOp])
 end DecodingFailureMigration
 object DecodingFailureMigration extends DecodingFailureMigration

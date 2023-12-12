@@ -4,6 +4,7 @@ import cats.syntax.applicative.*
 import cats.syntax.either.*
 import cats.syntax.functor.*
 import cats.{Applicative, Eq, Functor}
+import com.peknight.codec.Decoder
 import com.peknight.codec.cursor.Cursor.{ArrayCursor, FailedCursor, ObjectCursor, SuccessCursor, TopCursor}
 import com.peknight.codec.error.{CursorFailure, DecodingFailure, MissingField}
 import com.peknight.codec.path.{PathElem, PathToRoot}
@@ -187,16 +188,14 @@ sealed trait Cursor[S]:
   /**
    * Attempt to decode the focus as an A.
    */
-  def as[F[_], A](using d: com.peknight.codec.Decoder[F, Cursor[S], DecodingFailure[Cursor[S]], A])
-  : F[Either[DecodingFailure[Cursor[S]], A]] =
+  def as[F[_], A](using d: Decoder[F, Cursor[S], DecodingFailure, A]): F[Either[DecodingFailure, A]] =
     d.decode(this)
 
   /**
    * Attempt to decode the value at the given key in a S object as an A
    */
-  def get[F[_], A](k: String)
-                  (using com.peknight.codec.Decoder[F, Cursor[S], DecodingFailure[Cursor[S]], A], ObjectType[S])
-  : F[Either[DecodingFailure[Cursor[S]], A]] =
+  def get[F[_], A](k: String)(using Decoder[F, Cursor[S], DecodingFailure, A], ObjectType[S])
+  : F[Either[DecodingFailure, A]] =
     downField(k).as[F, A]
 
   /**
@@ -204,12 +203,12 @@ sealed trait Cursor[S]:
    * then use the fallback instead.
    */
   def getOrElse[F[_]: Functor, A](k: String)(fallback: => A)
-                                 (using com.peknight.codec.Decoder[F, Cursor[S], DecodingFailure[Cursor[S]], Option[A]],
-                                  ObjectType[S]): F[Either[DecodingFailure[Cursor[S]], A]] =
+                                 (using Decoder[F, Cursor[S], DecodingFailure, Option[A]], ObjectType[S])
+  : F[Either[DecodingFailure, A]] =
     get[F, Option[A]](k).map {
-      case Right(Some(a)) => a.asRight[DecodingFailure[Cursor[S]]]
-      case Right(None) => fallback.asRight[DecodingFailure[Cursor[S]]]
-      case left => left.asInstanceOf[Either[DecodingFailure[Cursor[S]], A]]
+      case Right(Some(a)) => a.asRight[DecodingFailure]
+      case Right(None) => fallback.asRight[DecodingFailure]
+      case left => left.asInstanceOf[Either[DecodingFailure, A]]
     }
 
   /**
@@ -231,10 +230,10 @@ sealed trait Cursor[S]:
   def replay(history: List[CursorOp])(using ObjectType[S], ArrayType[S]): Cursor[S] =
     history.foldRight(this)((op, c) => c.replayOne(op))
 
-  def toDecodingFailure: DecodingFailure[Cursor[S]] =
+  def toDecodingFailure: DecodingFailure =
     this match
-      case cursor: FailedCursor[S] if cursor.missingField => MissingField(cursor)
-      case _ => CursorFailure(this)
+      case cursor: FailedCursor[S] if cursor.missingField => MissingField.cursor(this)
+      case _ => CursorFailure.cursor(this)
 end Cursor
 object Cursor:
   given [S](using eq: Eq[S]): Eq[Cursor[S]] with
@@ -251,6 +250,8 @@ object Cursor:
     type Sum = S
     def focus(t: Cursor[S]): Option[S] = t.focus
     def downField(t: Cursor[S], k: String): Cursor[S] = t.downField(k)
+    def pathString(t: Cursor[S]): String = t.pathString
+    def history(t: Cursor[S]): List[CursorOp] = t.history
   end given
 
   def from[S](value: S): SuccessCursor[S] = TCursor(value, None, None)

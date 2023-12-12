@@ -6,13 +6,21 @@ import cats.syntax.applicative.*
 import cats.syntax.apply.*
 import cats.syntax.either.*
 import cats.syntax.flatMap.*
+import cats.syntax.foldable.*
 import cats.syntax.functor.*
+import cats.syntax.traverse.*
 import cats.syntax.validated.*
 import cats.{Applicative, Apply, Functor, Monad}
+import com.peknight.cats.ext.instances.applicative.given
 import com.peknight.cats.ext.instances.eitherT.given
-import com.peknight.codec.cursor.CursorType
+import com.peknight.codec.cursor.Cursor.{FailedCursor, SuccessCursor}
+import com.peknight.codec.cursor.{Cursor, CursorType}
+import com.peknight.codec.error.{DecodingFailure, NotObject}
 import com.peknight.codec.instances.*
+import com.peknight.codec.sum.ObjectType
 import com.peknight.generic.priority.PriorityInstancesF3
+
+import scala.collection.{Map, mutable}
 
 trait Decoder[F[_], T, E, A]:
   self =>
@@ -178,6 +186,18 @@ object Decoder extends DecoderCursorInstances
       def decode(t: T): F[Either[E, A]] = f(t)
       def decodeAccumulating(t: T): F[ValidatedNel[E, A]] = f(t).map(_.toValidatedNel)
   end instance
+  def cursor[F[_]: Applicative, S, A](f: SuccessCursor[S] => F[Either[DecodingFailure, A]])
+  : Decoder[F, Cursor[S], DecodingFailure, A] =
+    new Decoder[F, Cursor[S], DecodingFailure, A]:
+      def decode(t: Cursor[S]): F[Either[DecodingFailure, A]] =
+        t match
+          case cursor: SuccessCursor[S] => f(cursor)
+          case cursor: FailedCursor[S] => cursor.toDecodingFailure.asLeft[A].pure[F]
+      def decodeAccumulating(t: Cursor[S]): F[ValidatedNel[DecodingFailure, A]] =
+        t match
+          case cursor: SuccessCursor[S] => f(cursor).map(_.toValidatedNel)
+          case cursor: FailedCursor[S] => cursor.toDecodingFailure.invalidNel[A].pure[F]
+  end cursor
   def fromState[F[_]: Monad, T, E, A](s: StateT[[X] =>> F[Either[E, X]], T, A]): Decoder[F, T, E, A] =
     new Decoder[F, T, E, A]:
       def decode(t: T): F[Either[E, A]] = s.runA(t)
@@ -193,4 +213,46 @@ object Decoder extends DecoderCursorInstances
       def decode(t: T): F[Either[E, A]] = f(t).asLeft[A].pure[F]
       def decodeAccumulating(t: T): F[ValidatedNel[E, A]] = f(t).invalidNel[A].pure[F]
   end failed
+
+  private[codec] def decodeMapLike[F[_], S, O, K, V, M[X, Y] <: Map[X, Y]](builder: => mutable.Builder[(K, V), M[K, V]])(
+    using
+    monad: Monad[F],
+    keyDecoder: Decoder[F, String, DecodingFailure, K],
+    valueDecoder: Decoder[F, Cursor[S], DecodingFailure, V],
+    objectType: ObjectType.Aux[S, O]
+  ): Decoder[F, Cursor[S], DecodingFailure, M[K, V]] =
+    new Decoder[F, Cursor[S], DecodingFailure, M[K, V]]:
+      def decode(t: Cursor[S]): F[Either[DecodingFailure, M[K, V]]] =
+        type EitherF[T] = F[Either[DecodingFailure, T]]
+        t match
+          case cursor: SuccessCursor[S] => objectType.asObject(cursor.value) match
+            case Some(o) => objectType.keys(o).toList.foldLeftM[EitherF, mutable.Builder[(K, V), M[K, V]]](builder) {
+              (builder, key) =>
+                val c = t.downField(key)
+                Monad[EitherF].flatMap(keyDecoder.decode(key).map(_.left.map(_.cursor(c)))) { k =>
+                  Monad[EitherF].map(valueDecoder.decode(c))(v => builder += ((k, v)))
+                }
+            }.map(_.result())
+            case _ => NotObject.cursor(t).asLeft.pure[F]
+          case cursor: FailedCursor[S] => cursor.toDecodingFailure.asLeft.pure[F]
+
+      def decodeAccumulating(t: Cursor[S]): F[ValidatedNel[DecodingFailure, M[K, V]]] =
+        type ValidatedNelF[T] = F[ValidatedNel[DecodingFailure, T]]
+        t match
+          case cursor: SuccessCursor[S] => objectType.asObject(cursor.value) match
+            case Some(o) => objectType.keys(o).toList.traverse[ValidatedNelF, (K, V)] {
+              key =>
+                val c = t.downField(key)
+                (keyDecoder.decodeAccumulating(key), valueDecoder.decodeAccumulating(c)).mapN {
+                  case (Valid(key), Valid(value)) => ((key, value)).validNel
+                  case (Valid(_), Invalid(es)) => es.invalid
+                  case (Invalid(es), Valid(_)) => es.map(_.cursor(c)).invalid
+                  case (Invalid(keyEs), Invalid(valueEs)) =>
+                    val keyErrors = keyEs.map(_.cursor(c))
+                    NonEmptyList(keyErrors.head, keyErrors.tail ++ valueEs.toList).invalid
+                }
+            }.map(_.foldLeft(builder)(_ += _).result())
+            case _ => NotObject.cursor(t).invalidNel.pure[F]
+          case cursor: FailedCursor[S] => cursor.toDecodingFailure.invalidNel.pure[F]
+  end decodeMapLike
 end Decoder

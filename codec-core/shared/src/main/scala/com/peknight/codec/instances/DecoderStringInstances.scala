@@ -6,7 +6,7 @@ import cats.syntax.either.*
 import cats.syntax.functor.*
 import cats.syntax.validated.*
 import cats.{Applicative, Functor}
-import com.peknight.codec.cursor.{Cursor, CursorDecoder}
+import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.error.{DecodingFailure, ParsingTypeError, WrongClassTag}
 import com.peknight.codec.sum.StringType
 import com.peknight.generic.priority.HighPriority
@@ -18,16 +18,16 @@ import scala.util.{Failure, Success, Try}
 
 trait DecoderStringInstances:
 
-  private[this] type Decoder[F[_], A] = com.peknight.codec.Decoder[F, String, DecodingFailure[String], A]
+  private[this] type Decoder[F[_], A] = com.peknight.codec.Decoder[F, String, DecodingFailure, A]
 
-  private[this] def instance[F[_]: Functor, A](f: String => F[Either[DecodingFailure[String], A]]): Decoder[F, A] =
-    com.peknight.codec.Decoder.instance[F, String, DecodingFailure[String], A](f)
+  private[this] def instance[F[_]: Functor, A](f: String => F[Either[DecodingFailure, A]]): Decoder[F, A] =
+    com.peknight.codec.Decoder.instance[F, String, DecodingFailure, A](f)
 
   given decodeBoolean[F[_]: Applicative]: Decoder[F, Boolean] =
     instance[F, Boolean] { t =>
       toBooleanOption(t) match
         case Some(b) => b.asRight.pure
-        case None => WrongClassTag[String, Boolean](t).asLeft.pure
+        case None => WrongClassTag[Boolean].value(t).asLeft.pure
     }
 
   private[this] def toBooleanOption(t: String): Option[Boolean] =
@@ -38,13 +38,13 @@ trait DecoderStringInstances:
     else None
 
   given decodeChar[F[_]: Applicative]: Decoder[F, Char] =
-    instance[F, Char](t => if t.length == 1 then t.head.asRight.pure else WrongClassTag[String, Char](t).asLeft.pure)
+    instance[F, Char](t => if t.length == 1 then t.head.asRight.pure else WrongClassTag[Char].value(t).asLeft.pure)
 
   private[this] def decodeWithTry[F[_]: Applicative, A: ClassTag](f: String => A): Decoder[F, A] =
     instance[F, A] { t =>
       Try(f(t)) match
         case Success(value) => value.asRight.pure
-        case Failure(e) => ParsingTypeError[String, A](t, e).asLeft.pure
+        case Failure(e) => ParsingTypeError[A](e).asLeft.pure
     }
 
   private[this] def decodeNumber[F[_]: Applicative, A: ClassTag](f: BigDecimal => A): Decoder[F, A] =
@@ -64,11 +64,11 @@ trait DecoderStringInstances:
     HighPriority(decodeWithTry[F, URI](t => new URI(t)))
 
   given stringDecoder[F[_], S, A](using applicative: Applicative[F], decoder: Decoder[F, A], stringType: StringType[S],
-                                  classTag: ClassTag[A]): CursorDecoder[F, S, A] =
-    CursorDecoder.instance[F, S, A] { t =>
+                                  classTag: ClassTag[A]): com.peknight.codec.Decoder[F, Cursor[S], DecodingFailure, A] =
+    com.peknight.codec.Decoder.cursor[F, S, A] { t =>
       StringType[S].asString(t.value) match
-        case Some(s) => decoder.decode(s).map(_.left.map(_.as(t)))
-        case None => WrongClassTag[Cursor[S], A](t).asLeft.pure
+        case Some(s) => decoder.decode(s).map(_.left.map(_.cursor(t)))
+        case None => WrongClassTag[A].cursor(t).asLeft.pure
     }
 
 end DecoderStringInstances

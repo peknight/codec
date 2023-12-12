@@ -18,7 +18,7 @@ trait CodecDerivation:
     cursorType: CursorType.Aux[T, S],
     objectType: ObjectType.Aux[S, O],
     nullType: NullType[S],
-    failure: Migration[DecodingFailure[T], E],
+    failure: Migration[DecodingFailure, E],
     stringEncoder: Encoder[F, S, String],
     stringDecoder: Decoder[F, T, E, String],
     stringOptionDecoder: Decoder[F, T, E, Option[String]],
@@ -38,7 +38,7 @@ trait CodecDerivation:
     cursorType: CursorType.Aux[T, S],
     objectType: ObjectType.Aux[S, O],
     nullType: NullType[S],
-    failure: Migration[DecodingFailure[T], E],
+    failure: Migration[DecodingFailure, E],
     encoders: Generic.Product.Instances[[X] =>> Encoder[F, S, X], A],
     decoders: Generic.Product.Instances[[X] =>> Decoder[F, T, E, X], A]
   ): Codec[F, S, T, E, A] =
@@ -55,7 +55,7 @@ trait CodecDerivation:
     configuration: CodecConfiguration,
     cursorType: CursorType.Aux[T, S],
     objectType: ObjectType.Aux[S, O],
-    failure: Migration[DecodingFailure[T], E],
+    failure: Migration[DecodingFailure, E],
     stringEncoder: Encoder[F, S, String],
     stringDecoder: Decoder[F, T, E, String],
     stringOptionDecoder: Decoder[F, T, E, Option[String]],

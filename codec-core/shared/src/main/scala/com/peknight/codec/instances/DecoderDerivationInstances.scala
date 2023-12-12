@@ -18,7 +18,7 @@ trait DecoderDerivationInstances extends DecoderDerivation:
     cursorType: CursorType.Aux[T, S],
     objectType: ObjectType.Aux[S, O],
     nullType: NullType[S],
-    failure: Migration[DecodingFailure[T], E],
+    failure: Migration[DecodingFailure, E],
     stringDecoder: Decoder[F, T, E, String],
     stringOptionDecoder: Decoder[F, T, E, Option[String]],
     instances: => Generic.Instances[[X] =>> Decoder[F, T, E, X], A]
