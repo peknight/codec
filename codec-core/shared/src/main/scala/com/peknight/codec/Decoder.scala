@@ -1,7 +1,7 @@
 package com.peknight.codec
 
 import cats.data.Validated.{Invalid, Valid}
-import cats.data.{NonEmptyList, StateT, ValidatedNel}
+import cats.data.{NonEmptyList, StateT, Validated, ValidatedNel}
 import cats.syntax.applicative.*
 import cats.syntax.apply.*
 import cats.syntax.either.*
@@ -11,17 +11,20 @@ import cats.syntax.functor.*
 import cats.syntax.option.*
 import cats.syntax.traverse.*
 import cats.syntax.validated.*
-import cats.{Applicative, Apply, Functor, Monad}
+import cats.{Applicative, Apply, Eval, Functor, Monad, MonadError, SemigroupK}
 import com.peknight.cats.ext.instances.applicative.given
 import com.peknight.cats.ext.instances.eitherT.given
 import com.peknight.codec.cursor.Cursor.{FailedCursor, SuccessCursor}
 import com.peknight.codec.cursor.{Cursor, CursorType}
-import com.peknight.codec.error.{DecodingFailure, NotArray, NotObject}
+import com.peknight.codec.error.*
 import com.peknight.codec.instances.*
 import com.peknight.codec.sum.{ArrayType, ObjectType}
 import com.peknight.generic.priority.PriorityInstancesF3
 
+import java.time.format.DateTimeFormatter
 import scala.collection.{Map, mutable}
+import scala.reflect.ClassTag
+import scala.util.{Failure, Success, Try}
 
 trait Decoder[F[_], T, E, A]:
   self =>
@@ -170,7 +173,7 @@ trait Decoder[F[_], T, E, A]:
 end Decoder
 object Decoder extends DecoderCursorInstances
   with DecoderStringInstances
-  with DecoderVectorInstances
+  with DecoderArrayInstances
   with DecoderObjectInstances
   with DecoderNullInstances
   with DecoderMigrationInstances
@@ -214,6 +217,78 @@ object Decoder extends DecoderCursorInstances
       def decode(t: T): F[Either[E, A]] = f(t).asLeft[A].pure[F]
       def decodeAccumulating(t: T): F[ValidatedNel[E, A]] = f(t).invalidNel[A].pure[F]
   end failed
+
+  given [F[_]: Monad, T, E]: SemigroupK[[X] =>> Decoder[F, T, E, X]] with MonadError[[X] =>> Decoder[F, T, E, X], E] with
+    def combineK[A](x: Decoder[F, T, E, A], y: Decoder[F, T, E, A]): Decoder[F, T, E, A] = x.or(y)
+    def pure[A](x: A): Decoder[F, T, E, A] = const(x)
+    override def map[A, B](fa: Decoder[F, T, E, A])(f: A => B): Decoder[F, T, E, B] = fa.map(f)
+    override def product[A, B](fa: Decoder[F, T, E, A], fb: Decoder[F, T, E, B]): Decoder[F, T, E, (A, B)] =
+      fa.product(fb)
+    override def ap[A, B](ff: Decoder[F, T, E, A => B])(fa: Decoder[F, T, E, A]): Decoder[F, T, E, B] =
+      ff.product(fa).map {
+        case (f, a) => f(a)
+      }
+    override def ap2[A, B, Z](ff: Decoder[F, T, E, (A, B) => Z])(fa: Decoder[F, T, E, A], fb: Decoder[F, T, E, B])
+    : Decoder[F, T, E, Z] =
+      ff.product(fa.product(fb)).map {
+        case (f, (a, b)) => f(a, b)
+      }
+    override def map2[A, B, Z](fa: Decoder[F, T, E, A], fb: Decoder[F, T, E, B])(f: (A, B) => Z): Decoder[F, T, E, Z] =
+      fa.product(fb).map {
+        case (a, b) => f(a, b)
+      }
+    override def map2Eval[A, B, Z](fa: Decoder[F, T, E, A], fb: Eval[Decoder[F, T, E, B]])(f: (A, B) => Z)
+    : Eval[Decoder[F, T, E, Z]] =
+      fb.map(fb => map2(fa, fb)(f))
+    override def productR[A, B](fa: Decoder[F, T, E, A])(fb: Decoder[F, T, E, B]): Decoder[F, T, E, B] =
+      fa.product(fb).map(_._2)
+    override def productL[A, B](fa: Decoder[F, T, E, A])(fb: Decoder[F, T, E, B]): Decoder[F, T, E, A] =
+      fa.product(fb).map(_._1)
+    def flatMap[A, B](fa: Decoder[F, T, E, A])(f: A => Decoder[F, T, E, B]): Decoder[F, T, E, B] = fa.flatMap(f)
+    def tailRecM[A, B](a: A)(f: A => Decoder[F, T, E, Either[A, B]]): Decoder[F, T, E, B] =
+      instance[F, T, E, B](t => Monad[[X] =>> F[Either[E, X]]].tailRecM[A, B](a)(a => f(a).decode(t)))
+    def raiseError[A](e: E): Decoder[F, T, E, A] = Decoder.failed(e)
+    def handleErrorWith[A](fa: Decoder[F, T, E, A])(f: E => Decoder[F, T, E, A]): Decoder[F, T, E, A] =
+      fa.handleErrorWith(f)
+  end given
+
+  /**
+   * Attempt to decode a value at key k and remove it from the Cursor[S]
+   */
+  def decodeField[F[_], S, A](k: String)(using Applicative[F], Decoder[F, Cursor[S], DecodingFailure, A], ObjectType[S])
+  : StateT[[X] =>> F[Either[DecodingFailure, X]], Cursor[S], A] =
+    StateT[[X] =>> F[Either[DecodingFailure, X]], Cursor[S], A] { c =>
+      val field = c.downField(k)
+      field.as[F, A].map {
+        case Right(a) if field.failed => ((c, a)).asRight[DecodingFailure]
+        case Right(a) => ((field.delete, a)).asRight[DecodingFailure]
+        case left => left.asInstanceOf[Either[DecodingFailure, (Cursor[S], A)]]
+      }
+    }
+
+  private[codec] def toBooleanOption(t: String): Option[Boolean] =
+    if "true".equalsIgnoreCase(t) then Some(true)
+    else if "false".equalsIgnoreCase(t) then Some(false)
+    else if List("1", "t", "yes", "y").exists(t.equalsIgnoreCase) then Some(true)
+    else if List("0", "f", "no", "n").exists(t.equalsIgnoreCase) then Some(false)
+    else None
+
+  private[codec] def decodeWithTry[F[_] : Applicative, A: ClassTag](f: String => A)
+  : Decoder[F, String, DecodingFailure, A] =
+    instance[F, String, DecodingFailure, A] { t =>
+      Try(f(t)) match
+        case Success(value) => value.asRight.pure
+        case Failure(e) => ParsingTypeError[A](e).asLeft.pure
+    }
+
+  private[codec] def decodeNumber[F[_]: Applicative, A: ClassTag](f: BigDecimal => A)
+  : Decoder[F, String, DecodingFailure, A] =
+    decodeWithTry[F, A](t => f(BigDecimal(t)))
+
+  private[codec] def decodeJavaTime[F[_]: Applicative, A: ClassTag](formatter: DateTimeFormatter)
+                                                                   (f: (String, DateTimeFormatter) => A)
+  : Decoder[F, String, DecodingFailure, A] =
+    decodeWithTry(t => f(t, formatter))
 
   private[codec] def decodeMap[F[_], S, K, V, M[X, Y] <: Map[X, Y]](builder: => mutable.Builder[(K, V), M[K, V]])(
     using
@@ -324,5 +399,26 @@ object Decoder extends DecoderCursorInstances
     decodeB: Decoder[F, Cursor[S], DecodingFailure, B],
     objectType: ObjectType[S],
   ): Decoder[F, Cursor[S], DecodingFailure, Either[A, B]] =
-    cursor[F, S, Either[A, B]](t => ???)
+    cursor[F, S, Either[A, B]] { t => (t.downField(leftKey), t.downField(rightKey)) match
+      case (lCursor: SuccessCursor[S], rCursor: SuccessCursor[S]) =>
+        NotSingleKeyObject(List(leftKey, rightKey)).cursor(t).asLeft.pure
+      case (lCursor: SuccessCursor[S], rCursor: FailedCursor[S]) => decodeA.decode(lCursor).map(_.map(_.asLeft))
+      case (lCursor: FailedCursor[S], rCursor: SuccessCursor[S]) => decodeB.decode(rCursor).map(_.map(_.asRight))
+      case (lCursor: FailedCursor[S], rCursor: FailedCursor[S]) => MissingField.cursor(t).asLeft.pure
+    }
+
+  private[codec] def decodeValidated[F[_], S, E, A](failureKey: String, successKey: String)(using
+    applicative: Applicative[F],
+    decodeE: Decoder[F, Cursor[S], DecodingFailure, E],
+    decodeA: Decoder[F, Cursor[S], DecodingFailure, A],
+    objectType: ObjectType[S],
+  ): Decoder[F, Cursor[S], DecodingFailure, Validated[E, A]] =
+    cursor[F, S, Validated[E, A]] { t => (t.downField(failureKey), t.downField(successKey)) match
+        case (fCursor: SuccessCursor[S], sCursor: SuccessCursor[S]) =>
+          NotSingleKeyObject(List(failureKey, successKey)).cursor(t).asLeft.pure
+        case (fCursor: SuccessCursor[S], sCursor: FailedCursor[S]) => decodeE.decode(fCursor).map(_.map(_.invalid))
+        case (fCursor: FailedCursor[S], sCursor: SuccessCursor[S]) => decodeA.decode(sCursor).map(_.map(_.valid))
+        case (fCursor: FailedCursor[S], sCursor: FailedCursor[S]) => MissingField.cursor(t).asLeft.pure
+    }
+
 end Decoder
