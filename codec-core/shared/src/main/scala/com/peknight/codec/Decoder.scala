@@ -30,6 +30,7 @@ trait Decoder[F[_], T, E, A]:
   self =>
   def decode(t: T): F[Either[E, A]]
   def decodeAccumulating(t: T): F[ValidatedNel[E, A]]
+  def decodeS[S](s: S)(using cursorType: CursorType.Aux[T, S]): F[Either[E, A]] = decode(cursorType.to(s))
   def map[B](f: A => B)(using Functor[F]): Decoder[F, T, E, B] =
     new Decoder[F, T, E, B]:
       def decode(t: T): F[Either[E, B]] = self.decode(t).map(_.map(f))

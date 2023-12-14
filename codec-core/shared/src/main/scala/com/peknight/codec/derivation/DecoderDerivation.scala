@@ -18,10 +18,10 @@ import com.peknight.generic.migration.id.Migration
 import com.peknight.generic.tuple.syntax.sequence
 
 trait DecoderDerivation:
-  def derived[F[_], S, O, T, E, A](using configuration: DecoderConfiguration)(using
+  def derived[F[_], S, T, E, A](using configuration: DecoderConfiguration)(using
     monad: Monad[F],
     cursorType: CursorType.Aux[T, S],
-    objectType: ObjectType.Aux[S, O],
+    objectType: ObjectType[S],
     nullType: NullType[S],
     failure: Migration[DecodingFailure, E],
     stringDecoder: Decoder[F, T, E, String],
@@ -29,15 +29,15 @@ trait DecoderDerivation:
     instances: => Generic.Instances[[X] =>> Decoder[F, T, E, X], A]
   ): Decoder[F, T, E, A] =
     instances.derive(
-      inst ?=> derivedProduct[F, S, O, T, E, A](configuration, cursorType, objectType, nullType, failure, inst),
-      inst ?=> derivedSum[F, S, O, T, E, A](configuration, cursorType, objectType, failure, stringDecoder,
+      inst ?=> derivedProduct[F, S, T, E, A](configuration, cursorType, objectType, nullType, failure, inst),
+      inst ?=> derivedSum[F, S, T, E, A](configuration, cursorType, objectType, failure, stringDecoder,
         stringOptionDecoder, inst)
     )
 
-  private[this] def derivedProduct[F[_] : Applicative, S, O, T, E, A](
+  private[this] def derivedProduct[F[_] : Applicative, S, T, E, A](
     configuration: DecoderConfiguration,
     cursorType: CursorType.Aux[T, S],
-    objectType: ObjectType.Aux[S, O],
+    objectType: ObjectType[S],
     nullType: NullType[S],
     failure: Migration[DecodingFailure, E],
     instances: => Generic.Product.Instances[[X] =>> Decoder[F, T, E, X], A]
@@ -49,10 +49,10 @@ trait DecoderDerivation:
         decodeProductValidatedNel(t, configuration, cursorType, objectType, nullType, failure, instances)
   end derivedProduct
 
-  private[this] def derivedSum[F[_] : Monad, S, O, T, E, A](
+  private[this] def derivedSum[F[_] : Monad, S, T, E, A](
     configuration: DecoderConfiguration,
     cursorType: CursorType.Aux[T, S],
-    objectType: ObjectType.Aux[S, O],
+    objectType: ObjectType[S],
     failure: Migration[DecodingFailure, E],
     stringDecoder: Decoder[F, T, E, String],
     stringOptionDecoder: Decoder[F, T, E, Option[String]],
@@ -78,16 +78,16 @@ trait DecoderDerivation:
             decodeSumValidatedNel(t, configuration, cursorType, objectType, failure, stringOptionDecoder, instances)
   end derivedSum
 
-  private[derivation] def decodeProductEither[F[_] : Applicative, S, O, T, E, A](
+  private[derivation] def decodeProductEither[F[_] : Applicative, S, T, E, A](
     t: T,
     configuration: DecoderConfiguration,
     cursorType: CursorType.Aux[T, S],
-    objectType: ObjectType.Aux[S, O],
+    objectType: ObjectType[S],
     nullType: NullType[S],
     failure: Migration[DecodingFailure, E],
     instances: => Generic.Product.Instances[[X] =>> Decoder[F, T, E, X], A]
   ): F[Either[E, A]] =
-    decodeProduct[F, [X] =>> Either[E, X], S, O, T, E, A](
+    decodeProduct[F, [X] =>> Either[E, X], S, T, E, A](
       t,
       configuration,
       cursorType,
@@ -100,16 +100,16 @@ trait DecoderDerivation:
       instances
     )
 
-  private[derivation] def decodeProductValidatedNel[F[_] : Applicative, S, O, T, E, A](
+  private[derivation] def decodeProductValidatedNel[F[_] : Applicative, S, T, E, A](
     t: T,
     configuration: DecoderConfiguration,
     cursorType: CursorType.Aux[T, S],
-    objectType: ObjectType.Aux[S, O],
+    objectType: ObjectType[S],
     nullType: NullType[S],
     failure: Migration[DecodingFailure, E],
     instances: => Generic.Product.Instances[[X] =>> Decoder[F, T, E, X], A]
   ): F[ValidatedNel[E, A]] =
-    decodeProduct[F, [X] =>> ValidatedNel[E, X], S, O, T, E, A](
+    decodeProduct[F, [X] =>> ValidatedNel[E, X], S, T, E, A](
       t,
       configuration,
       cursorType,
@@ -122,16 +122,16 @@ trait DecoderDerivation:
       instances
     )
 
-  private[derivation] def decodeSumEither[F[_] : Monad, S, O, T, E, A](
+  private[derivation] def decodeSumEither[F[_] : Monad, S, T, E, A](
     t: T,
     configuration: DecoderConfiguration,
     cursorType: CursorType.Aux[T, S],
-    objectType: ObjectType.Aux[S, O],
+    objectType: ObjectType[S],
     failure: Migration[DecodingFailure, E],
     stringOptionDecoder: Decoder[F, T, E, Option[String]],
     instances: => Generic.Sum.Instances[[X] =>> Decoder[F, T, E, X], A]
   ): F[Either[E, A]] =
-    decodeSum[F, [X] =>> Either[E, X], S, O, T, E, A](
+    decodeSum[F, [X] =>> Either[E, X], S, T, E, A](
       t,
       configuration,
       cursorType,
@@ -143,16 +143,16 @@ trait DecoderDerivation:
       instances
     )
 
-  private[derivation] def decodeSumValidatedNel[F[_] : Monad, S, O, T, E, A](
+  private[derivation] def decodeSumValidatedNel[F[_] : Monad, S, T, E, A](
     t: T,
     configuration: DecoderConfiguration,
     cursorType: CursorType.Aux[T, S],
-    objectType: ObjectType.Aux[S, O],
+    objectType: ObjectType[S],
     failure: Migration[DecodingFailure, E],
     stringOptionDecoder: Decoder[F, T, E, Option[String]],
     instances: => Generic.Sum.Instances[[X] =>> Decoder[F, T, E, X], A]
   ): F[ValidatedNel[E, A]] =
-    decodeSum[F, [X] =>> ValidatedNel[E, X], S, O, T, E, A](
+    decodeSum[F, [X] =>> ValidatedNel[E, X], S, T, E, A](
       t,
       configuration,
       cursorType,
@@ -164,11 +164,11 @@ trait DecoderDerivation:
       instances
     )
 
-  private[this] def decodeProduct[F[_] : Applicative, G[_] : Applicative, S, O, T, E, A](
+  private[this] def decodeProduct[F[_] : Applicative, G[_] : Applicative, S, T, E, A](
     t: T,
     configuration: DecoderConfiguration,
     cursorType: CursorType.Aux[T, S],
-    objectType: ObjectType.Aux[S, O],
+    objectType: ObjectType[S],
     nullType: NullType[S],
     failure: Migration[DecodingFailure, E],
     asLeft: E => G[A],
@@ -193,11 +193,11 @@ trait DecoderDerivation:
         handleDecodeProduct(t, configuration, cursorType, objectType, nullType, decode.asInstanceOf, isRight, instances)
     else asLeft(failure.migrate(NotObject.cursorType(t)(using cursorType))).pure[F]
 
-  private[this] def handleDecodeProduct[F[_] : Applicative, G[_] : Applicative, S, O, T, E, A](
+  private[this] def handleDecodeProduct[F[_] : Applicative, G[_] : Applicative, S, T, E, A](
     t: T,
     configuration: DecoderConfiguration,
     cursorType: CursorType.Aux[T, S],
-    objectType: ObjectType.Aux[S, O],
+    objectType: ObjectType[S],
     nullType: NullType[S],
     decode: [X] => Decoder[F, T, E, X] => T => F[G[X]],
     isRight: [X] => G[X] => Boolean,
@@ -216,11 +216,11 @@ trait DecoderDerivation:
         )
     }
 
-  private[this] def decodeSum[F[_] : Monad, G[_], S, O, T, E, A](
+  private[this] def decodeSum[F[_] : Monad, G[_], S, T, E, A](
     t: T,
     configuration: DecoderConfiguration,
     cursorType: CursorType.Aux[T, S],
-    objectType: ObjectType.Aux[S, O],
+    objectType: ObjectType[S],
     failure: Migration[DecodingFailure, E],
     stringOptionDecoder: Decoder[F, T, E, Option[String]],
     asLeft: E => G[A],

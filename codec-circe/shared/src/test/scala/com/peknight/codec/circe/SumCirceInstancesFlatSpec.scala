@@ -10,7 +10,7 @@ import io.circe.{Codec, DecodingFailure}
 import org.scalatest.flatspec.AnyFlatSpec
 
 class SumCirceInstancesFlatSpec extends AnyFlatSpec:
-  "Sum Encoder" should "succeed" in {
+  "Sum Codec" should "succeed" in {
     val a: OuterSum = A
     val b: OuterSum = B
     val c: OuterSum = C

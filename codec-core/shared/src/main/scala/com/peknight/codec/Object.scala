@@ -40,6 +40,7 @@ trait Object[S]:
     }
   def foldLeft[B](b: B)(f: (B, (String, S)) => B): B
   def foldLeftM[F[_]: Monad, B](b: B)(f: (B, (String, S)) => F[B]): F[B]
+  override def toString: String = toIterable.map((key, value) => s"$key=$value").mkString("Object(", ",", ")")
 end Object
 object Object:
   def apply[S](fields: (String, S)*): Object[S] = fromIterable(fields)

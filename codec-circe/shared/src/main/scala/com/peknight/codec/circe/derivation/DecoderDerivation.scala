@@ -6,7 +6,7 @@ import com.peknight.codec.circe.syntax.codec.asCirceDecoder
 import com.peknight.codec.configuration.DecoderConfiguration
 import com.peknight.codec.id.{Decoder, Encoder}
 import com.peknight.generic.Generic
-import io.circe.{ACursor, DecodingFailure, Json, JsonObject}
+import io.circe.{ACursor, DecodingFailure, Json}
 
 trait DecoderDerivation extends CirceTypeInstances
   with DecodingFailureMigrationInstances
@@ -15,7 +15,7 @@ trait DecoderDerivation extends CirceTypeInstances
     instances: => Generic.Instances[[X] =>> Decoder[ACursor, DecodingFailure, X], A]
   ): io.circe.Decoder[A] =
     com.peknight.codec.derivation.DecoderDerivation
-      .derived[Id, Json, JsonObject, ACursor, DecodingFailure, A].asCirceDecoder
+      .derived[Id, Json, ACursor, DecodingFailure, A].asCirceDecoder
 end DecoderDerivation
 object DecoderDerivation extends DecoderDerivation
 

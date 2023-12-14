@@ -252,6 +252,7 @@ object Cursor:
     def downField(t: Cursor[S], k: String): Cursor[S] = t.downField(k)
     def pathString(t: Cursor[S]): String = t.pathString
     def history(t: Cursor[S]): List[CursorOp] = t.history
+    def to(s: S): Cursor[S] = from(s)
   end given
 
   def from[S](value: S): SuccessCursor[S] = TCursor(value, None, None)

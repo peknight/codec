@@ -13,10 +13,10 @@ import com.peknight.generic.migration.id.Migration
 import com.peknight.generic.tuple.syntax.sequence
 
 trait CodecDerivation:
-  def derived[F[_], S, O, T, E, A](using configuration: CodecConfiguration)(using
+  def derived[F[_], S, T, E, A](using configuration: CodecConfiguration)(using
     monad: Monad[F],
     cursorType: CursorType.Aux[T, S],
-    objectType: ObjectType.Aux[S, O],
+    objectType: ObjectType[S],
     nullType: NullType[S],
     failure: Migration[DecodingFailure, E],
     stringEncoder: Encoder[F, S, String],
@@ -27,16 +27,16 @@ trait CodecDerivation:
     decoders: => Generic.Instances[[X] =>> Decoder[F, T, E, X], A]
   ): Codec[F, S, T, E, A] =
     if generic.isProduct then
-      derivedProduct[F, S, O, T, E, A](configuration, cursorType, objectType, nullType, failure, encoders.asInstanceOf,
+      derivedProduct[F, S, T, E, A](configuration, cursorType, objectType, nullType, failure, encoders.asInstanceOf,
         decoders.asInstanceOf)
     else
-      derivedSum[F, S, O, T, E, A](configuration, cursorType, objectType, failure, stringEncoder, stringDecoder,
+      derivedSum[F, S, T, E, A](configuration, cursorType, objectType, failure, stringEncoder, stringDecoder,
         stringOptionDecoder, generic.asInstanceOf, encoders.asInstanceOf, decoders.asInstanceOf)
 
-  private[this] def derivedProduct[F[_]: Applicative, S, O, T, E, A](
+  private[this] def derivedProduct[F[_]: Applicative, S, T, E, A](
     configuration: CodecConfiguration,
     cursorType: CursorType.Aux[T, S],
-    objectType: ObjectType.Aux[S, O],
+    objectType: ObjectType[S],
     nullType: NullType[S],
     failure: Migration[DecodingFailure, E],
     encoders: Generic.Product.Instances[[X] =>> Encoder[F, S, X], A],
@@ -51,10 +51,10 @@ trait CodecDerivation:
           decoders)
   end derivedProduct
 
-  private[this] def derivedSum[F[_]: Monad, S, O, T, E, A](
+  private[this] def derivedSum[F[_]: Monad, S, T, E, A](
     configuration: CodecConfiguration,
     cursorType: CursorType.Aux[T, S],
-    objectType: ObjectType.Aux[S, O],
+    objectType: ObjectType[S],
     failure: Migration[DecodingFailure, E],
     stringEncoder: Encoder[F, S, String],
     stringDecoder: Decoder[F, T, E, String],
@@ -77,7 +77,8 @@ trait CodecDerivation:
         new Codec[F, S, T, E, A] with SumEncoder[F, S, A] with SumDecoder[F, T, E, A]:
           def decoders: Map[String, Decoder[F, T, E, _]] =
             DecoderDerivation.decodersDict[F, T, E, A](configuration, decoders0)
-          def encode(a: A): F[S] = EncoderDerivation.encodeSum(a, configuration, objectType, stringEncoder, encoders)
+          def encode(a: A): F[S] =
+            EncoderDerivation.encodeSum(a, configuration, objectType, stringEncoder, encoders)
           def decode(t: T): F[Either[E, A]] =
             DecoderDerivation.decodeSumEither(t, configuration, cursorType, objectType, failure,
               stringOptionDecoder, decoders0)

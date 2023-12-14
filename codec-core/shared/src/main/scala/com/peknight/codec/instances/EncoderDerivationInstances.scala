@@ -9,14 +9,14 @@ import com.peknight.generic.Generic
 import com.peknight.generic.priority.LowPriority
 
 trait EncoderDerivationInstances extends EncoderDerivation:
-  given derivedEncoder[F[_], S, O, A](using
+  given derivedEncoder[F[_], S, A](using
     configuration: EncoderConfiguration,
     applicative: Applicative[F],
-    objectType: ObjectType.Aux[S, O],
+    objectType: ObjectType[S],
     stringEncoder: Encoder[F, S, String],
     instances: => Generic.Instances[[X] =>> Encoder[F, S, X], A]
   ): LowPriority[Encoder[F, S, A]] =
-    LowPriority(derived[F, S, O, A])
+    LowPriority(derived[F, S, A])
 
 end EncoderDerivationInstances
 object EncoderDerivationInstances extends EncoderDerivationInstances

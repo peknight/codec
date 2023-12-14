@@ -12,6 +12,6 @@ trait EncoderDerivation extends CirceTypeInstances with EncoderCirceInstances:
   def derived[A](using configuration: EncoderConfiguration)(using
     instances: => Generic.Instances[[X] =>> Encoder[Json, X], A]
   ): io.circe.Encoder[A] =
-    com.peknight.codec.derivation.EncoderDerivation.derived[Id, Json, JsonObject, A].asCirceEncoder
+    com.peknight.codec.derivation.EncoderDerivation.derived[Id, Json, A].asCirceEncoder
 end EncoderDerivation
 object EncoderDerivation extends EncoderDerivation

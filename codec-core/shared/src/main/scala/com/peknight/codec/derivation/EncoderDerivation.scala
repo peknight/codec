@@ -11,27 +11,27 @@ import com.peknight.generic.Generic
 import com.peknight.generic.tuple.syntax.forall
 
 trait EncoderDerivation:
-  def derived[F[_], S, O, A](using configuration: EncoderConfiguration)(using
+  def derived[F[_], S, A](using configuration: EncoderConfiguration)(using
     applicative: Applicative[F],
-    objectType: ObjectType.Aux[S, O],
+    objectType: ObjectType[S],
     stringEncoder: Encoder[F, S, String],
     instances: => Generic.Instances[[X] =>> Encoder[F, S, X], A]
   ): Encoder[F, S, A] =
     instances.derive(
-      inst ?=> derivedProduct[F, S, O, A](configuration, objectType, inst),
-      inst ?=> derivedSum[F, S, O, A](configuration, objectType, stringEncoder, inst)
+      inst ?=> derivedProduct[F, S, A](configuration, objectType, inst),
+      inst ?=> derivedSum[F, S, A](configuration, objectType, stringEncoder, inst)
     )
 
-  private[this] def derivedProduct[F[_] : Applicative, S, O, A](
+  private[this] def derivedProduct[F[_] : Applicative, S, A](
     configuration: EncoderConfiguration,
-    objectType: ObjectType.Aux[S, O],
+    objectType: ObjectType[S],
     instances: => Generic.Product.Instances[[X] =>> Encoder[F, S, X], A]
   ): Encoder[F, S, A] =
     (a: A) => encodeProduct(a, configuration, objectType, instances)
 
-  private[this] def derivedSum[F[_] : Applicative, S, O, A](
+  private[this] def derivedSum[F[_] : Applicative, S, A](
     configuration: EncoderConfiguration,
-    objectType: ObjectType.Aux[S, O],
+    objectType: ObjectType[S],
     stringEncoder: Encoder[F, S, String],
     instances: => Generic.Sum.Instances[[X] =>> Encoder[F, S, X], A]
   ): Encoder[F, S, A] =
@@ -42,10 +42,10 @@ trait EncoderDerivation:
         def encode(a: A): F[S] = encodeSum(a, configuration, objectType, stringEncoder, instances)
   end derivedSum
 
-  private[derivation] def encodeProduct[F[_] : Applicative, S, O, A](
+  private[derivation] def encodeProduct[F[_] : Applicative, S, A](
     a: A,
     configuration: EncoderConfiguration,
-    objectType: ObjectType.Aux[S, O],
+    objectType: ObjectType[S],
     instances: => Generic.Product.Instances[[X] =>> Encoder[F, S, X], A]
   ): F[S] =
     instances.foldRightWithLabel(a)(List.empty[F[(String, S)]]) {
@@ -53,10 +53,10 @@ trait EncoderDerivation:
         encoder.encode(x).map((configuration.transformMemberNames(label), _)) :: acc
     }.sequence.map(f => objectType.to(objectType.fromFoldable(f)))
 
-  private[derivation] def encodeSum[F[_] : Applicative, S, O, A](
+  private[derivation] def encodeSum[F[_] : Applicative, S, A](
     a: A,
     configuration: EncoderConfiguration,
-    objectType: ObjectType.Aux[S, O],
+    objectType: ObjectType[S],
     stringEncoder: Encoder[F, S, String],
     instances: => Generic.Sum.Instances[[X] =>> Encoder[F, S, X], A]
   ): F[S] =
