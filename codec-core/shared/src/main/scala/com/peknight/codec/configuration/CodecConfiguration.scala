@@ -32,6 +32,4 @@ object CodecConfiguration:
   ): CodecConfiguration =
     Configuration(transformMemberNames, transformConstructorNames, discriminator, useDefaults, strictDecoding)
 
-  given CodecConfiguration = apply()
-
 end CodecConfiguration
