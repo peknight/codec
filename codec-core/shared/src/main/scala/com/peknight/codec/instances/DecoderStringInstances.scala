@@ -8,7 +8,7 @@ import com.peknight.codec.Decoder
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.error.{DecodingFailure, WrongClassTag}
 import com.peknight.codec.sum.StringType
-import com.peknight.generic.priority.HighPriority
+import com.peknight.generic.priority.{MidPriority, HighPriority}
 
 import java.net.URI
 import java.time.*
@@ -80,11 +80,11 @@ trait DecoderStringInstances:
 
   given stringDecoder[F[_], S, A](using applicative: Applicative[F], decoder: Decoder[F, String, DecodingFailure, A],
                                   stringType: StringType[S], classTag: ClassTag[A])
-  : Decoder[F, Cursor[S], DecodingFailure, A] =
-    Decoder.cursor[F, S, A] { t =>
+  : MidPriority[Decoder[F, Cursor[S], DecodingFailure, A]] =
+    MidPriority(Decoder.cursor[F, S, A] { t =>
       StringType[S].asString(t.value) match
         case Some(s) => decoder.decode(s).map(_.left.map(_.cursor(t)))
         case None => WrongClassTag[A].cursor(t).asLeft.pure
-    }
+    })
 
 end DecoderStringInstances
