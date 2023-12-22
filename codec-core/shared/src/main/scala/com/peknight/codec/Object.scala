@@ -27,7 +27,7 @@ trait Object[S]:
   def prepended(field: (String, S)): Object[S]
   def +:(field: (String, S)): Object[S] = prepended(field)
   def remove(key: String): Object[S]
-  def traverse[F[_]](f: S => F[S])(using Applicative[F]): F[Object[S]]
+  def traverse[F[_], T](f: S => F[T])(using Applicative[F]): F[Object[T]]
   def mapValues[T](f: S => T): Object[T]
   def filter(pred: ((String, S)) => Boolean): Object[S] = Object.fromIterable[S](toIterable.filter(pred))
   def filterKeys(pred: String => Boolean): Object[S] = filter(field => pred(field._1))
@@ -73,10 +73,10 @@ object Object:
       if fields.contains(key) then MapAndVectorObject[S](fields.updated(key, value), orderedKeys)
       else MapAndVectorObject[S](fields.updated(key, value), key +: orderedKeys)
     def remove(key: String): Object[S] = MapAndVectorObject[S](fields - key, orderedKeys.filterNot(_ == key))
-    def traverse[F[_]](f: S => F[S])(using Applicative[F]): F[Object[S]] =
-      orderedKeys.foldLeft(Map.empty[String, S].pure[F]) {
+    def traverse[F[_], T](f: S => F[T])(using Applicative[F]): F[Object[T]] =
+      orderedKeys.foldLeft(Map.empty[String, T].pure[F]) {
         case (acc, key) => (acc, f(fields(key))).mapN(_.updated(key, _))
-      }.map(mappedFields => MapAndVectorObject[S](mappedFields, orderedKeys))
+      }.map(mappedFields => MapAndVectorObject[T](mappedFields, orderedKeys))
     def mapValues[T](f: S => T): Object[T] =
       MapAndVectorObject[T](
         fields.map {
