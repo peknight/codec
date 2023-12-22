@@ -28,7 +28,7 @@ trait Object[S]:
   def +:(field: (String, S)): Object[S] = prepended(field)
   def remove(key: String): Object[S]
   def traverse[F[_]](f: S => F[S])(using Applicative[F]): F[Object[S]]
-  def mapValues(f: S => S): Object[S]
+  def mapValues[T](f: S => T): Object[T]
   def filter(pred: ((String, S)) => Boolean): Object[S] = Object.fromIterable[S](toIterable.filter(pred))
   def filterKeys(pred: String => Boolean): Object[S] = filter(field => pred(field._1))
   def deepMerge(that: Object[S])(using Semigroup[S]): Object[S] =
@@ -77,8 +77,8 @@ object Object:
       orderedKeys.foldLeft(Map.empty[String, S].pure[F]) {
         case (acc, key) => (acc, f(fields(key))).mapN(_.updated(key, _))
       }.map(mappedFields => MapAndVectorObject[S](mappedFields, orderedKeys))
-    def mapValues(f: S => S): Object[S] =
-      MapAndVectorObject[S](
+    def mapValues[T](f: S => T): Object[T] =
+      MapAndVectorObject[T](
         fields.map {
           case (key, value) => (key, f(value))
         },
