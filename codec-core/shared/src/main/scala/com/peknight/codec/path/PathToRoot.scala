@@ -6,14 +6,14 @@ import com.peknight.error.Error
 import cats.syntax.eq.*
 import cats.syntax.foldable.*
 
-private[codec] case class PathToRoot private(value: Vector[PathElem]) extends AnyVal:
+case class PathToRoot private(value: Vector[PathElem]) extends AnyVal:
   def asPathString: String = PathToRoot.toPathString(this)
   def prependElem(elem: PathElem): PathToRoot = PathToRoot(elem +: value)
   def appendElem(elem: PathElem): PathToRoot = PathToRoot(value :+ elem)
   def +:(elem: PathElem): PathToRoot = prependElem(elem)
   def :+(elem: PathElem): PathToRoot = appendElem(elem)
 end PathToRoot
-private[codec] object PathToRoot:
+object PathToRoot:
   val empty: PathToRoot = PathToRoot(Vector.empty)
   def toPathString(path: PathToRoot): String =
     if path.value.isEmpty then ""
@@ -58,17 +58,17 @@ private[codec] object PathToRoot:
   sealed trait PathToRootError(msg: String) extends Error:
     override def lowPriorityMessage: Option[String] = Some(msg)
   end PathToRootError
-  object MoveUpAboveRoot extends PathToRootError("Attempt to move up above the root of the document.")
-  object MoveBeyondBeginning extends PathToRootError(
+  private[this] object MoveUpAboveRoot extends PathToRootError("Attempt to move up above the root of the document.")
+  private[this] object MoveBeyondBeginning extends PathToRootError(
     "Attempt to move beyond beginning of array in cursor history."
   )
-  object MoveOutIntMaxValue extends PathToRootError(
+  private[this] object MoveOutIntMaxValue extends PathToRootError(
     "Attempt to move to index > Int.MaxValue in array in cursor history."
   )
-  case class MoveSiblingNonObject(name: String) extends PathToRootError(
+  private[this] case class MoveSiblingNonObject(name: String) extends PathToRootError(
     s"Attempt to move to sibling field($name), but cursor history didn't indicate we were in an object."
   )
-  case class InvalidHistoryState(invalid: CursorOp) extends PathToRootError(
+  private[this] case class InvalidHistoryState(invalid: CursorOp) extends PathToRootError(
     s"Invalid cursor history state: $invalid"
   )
 end PathToRoot
