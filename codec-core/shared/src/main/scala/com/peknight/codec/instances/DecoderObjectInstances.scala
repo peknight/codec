@@ -1,15 +1,13 @@
 package com.peknight.codec.instances
 
 import cats.data.NonEmptyMap
-import cats.{Applicative, Monad, Order}
 import cats.syntax.applicative.*
 import cats.syntax.either.*
-import cats.syntax.functor.*
+import cats.{Applicative, Monad, Order}
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.error.*
 import com.peknight.codec.sum.{ArrayType, NullType, ObjectType}
 import com.peknight.codec.{Decoder, Object}
-import com.peknight.generic.priority.MidPriority
 
 import scala.collection.immutable.{SortedMap, Map as ImmutableMap}
 
@@ -44,15 +42,4 @@ trait DecoderObjectInstances extends DecoderObjectInstances1:
       if t.isEmpty then ().asRight.pure
       else NotUnit.value(t).asLeft.pure
     }
-
-  given objectDecoder[F[_], S, A](using applicative: Applicative[F],
-                                  decoder: Decoder[F, Object[S], DecodingFailure, A],
-                                  objectType: ObjectType.Aux[S, Object[S]])
-  : MidPriority[Decoder[F, Cursor[S], DecodingFailure, A]] =
-    MidPriority { Decoder.cursor[F, S, A] { t =>
-      objectType.asObject(t.value) match
-        case Some(o) => decoder.decode(o).map(_.left.map(_.cursor(t)))
-        case None => NotObject.cursor(t).asLeft.pure
-    }}
-
 end DecoderObjectInstances

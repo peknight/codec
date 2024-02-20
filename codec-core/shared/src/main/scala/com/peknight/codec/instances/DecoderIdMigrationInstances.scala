@@ -9,7 +9,7 @@ import com.peknight.codec.Decoder
 import com.peknight.generic.migration.Migration
 import com.peknight.generic.priority.MidPriority
 
-trait DecoderIdMigrationInstances extends DecoderErrorMigrationInstances:
+trait DecoderIdMigrationInstances:
   given migrationDecoder[F[_], T, E, A] (using functor: Functor[F], migration: Migration[F, T, A])
   : MidPriority[Decoder[F, T, E, A]] =
     MidPriority {

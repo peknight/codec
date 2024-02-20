@@ -18,7 +18,7 @@ import com.peknight.codec.cursor.Cursor.{FailedCursor, SuccessCursor}
 import com.peknight.codec.cursor.{Cursor, CursorType}
 import com.peknight.codec.error.*
 import com.peknight.codec.instances.*
-import com.peknight.codec.sum.{ArrayType, ObjectType}
+import com.peknight.codec.sum.{ArrayType, ObjectType, StringType}
 import com.peknight.generic.priority.PriorityInstancesF3
 
 import java.time.format.DateTimeFormatter
@@ -213,7 +213,7 @@ object Decoder extends DecoderCursorInstances
       def decode(t: T): F[Either[E, A]] = failure.asLeft[A].pure[F]
       def decodeAccumulating(t: T): F[ValidatedNel[E, A]] = failure.invalidNel[A].pure[F]
   end failed
-  def failed[F[_] : Applicative, T, E, A](f: T => E): Decoder[F, T, E, A] =
+  def failed[F[_]: Applicative, T, E, A](f: T => E): Decoder[F, T, E, A] =
     new Decoder[F, T, E, A]:
       def decode(t: T): F[Either[E, A]] = f(t).asLeft[A].pure[F]
       def decodeAccumulating(t: T): F[ValidatedNel[E, A]] = f(t).invalidNel[A].pure[F]
@@ -274,7 +274,7 @@ object Decoder extends DecoderCursorInstances
     else if List("0", "f", "no", "n").exists(t.equalsIgnoreCase) then Some(false)
     else None
 
-  private[codec] def decodeWithTry[F[_] : Applicative, A: ClassTag](f: String => A)
+  private[codec] def decodeWithTry[F[_]: Applicative, A: ClassTag](f: String => A)
   : Decoder[F, String, DecodingFailure, A] =
     instance[F, String, DecodingFailure, A] { t =>
       Try(f(t)) match
@@ -420,6 +420,26 @@ object Decoder extends DecoderCursorInstances
         case (fCursor: SuccessCursor[S], sCursor: FailedCursor[S]) => decodeE.decode(fCursor).map(_.map(_.invalid))
         case (fCursor: FailedCursor[S], sCursor: SuccessCursor[S]) => decodeA.decode(sCursor).map(_.map(_.valid))
         case (fCursor: FailedCursor[S], sCursor: FailedCursor[S]) => MissingField.cursor(t).asLeft.pure
+    }
+
+  private[codec] def stringDecoder[F[_], S, A](decoder: Decoder[F, String, DecodingFailure, A])
+                                              (using applicative: Applicative[F],
+                                               stringType: StringType[S], classTag: ClassTag[A])
+  : Decoder[F, Cursor[S], DecodingFailure, A] =
+    Decoder.cursor[F, S, A] { t =>
+      StringType[S].asString(t.value) match
+        case Some(s) => decoder.decode(s).map(_.left.map(_.cursor(t)))
+        case None => WrongClassTag[A].cursor(t).asLeft.pure
+    }
+
+  private[codec] def objectDecoder[F[_], S, A](decoder: Decoder[F, Object[S], DecodingFailure, A])
+                                              (using applicative: Applicative[F],
+                                               objectType: ObjectType.Aux[S, Object[S]])
+  : Decoder[F, Cursor[S], DecodingFailure, A] =
+    cursor[F, S, A] { t =>
+      objectType.asObject(t.value) match
+        case Some(o) => decoder.decode(o).map(_.left.map(_.cursor(t)))
+        case None => NotObject.cursor(t).asLeft.pure
     }
 
 end Decoder

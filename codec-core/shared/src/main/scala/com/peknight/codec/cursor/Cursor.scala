@@ -262,7 +262,7 @@ object Cursor:
     def replace(newValue: S, cursor: SuccessCursor[S], op: Option[CursorOp]): SuccessCursor[S]
     def addOp(cursor: SuccessCursor[S], op: CursorOp): SuccessCursor[S]
     def withFocus(f: S => S): Cursor[S] = replace(f(value), this, None)
-    def withFocusM[F[_] : Applicative](f: S => F[S]): F[Cursor[S]] = f(value).map(replace(_, this, None))
+    def withFocusM[F[_]: Applicative](f: S => F[S]): F[Cursor[S]] = f(value).map(replace(_, this, None))
     def succeeded: Boolean = true
     def success: Option[SuccessCursor[S]] = Some(this)
     def focus: Option[S] = Some(value)
@@ -429,7 +429,7 @@ object Cursor:
     def top: Option[S] = None
     def root: Option[SuccessCursor[S]] = lastCursorValue.root
     def withFocus(f: S => S): Cursor[S] = this
-    def withFocusM[F[_] : Applicative](f: S => F[S]): F[Cursor[S]] = this.pure[F]
+    def withFocusM[F[_]: Applicative](f: S => F[S]): F[Cursor[S]] = this.pure[F]
 
     def values(using ArrayType[S]): Option[Iterable[S]] = None
 

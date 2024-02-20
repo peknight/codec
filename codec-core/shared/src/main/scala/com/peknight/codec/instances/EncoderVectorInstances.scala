@@ -1,61 +1,54 @@
 package com.peknight.codec.instances
 
+import cats.Applicative
 import cats.data.*
 import cats.syntax.functor.*
 import cats.syntax.traverse.*
-import cats.{Applicative, Functor}
 import com.peknight.codec.Encoder
-import com.peknight.codec.sum.ArrayType
 import com.peknight.generic.Generic
-import com.peknight.generic.priority.{HighPriority, MidPriority}
+import com.peknight.generic.priority.HighPriority
 
 trait EncoderVectorInstances:
-  given encodeSeq[F[_], S, A](using Applicative[F], Encoder[F, S, A]): Encoder[F, Vector[S], Seq[A]] =
+  given encodeVectorSeq[F[_], S, A](using Applicative[F], Encoder[F, S, A]): Encoder[F, Vector[S], Seq[A]] =
     Encoder.vectorEncoder[F, S, A].contramap(_.toVector)
 
-  given encodeSet[F[_], S, A](using Applicative[F], Encoder[F, S, A]): Encoder[F, Vector[S], Set[A]] =
+  given encodeVectorSet[F[_], S, A](using Applicative[F], Encoder[F, S, A]): Encoder[F, Vector[S], Set[A]] =
     Encoder.vectorEncoder[F, S, A].contramap(_.toVector)
 
-  given encodeList[F[_], S, A](using Applicative[F], Encoder[F, S, A]): Encoder[F, Vector[S], List[A]] =
+  given encodeVectorList[F[_], S, A](using Applicative[F], Encoder[F, S, A]): Encoder[F, Vector[S], List[A]] =
     Encoder.vectorEncoder[F, S, A].contramap(_.toVector)
 
-  given encodeVector[F[_], S, A](using Applicative[F], Encoder[F, S, A]): Encoder[F, Vector[S], Vector[A]] =
+  given encodeVectorVector[F[_], S, A](using Applicative[F], Encoder[F, S, A]): Encoder[F, Vector[S], Vector[A]] =
     Encoder.vectorEncoder[F, S, A]
 
-  given encodeChain[F[_], S, A](using Applicative[F], Encoder[F, S, A]): Encoder[F, Vector[S], Chain[A]] =
+  given encodeVectorChain[F[_], S, A](using Applicative[F], Encoder[F, S, A]): Encoder[F, Vector[S], Chain[A]] =
     Encoder.vectorEncoder[F, S, A].contramap(_.toVector)
 
-  given encodeNonEmptyList[F[_], S, A](using Applicative[F], Encoder[F, S, A]): Encoder[F, Vector[S], NonEmptyList[A]] =
+  given encodeVectorNonEmptyList[F[_], S, A](using Applicative[F], Encoder[F, S, A]): Encoder[F, Vector[S], NonEmptyList[A]] =
     Encoder.vectorEncoder[F, S, A].contramap(_.toList.toVector)
 
-  given encodeNonEmptyVector[F[_], S, A](using Applicative[F], Encoder[F, S, A]): Encoder[F, Vector[S], NonEmptyVector[A]] =
+  given encodeVectorNonEmptyVector[F[_], S, A](using Applicative[F], Encoder[F, S, A]): Encoder[F, Vector[S], NonEmptyVector[A]] =
     Encoder.vectorEncoder[F, S, A].contramap(_.toVector)
 
-  given encodeNonEmptySet[F[_], S, A](using Applicative[F], Encoder[F, S, A]): Encoder[F, Vector[S], NonEmptySet[A]] =
+  given encodeVectorNonEmptySet[F[_], S, A](using Applicative[F], Encoder[F, S, A]): Encoder[F, Vector[S], NonEmptySet[A]] =
     Encoder.vectorEncoder[F, S, A].contramap(_.toSortedSet.toVector)
 
-  given encodeNonEmptyChain[F[_], S, A](using Applicative[F], Encoder[F, S, A]): Encoder[F, Vector[S], NonEmptyChain[A]] =
+  given encodeVectorNonEmptyChain[F[_], S, A](using Applicative[F], Encoder[F, S, A]): Encoder[F, Vector[S], NonEmptyChain[A]] =
     Encoder.vectorEncoder[F, S, A].contramap(_.toChain.toVector)
 
-  given encodeOneAnd[F[_], S, A, G[_]](using applicative: Applicative[F], encoder: Encoder[F, S, A],
+  given encodeVectorOneAnd[F[_], S, A, G[_]](using applicative: Applicative[F], encoder: Encoder[F, S, A],
                                        ev: G[A] => Iterable[A]): Encoder[F, Vector[S], OneAnd[G, A]] =
     Encoder.vectorEncoder[F, S, A].contramap(a => a.head +: ev(a.tail).toVector)
 
-  given encodeIterable[F[_], S, A, G[_]](using applicative: Applicative[F], encoder: Encoder[F, S, A],
+  given encodeVectorIterable[F[_], S, A, G[_]](using applicative: Applicative[F], encoder: Encoder[F, S, A],
                                          ev: G[A] => Iterable[A]): HighPriority[Encoder[F, Vector[S], G[A]]] =
     HighPriority(Encoder.vectorEncoder[F, S, A].contramap(a => ev(a).toVector))
 
-  given encodeTuple[F[_], S, A <: Tuple](using applicative: Applicative[F],
+  given encodeVectorTuple[F[_], S, A <: Tuple](using applicative: Applicative[F],
                                          instances: => Generic.Product.Instances[[X] =>> Encoder[F, S, X], A])
   : Encoder[F, Vector[S], A] with
     def encode(a: A): F[Vector[S]] =
       instances.map[[X] =>> F[S]](a)([T] => (encoder: Encoder[F, S, T], t: T) => encoder.encode(t))
         .toList.asInstanceOf[List[F[S]]].toVector.sequence
-  end encodeTuple
-
-  given vectorEncoder[F[_], S, A](using functor: Functor[F], encoder: Encoder[F, Vector[S], A], arrayType: ArrayType[S])
-  : MidPriority[Encoder[F, S, A]] =
-    MidPriority(encoder.encode(_).map(arrayType.to))
-  end vectorEncoder
-
+  end encodeVectorTuple
 end EncoderVectorInstances

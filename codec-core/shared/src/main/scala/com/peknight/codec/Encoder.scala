@@ -7,6 +7,7 @@ import cats.syntax.functor.*
 import cats.syntax.traverse.*
 import cats.{Applicative, Contravariant, Foldable, Functor, Traverse}
 import com.peknight.codec.instances.*
+import com.peknight.codec.sum.{ArrayType, ObjectType, StringType}
 import com.peknight.generic.priority.PriorityInstancesF2
 
 import java.time.format.DateTimeFormatter
@@ -18,7 +19,7 @@ trait Encoder[F[_], S, A]:
   def contramap[B](f: B => A): Encoder[F, S, B] = (b: B) => self.encode(f(b))
 end Encoder
 object Encoder extends EncoderStringInstances
-  with EncoderVectorInstances
+  with EncoderArrayInstances
   with EncoderObjectInstances
   with EncoderNullInstances
   with EncoderMigrationInstances
@@ -31,7 +32,7 @@ object Encoder extends EncoderStringInstances
     def contramap[A, B](fa: Encoder[F, S, A])(f: B => A): Encoder[F, S, B] = fa.contramap(f)
   end encoderContravariant
 
-  def stringEncoder[F[_]: Applicative, A]: Encoder[F, String, A] = (a: A) => a.toString.pure[F]
+  def toStringEncoder[F[_]: Applicative, A]: Encoder[F, String, A] = (a: A) => a.toString.pure[F]
 
   def stringEncodeJavaTime[F[_]: Applicative, A <: TemporalAccessor](formatter: DateTimeFormatter)
   : Encoder[F, String, A] =
@@ -69,4 +70,17 @@ object Encoder extends EncoderStringInstances
     case Validated.Invalid(invalid) => encodeE.encode(invalid).map(l => Object.singleton(failureKey, l))
     case Validated.Valid(valid) => encodeA.encode(valid).map(r => Object.singleton(successKey, r))
   }
+
+  private[codec] def stringEncoder[F[_], S, A](encoder: Encoder[F, String, A])
+                                              (using functor: Functor[F], stringType: StringType[S]): Encoder[F, S, A] =
+    encoder.encode(_).map(str => stringType.to(str))
+
+  private[codec] def arrayEncoder[F[_], S, A](encoder: Encoder[F, Vector[S], A])
+                                             (using functor: Functor[F], arrayType: ArrayType[S]): Encoder[F, S, A] =
+    encoder.encode(_).map(arrayType.to)
+
+  private[codec] def objectEncoder[F[_], S, A](encoder: Encoder[F, Object[S], A])(using functor: Functor[F],
+                                                                                  objectType: ObjectType[S])
+  : Encoder[F, S, A] =
+    encoder.encode(_).map(obj => objectType.to(objectType.fromObject(obj)))
 end Encoder
