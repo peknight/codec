@@ -12,15 +12,8 @@ import scala.collection.immutable.ArraySeq
 import scala.reflect.ClassTag
 
 trait DecoderArrayInstances1 extends DecoderArrayInstances2:
-  given decodeIterable[F[_], S, A, C[X] <: Iterable[X]](using
-    monad: Monad[F],
-    decoder: Decoder[F, Cursor[S], DecodingFailure, A],
-    arrayType: ArrayType[S],
-    factory: Factory[A, C[A]]
-  ): Decoder[F, Cursor[S], DecodingFailure, C[A]] =
-    Decoder.decodeSeq[F, S, A, C](factory.newBuilder)
-
-  given decodeArray[F[_], S, A](using
+  given decodeArray[F[_], S, A](
+    using
     monad: Monad[F],
     decoder: Decoder[F, Cursor[S], DecodingFailure, A],
     arrayType: ArrayType[S],
@@ -28,7 +21,8 @@ trait DecoderArrayInstances1 extends DecoderArrayInstances2:
   ): Decoder[F, Cursor[S], DecodingFailure, Array[A]] =
     Decoder.decodeSeq[F, S, A, Array](factory.newBuilder)
 
-  given decodeOneAnd[F[_], S, A, C[_]](using
+  given decodeOneAnd[F[_], S, A, C[_]](
+    using
     monad: Monad[F],
     decoder: Decoder[F, Cursor[S], DecodingFailure, A],
     arrayType: ArrayType[S],
@@ -36,11 +30,20 @@ trait DecoderArrayInstances1 extends DecoderArrayInstances2:
   ): Decoder[F, Cursor[S], DecodingFailure, OneAnd[C, A]] =
     Decoder.decodeNonEmptySeq[F, S, A, C, OneAnd[C, A]](factory.newBuilder)(OneAnd.apply)
 
-  given decodeArraySeq[F[_], S, A](using
+  given decodeArraySeq[F[_], S, A](
+    using
     monad: Monad[F],
     decoder: Decoder[F, Cursor[S], DecodingFailure, A],
     arrayType: ArrayType[S],
     classTag: ClassTag[A]
   ): Decoder[F, Cursor[S], DecodingFailure, ArraySeq[A]] =
     Decoder.decodeSeq[F, S, A, ArraySeq](ArraySeq.newBuilder[A])
+
+  given decodeIterable[F[_], S, A, C[X] <: Iterable[X]](using
+    monad: Monad[F],
+    decoder: Decoder[F, Cursor[S], DecodingFailure, A],
+    arrayType: ArrayType[S],
+    factory: Factory[A, C[A]]
+  ): Decoder[F, Cursor[S], DecodingFailure, C[A]] =
+    Decoder.decodeSeq[F, S, A, C](factory.newBuilder)
 end DecoderArrayInstances1

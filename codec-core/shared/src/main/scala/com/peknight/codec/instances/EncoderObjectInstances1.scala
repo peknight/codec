@@ -13,27 +13,32 @@ import scala.collection.Map
 import scala.collection.immutable.Map as ImmutableMap
 
 trait EncoderObjectInstances1:
-  given encodeObjectUnit[F[_]: Applicative, S]: Encoder[F, Object[S], Unit] with
+  given objectEncodeUnit[F[_]: Applicative, S]: Encoder[F, Object[S], Unit] with
     def encode(a: Unit): F[Object[S]] = Object.empty[S].pure[F]
-  end encodeObjectUnit
+  end objectEncodeUnit
 
-  given encodeObjectNonEmptyMap[F[_], S, K, V](using applicative: Applicative[F], keyEncoder: Encoder[F, String, K],
-                                               valueEncoder: Encoder[F, S, V]): Encoder[F, Object[S], NonEmptyMap[K, V]] =
-    encodeObjectMap[F, S, K, V].contramap(_.toSortedMap)
+  given objectEncodeNonEmptyMap[F[_], S, K, V](
+    using applicative: Applicative[F], keyEncoder: Encoder[F, String, K], valueEncoder: Encoder[F, S, V]
+  ): Encoder[F, Object[S], NonEmptyMap[K, V]] =
+    objectEncodeMap[F, S, K, V].contramap(_.toSortedMap)
 
-  given encodeObjectMap[F[_], S, K, V](using applicative: Applicative[F], keyEncoder: Encoder[F, String, K],
-                                       valueEncoder: Encoder[F, S, V]): Encoder[F, Object[S], ImmutableMap[K, V]] =
-    encodeObjectMapLike[F, S, K, V, ImmutableMap](using applicative, keyEncoder, valueEncoder, identity)
+  given objectEncodeMap[F[_], S, K, V](
+    using applicative: Applicative[F], keyEncoder: Encoder[F, String, K], valueEncoder: Encoder[F, S, V]
+  ): Encoder[F, Object[S], ImmutableMap[K, V]] =
+    objectEncodeMapLike[F, S, K, V, ImmutableMap](using applicative, keyEncoder, valueEncoder, identity)
 
-  given encodeObjectMapLike[F[_], S, K, V, M[X, Y] <: Map[X, Y]](using applicative: Applicative[F],
-                                                                 keyEncoder: Encoder[F, String, K],
-                                                                 valueEncoder: Encoder[F, S, V],
-                                                                 ev: M[K, V] => Iterable[(K, V)])
-  : Encoder[F, Object[S], M[K, V]] with
+  given objectEncodeMapLike[F[_], S, K, V, M[X, Y] <: Map[X, Y]](
+    using
+    applicative: Applicative[F],
+    keyEncoder: Encoder[F, String, K],
+    valueEncoder: Encoder[F, S, V],
+    ev: M[K, V] => Iterable[(K, V)]
+  ): Encoder[F, Object[S], M[K, V]] with
     def encode(a: M[K, V]): F[Object[S]] =
       ev(a).toVector.traverse[F, (String, S)] {
         case (k, v) => (keyEncoder.encode(k), valueEncoder.encode(v)).mapN((_, _))
       }.map(Object.fromIterable)
+  end objectEncodeMapLike
 
   given encodeObject[F[_], S, O](using applicative: Applicative[F], objectType: ObjectType.Aux[S, O])
   : Encoder[F, S, O] with

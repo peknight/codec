@@ -12,9 +12,13 @@ import com.peknight.codec.error.{DecodingFailure, MissingField, NotNull}
 import com.peknight.codec.sum.{ArrayType, NullType, ObjectType}
 
 trait DecoderNullInstances1 extends DecoderNullInstances2:
-  given decodeOptionOA[F[_], S, A](using applicative: Applicative[F], decoder: Decoder[F, Cursor[S], DecodingFailure, A],
-                                   objectType: ObjectType[S], arrayType: ArrayType[S])
-  : Decoder[F, Cursor[S], DecodingFailure, Option[A]] =
+  given decodeOptionOA[F[_], S, A](
+    using
+    applicative: Applicative[F],
+    decoder: Decoder[F, Cursor[S], DecodingFailure, A],
+    objectType: ObjectType[S],
+    arrayType: ArrayType[S]
+  ): Decoder[F, Cursor[S], DecodingFailure, Option[A]] =
     Decoder.instance[F, Cursor[S], DecodingFailure, Option[A]] {
       case cursor: SuccessCursor[S] => decoder.decode(cursor).map(_.map(_.some))
       case cursor: FailedCursor[S] if !cursor.incorrectFocus => none.asRight.pure
@@ -22,9 +26,13 @@ trait DecoderNullInstances1 extends DecoderNullInstances2:
     }
   end decodeOptionOA
 
-  given decodeOptionON[F[_], S, A](using applicative: Applicative[F], decoder: Decoder[F, Cursor[S], DecodingFailure, A],
-                                   objectType: ObjectType[S], nullType: NullType[S])
-  : Decoder[F, Cursor[S], DecodingFailure, Option[A]] =
+  given decodeOptionON[F[_], S, A](
+    using
+    applicative: Applicative[F],
+    decoder: Decoder[F, Cursor[S], DecodingFailure, A],
+    objectType: ObjectType[S],
+    nullType: NullType[S]
+  ): Decoder[F, Cursor[S], DecodingFailure, Option[A]] =
     Decoder.instance[F, Cursor[S], DecodingFailure, Option[A]] {
       case cursor: SuccessCursor[S] if nullType.isNull(cursor.value) => none.asRight.pure
       case cursor: SuccessCursor[S] => decoder.decode(cursor).map(_.map(_.some))
@@ -33,9 +41,13 @@ trait DecoderNullInstances1 extends DecoderNullInstances2:
     }
   end decodeOptionON
 
-  given decodeOptionAN[F[_], S, A](using applicative: Applicative[F], decoder: Decoder[F, Cursor[S], DecodingFailure, A],
-                                   arrayType: ArrayType[S], nullType: NullType[S])
-  : Decoder[F, Cursor[S], DecodingFailure, Option[A]] =
+  given decodeOptionAN[F[_], S, A](
+    using
+    applicative: Applicative[F],
+    decoder: Decoder[F, Cursor[S], DecodingFailure, A],
+    arrayType: ArrayType[S],
+    nullType: NullType[S]
+  ): Decoder[F, Cursor[S], DecodingFailure, Option[A]] =
     Decoder.instance[F, Cursor[S], DecodingFailure, Option[A]] {
       case cursor: SuccessCursor[S] if nullType.isNull(cursor.value) => none.asRight.pure
       case cursor: SuccessCursor[S] => decoder.decode(cursor).map(_.map(_.some))
@@ -62,6 +74,7 @@ trait DecoderNullInstances1 extends DecoderNullInstances2:
       case cursor: FailedCursor[S] => MissingField.cursor(cursor).asLeft.pure
     }
   end decodeNoneON
+
   given decodeNoneAN[F[_], S](using applicative: Applicative[F], arrayType: ArrayType[S], nullType: NullType[S])
   : Decoder[F, Cursor[S], DecodingFailure, None.type] =
     Decoder.instance[F, Cursor[S], DecodingFailure, None.type] {

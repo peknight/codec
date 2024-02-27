@@ -10,20 +10,18 @@ import scala.collection.immutable.Map as ImmutableMap
 
 trait EncoderObjectInstances extends EncoderObjectInstances1:
   given encodeUnit[F[_]: Applicative, S: ObjectType]: Encoder[F, S, Unit] =
-    Encoder.objectEncoder[F, S, Unit](encodeObjectUnit[F, S])
+    Encoder.objectEncoder[F, S, Unit](objectEncodeUnit[F, S])
 
   given encodeNonEmptyMap[F[_], S, K, V](using Applicative[F], Encoder[F, String, K], Encoder[F, S, V], ObjectType[S])
   : Encoder[F, S, NonEmptyMap[K, V]] =
-    Encoder.objectEncoder[F, S, NonEmptyMap[K, V]](encodeObjectNonEmptyMap[F, S, K, V])
+    Encoder.objectEncoder[F, S, NonEmptyMap[K, V]](objectEncodeNonEmptyMap[F, S, K, V])
 
   given encodeMap[F[_], S, K, V](using Applicative[F], Encoder[F, String, K], Encoder[F, S, V], ObjectType[S])
   : Encoder[F, S, ImmutableMap[K, V]] =
-    Encoder.objectEncoder[F, S, ImmutableMap[K, V]](encodeObjectMap[F, S, K, V])
+    Encoder.objectEncoder[F, S, ImmutableMap[K, V]](objectEncodeMap[F, S, K, V])
 
-  given encodeMapLike[F[_], S, K, V, M[X, Y] <: Map[X, Y]](using Applicative[F],
-                                                           Encoder[F, String, K],
-                                                           Encoder[F, S, V],
-                                                           M[K, V] => Iterable[(K, V)],
-                                                           ObjectType[S]): Encoder[F, S, M[K, V]] =
-    Encoder.objectEncoder[F, S, M[K, V]](encodeObjectMapLike[F, S, K, V, M])
+  given encodeMapLike[F[_], S, K, V, M[X, Y] <: Map[X, Y]](
+    using Applicative[F], Encoder[F, String, K], Encoder[F, S, V], M[K, V] => Iterable[(K, V)], ObjectType[S]
+  ): Encoder[F, S, M[K, V]] =
+    Encoder.objectEncoder[F, S, M[K, V]](objectEncodeMapLike[F, S, K, V, M])
 end EncoderObjectInstances

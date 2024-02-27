@@ -17,10 +17,6 @@ import com.peknight.generic.Generic
 import scala.collection.immutable.SortedSet
 
 trait DecoderArrayInstances extends DecoderArrayInstances1:
-  given decodeSeq[F[_], S, A](using Monad[F], Decoder[F, Cursor[S], DecodingFailure, A], ArrayType[S])
-  : Decoder[F, Cursor[S], DecodingFailure, Seq[A]] =
-    Decoder.decodeSeq[F, S, A, Seq](Seq.newBuilder[A])
-
   given decodeSet[F[_], S, A](using Monad[F], Decoder[F, Cursor[S], DecodingFailure, A], ArrayType[S])
   : Decoder[F, Cursor[S], DecodingFailure, Set[A]] =
     Decoder.decodeSeq[F, S, A, Set](Set.newBuilder[A])
@@ -53,12 +49,17 @@ trait DecoderArrayInstances extends DecoderArrayInstances1:
     )(NonEmptySet.apply)
 
   given decodeNonEmptyChain[F[_], S, A](using monad: Monad[F], decoder: Decoder[F, Cursor[S], DecodingFailure, A],
-                                      arrayType: ArrayType[S], order: Order[A])
+                                        arrayType: ArrayType[S], order: Order[A])
   : Decoder[F, Cursor[S], DecodingFailure, NonEmptyChain[A]] =
     Decoder.decodeNonEmptySeq[F, S, A, Chain, NonEmptyChain[A]](new ChainBuilder[A])(NonEmptyChain.fromChainPrepend)
 
-  given decodeTuple[F[_], S, T <: Tuple](using
-    monad: Applicative[F],
+  given decodeSeq[F[_], S, A](using Monad[F], Decoder[F, Cursor[S], DecodingFailure, A], ArrayType[S])
+  : Decoder[F, Cursor[S], DecodingFailure, Seq[A]] =
+    Decoder.decodeSeq[F, S, A, Seq](Seq.newBuilder[A])
+
+  given decodeTuple[F[_], S, T <: Tuple](
+    using
+    applicative: Applicative[F],
     arrayType: ArrayType[S],
     instances: => Generic.Product.Instances[[X] =>> Decoder[F, Cursor[S], DecodingFailure, X], T]
   ): Decoder[F, Cursor[S], DecodingFailure, T] =

@@ -12,9 +12,12 @@ import com.peknight.codec.error.{DecodingFailure, MissingField, NotNull}
 import com.peknight.codec.sum.{ArrayType, NullType, ObjectType}
 
 trait DecoderNullInstances2:
-  given decodeOptionO[F[_], S, A](using applicative: Applicative[F], decoder: Decoder[F, Cursor[S], DecodingFailure, A],
-                                   objectType: ObjectType[S])
-  : Decoder[F, Cursor[S], DecodingFailure, Option[A]] =
+  given decodeOptionO[F[_], S, A](
+    using
+    applicative: Applicative[F],
+    decoder: Decoder[F, Cursor[S], DecodingFailure, A],
+    objectType: ObjectType[S]
+  ): Decoder[F, Cursor[S], DecodingFailure, Option[A]] =
     Decoder.instance[F, Cursor[S], DecodingFailure, Option[A]] {
       case cursor: SuccessCursor[S] => decoder.decode(cursor).map(_.map(_.some))
       case cursor: FailedCursor[S] if !cursor.incorrectFocusO => none.asRight.pure
@@ -22,8 +25,12 @@ trait DecoderNullInstances2:
     }
   end decodeOptionO
 
-  given decodeOptionA[F[_], S, A](using applicative: Applicative[F], decoder: Decoder[F, Cursor[S], DecodingFailure, A],
-                                  arrayType: ArrayType[S]): Decoder[F, Cursor[S], DecodingFailure, Option[A]] =
+  given decodeOptionA[F[_], S, A](
+    using
+    applicative: Applicative[F],
+    decoder: Decoder[F, Cursor[S], DecodingFailure, A],
+    arrayType: ArrayType[S]
+  ): Decoder[F, Cursor[S], DecodingFailure, Option[A]] =
     Decoder.instance[F, Cursor[S], DecodingFailure, Option[A]] {
       case cursor: SuccessCursor[S] => decoder.decode(cursor).map(_.map(_.some))
       case cursor: FailedCursor[S] if !cursor.incorrectFocusA => none.asRight.pure
@@ -31,8 +38,12 @@ trait DecoderNullInstances2:
     }
   end decodeOptionA
 
-  given decodeOptionN[F[_], S, A](using applicative: Applicative[F], decoder: Decoder[F, Cursor[S], DecodingFailure, A],
-                                  nullType: NullType[S]): Decoder[F, Cursor[S], DecodingFailure, Option[A]] =
+  given decodeOptionN[F[_], S, A](
+    using
+    applicative: Applicative[F],
+    decoder: Decoder[F, Cursor[S], DecodingFailure, A],
+    nullType: NullType[S]
+  ): Decoder[F, Cursor[S], DecodingFailure, Option[A]] =
     Decoder.instance[F, Cursor[S], DecodingFailure, Option[A]] {
       case cursor: SuccessCursor[S] if nullType.isNull(cursor.value) => none.asRight.pure
       case cursor: SuccessCursor[S] => decoder.decode(cursor).map(_.map(_.some))

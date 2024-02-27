@@ -48,6 +48,7 @@ object Encoder extends EncoderStringInstances
   def vectorEncodeFoldable[F[_], S, A, G[_]](using applicative: Applicative[F], foldable: Foldable[G],
                                              encoder: Encoder[F, S, A]): Encoder[F, Vector[S], G[A]] =
     (a: G[A]) => a.foldLeft(Vector.empty[F[S]])((vector, v) => encoder.encode(v) +: vector).reverse.sequence
+
   def vectorEncodeIterable[F[_], S, A, G[X] <: Iterable[X]](using Applicative[F], Encoder[F, S, A])
   : Encoder[F, Vector[S], G[A]] =
     vectorEncoder[F, S, A].contramap(_.toVector)
@@ -63,7 +64,6 @@ object Encoder extends EncoderStringInstances
     case Right(right) => encodeB.encode(right).map(r => Object.singleton(rightKey, r))
   }
 
-
   def objectEncodeValidated[F[_], S, E, A](failureKey: String, successKey: String)
                                           (using functor: Functor[F], encodeE: Encoder[F, S, E],
                                            encodeA: Encoder[F, S, A]): Encoder[F, Object[S], Validated[E, A]] = {
@@ -71,16 +71,16 @@ object Encoder extends EncoderStringInstances
     case Validated.Valid(valid) => encodeA.encode(valid).map(r => Object.singleton(successKey, r))
   }
 
-  private[codec] def stringEncoder[F[_], S, A](encoder: Encoder[F, String, A])
-                                              (using functor: Functor[F], stringType: StringType[S]): Encoder[F, S, A] =
+  def stringEncoder[F[_], S, A](encoder: Encoder[F, String, A])(using functor: Functor[F], stringType: StringType[S])
+  : Encoder[F, S, A] =
     encoder.encode(_).map(str => stringType.to(str))
 
-  private[codec] def arrayEncoder[F[_], S, A](encoder: Encoder[F, Vector[S], A])
-                                             (using functor: Functor[F], arrayType: ArrayType[S]): Encoder[F, S, A] =
+  def arrayEncoder[F[_], S, A](encoder: Encoder[F, Vector[S], A])(using functor: Functor[F], arrayType: ArrayType[S])
+  : Encoder[F, S, A] =
     encoder.encode(_).map(arrayType.to)
 
-  private[codec] def objectEncoder[F[_], S, A](encoder: Encoder[F, Object[S], A])(using functor: Functor[F],
-                                                                                  objectType: ObjectType[S])
+  def objectEncoder[F[_], S, A](encoder: Encoder[F, Object[S], A])(using functor: Functor[F], objectType: ObjectType[S])
   : Encoder[F, S, A] =
     encoder.encode(_).map(obj => objectType.to(objectType.fromObject(obj)))
+
 end Encoder
