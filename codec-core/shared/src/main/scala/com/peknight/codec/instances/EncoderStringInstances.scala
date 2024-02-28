@@ -1,10 +1,10 @@
 package com.peknight.codec.instances
 
-import cats.Applicative
 import cats.syntax.applicative.*
+import cats.{Applicative, Functor}
 import com.peknight.codec.Encoder
 import com.peknight.codec.sum.StringType
-import com.peknight.generic.priority.HighPriority
+import com.peknight.generic.priority.{HighPriority, MidPriority}
 
 import java.net.URI
 import java.time.*
@@ -177,4 +177,9 @@ trait EncoderStringInstances:
 
   given encodeCurrency[F[_]: Applicative, S: StringType]: HighPriority[Encoder[F, S, Currency]] =
     HighPriority(Encoder.stringEncoder[F, S, Currency](stringEncodeCurrency[F].instance))
+
+  // given midPriorityStringEncoder[F[_], S, A](
+  //   using functor: Functor[F], stringType: StringType[S], encoder: Encoder[F, String, A]
+  // ): MidPriority[Encoder[F, S, A]] =
+  //   MidPriority(Encoder.stringEncoder[F, S, A](encoder))
 end EncoderStringInstances

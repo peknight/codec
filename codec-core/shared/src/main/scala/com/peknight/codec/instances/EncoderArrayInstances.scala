@@ -1,12 +1,12 @@
 package com.peknight.codec.instances
 
-import cats.Applicative
 import cats.data.*
 import cats.syntax.traverse.*
+import cats.{Applicative, Functor}
 import com.peknight.codec.Encoder
 import com.peknight.codec.sum.ArrayType
 import com.peknight.generic.Generic
-import com.peknight.generic.priority.HighPriority
+import com.peknight.generic.priority.{HighPriority, MidPriority}
 
 trait EncoderArrayInstances:
   given vectorEncodeSeq[F[_], S, A](using Applicative[F], Encoder[F, S, A]): Encoder[F, Vector[S], Seq[A]] =
@@ -122,4 +122,9 @@ trait EncoderArrayInstances:
     instances: => Generic.Product.Instances[[X] =>> Encoder[F, S, X], A]
   ): Encoder[F, S, A] =
     Encoder.arrayEncoder[F, S, A](vectorEncodeTuple[F, S, A])
+
+  // given midPriorityArrayEncoder[F[_], S, A](
+  //   using functor: Functor[F], arrayType: ArrayType[S], encoder: Encoder[F, Vector[S], A]
+  // ): MidPriority[Encoder[F, S, A]] =
+  //   MidPriority(Encoder.arrayEncoder[F, S, A](encoder))
 end EncoderArrayInstances

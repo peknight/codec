@@ -38,15 +38,17 @@ object Encoder extends EncoderStringInstances
   : Encoder[F, String, A] =
     (a: A) => formatter.format(a).pure[F]
 
-  def traverseEncoder[F[_], S, A, G[_]](using traverse: Traverse[G], applicative: Applicative[F],
-                                        encoder: Encoder[F, S, A]): Encoder[F, G[S], G[A]] =
+  def traverseEncoder[F[_], S, A, G[_]](
+    using traverse: Traverse[G], applicative: Applicative[F], encoder: Encoder[F, S, A]
+  ): Encoder[F, G[S], G[A]] =
     (a: G[A]) => a.traverse[F, S](encoder.encode)
 
   def vectorEncoder[F[_], S, A](using Applicative[F], Encoder[F, S, A]): Encoder[F, Vector[S], Vector[A]] =
     traverseEncoder[F, S, A, Vector]
 
-  def vectorEncodeFoldable[F[_], S, A, G[_]](using applicative: Applicative[F], foldable: Foldable[G],
-                                             encoder: Encoder[F, S, A]): Encoder[F, Vector[S], G[A]] =
+  def vectorEncodeFoldable[F[_], S, A, G[_]](
+    using applicative: Applicative[F], foldable: Foldable[G], encoder: Encoder[F, S, A]
+  ): Encoder[F, Vector[S], G[A]] =
     (a: G[A]) => a.foldLeft(Vector.empty[F[S]])((vector, v) => encoder.encode(v) +: vector).reverse.sequence
 
   def vectorEncodeIterable[F[_], S, A, G[X] <: Iterable[X]](using Applicative[F], Encoder[F, S, A])
@@ -64,9 +66,9 @@ object Encoder extends EncoderStringInstances
     case Right(right) => encodeB.encode(right).map(r => Object.singleton(rightKey, r))
   }
 
-  def objectEncodeValidated[F[_], S, E, A](failureKey: String, successKey: String)
-                                          (using functor: Functor[F], encodeE: Encoder[F, S, E],
-                                           encodeA: Encoder[F, S, A]): Encoder[F, Object[S], Validated[E, A]] = {
+  def objectEncodeValidated[F[_], S, E, A](failureKey: String, successKey: String)(
+    using functor: Functor[F], encodeE: Encoder[F, S, E], encodeA: Encoder[F, S, A]
+  ): Encoder[F, Object[S], Validated[E, A]] = {
     case Validated.Invalid(invalid) => encodeE.encode(invalid).map(l => Object.singleton(failureKey, l))
     case Validated.Valid(valid) => encodeA.encode(valid).map(r => Object.singleton(successKey, r))
   }
