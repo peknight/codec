@@ -28,7 +28,7 @@ object Encoder extends EncoderStringInstances
 
   def apply[F[_], S, A](using encoder: Encoder[F, S, A]): Encoder[F, S, A] = encoder
   def instance[F[_], S, A](f: A => F[S]): Encoder[F, S, A] = f(_)
-  given encoderContravariant[F[_], S, A]: Contravariant[[X] =>> Encoder[F, S, X]] with
+  given encoderContravariant[F[_], S]: Contravariant[[X] =>> Encoder[F, S, X]] with
     def contramap[A, B](fa: Encoder[F, S, A])(f: B => A): Encoder[F, S, B] = fa.contramap(f)
   end encoderContravariant
 
