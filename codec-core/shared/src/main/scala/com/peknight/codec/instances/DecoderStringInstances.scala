@@ -14,15 +14,12 @@ import java.time.*
 import java.util.{Currency, UUID}
 import scala.reflect.ClassTag
 
-trait DecoderStringInstances:
-  
-  given decodeString[F[_], S](using applicative: Applicative[F], stringType: StringType[S])
-  : Decoder[F, Cursor[S], DecodingFailure, String] =
-    Decoder.cursor[F, S, String] { t =>
-      stringType.asString(t.value) match
-        case Some(s) => s.asRight.pure
-        case None => WrongClassTag[String].cursor(t).asLeft.pure
-    }
+trait DecoderStringInstances extends DecoderStringInstances1:
+  given stringDecodeString[F[_]: Applicative]: Decoder[F, String, DecodingFailure, String] =
+    Decoder.instance[F, String, DecodingFailure, String](_.asRight.pure)
+
+  given decodeString[F[_]: Applicative, S: StringType]: Decoder[F, Cursor[S], DecodingFailure, String] =
+    Decoder.stringDecoder[F, S, String](stringDecodeString[F])
 
   given stringDecodeBoolean[F[_] : Applicative]: Decoder[F, String, DecodingFailure, Boolean] =
     Decoder.instance[F, String, DecodingFailure, Boolean] { t =>
@@ -203,5 +200,4 @@ trait DecoderStringInstances:
   given decodeCurrency[F[_]: Applicative, S: StringType]
   : HighPriority[Decoder[F, Cursor[S], DecodingFailure, Currency]] =
     HighPriority(Decoder.stringDecoder[F, S, Currency](stringDecodeCurrency[F].instance))
-
 end DecoderStringInstances

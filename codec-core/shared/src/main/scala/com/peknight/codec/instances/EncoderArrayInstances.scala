@@ -1,14 +1,13 @@
 package com.peknight.codec.instances
 
+import cats.Applicative
 import cats.data.*
 import cats.syntax.traverse.*
-import cats.{Applicative, Functor}
 import com.peknight.codec.Encoder
 import com.peknight.codec.sum.ArrayType
 import com.peknight.generic.Generic
-import com.peknight.generic.priority.{HighPriority, MidPriority}
 
-trait EncoderArrayInstances:
+trait EncoderArrayInstances extends EncoderArrayInstances1:
   given vectorEncodeSeq[F[_], S, A](using Applicative[F], Encoder[F, S, A]): Encoder[F, Vector[S], Seq[A]] =
     Encoder.vectorEncoder[F, S, A].contramap(_.toVector)
 
@@ -88,23 +87,6 @@ trait EncoderArrayInstances:
   ): Encoder[F, S, OneAnd[G, A]] =
     Encoder.arrayEncoder[F, S, OneAnd[G, A]](vectorEncodeOneAnd[F, S, A, G])
 
-  given vectorEncodeIterable[F[_], S, A, G[_]](
-    using
-    applicative: Applicative[F],
-    encoder: Encoder[F, S, A],
-    ev: G[A] => Iterable[A]
-  ): HighPriority[Encoder[F, Vector[S], G[A]]] =
-    HighPriority(Encoder.vectorEncoder[F, S, A].contramap(a => ev(a).toVector))
-
-  given encodeIterable[F[_], S, A, G[_]](
-    using
-    applicative: Applicative[F],
-    encoder: Encoder[F, S, A],
-    ev: G[A] => Iterable[A],
-    arrayType: ArrayType[S]
-  ): HighPriority[Encoder[F, S, G[A]]] =
-    HighPriority(Encoder.arrayEncoder[F, S, G[A]](vectorEncodeIterable[F, S, A, G].instance))
-
   given vectorEncodeTuple[F[_], S, A <: Tuple](
     using
     applicative: Applicative[F],
@@ -122,9 +104,4 @@ trait EncoderArrayInstances:
     instances: => Generic.Product.Instances[[X] =>> Encoder[F, S, X], A]
   ): Encoder[F, S, A] =
     Encoder.arrayEncoder[F, S, A](vectorEncodeTuple[F, S, A])
-
-  // given midPriorityArrayEncoder[F[_], S, A](
-  //   using functor: Functor[F], arrayType: ArrayType[S], encoder: Encoder[F, Vector[S], A]
-  // ): MidPriority[Encoder[F, S, A]] =
-  //   MidPriority(Encoder.arrayEncoder[F, S, A](encoder))
 end EncoderArrayInstances

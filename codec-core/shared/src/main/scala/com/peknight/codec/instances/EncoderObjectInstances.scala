@@ -1,19 +1,18 @@
 package com.peknight.codec.instances
 
+import cats.Applicative
 import cats.data.NonEmptyMap
 import cats.syntax.applicative.*
 import cats.syntax.apply.*
 import cats.syntax.functor.*
 import cats.syntax.traverse.*
-import cats.{Applicative, Functor}
 import com.peknight.codec.sum.ObjectType
 import com.peknight.codec.{Encoder, Object}
-import com.peknight.generic.priority.MidPriority
 
 import scala.collection.Map
 import scala.collection.immutable.Map as ImmutableMap
 
-trait EncoderObjectInstances:
+trait EncoderObjectInstances extends EncoderObjectInstances1:
   given objectEncodeUnit[F[_] : Applicative, S]: Encoder[F, Object[S], Unit] with
     def encode(a: Unit): F[Object[S]] = Object.empty[S].pure[F]
   end objectEncodeUnit
@@ -61,9 +60,4 @@ trait EncoderObjectInstances:
   : Encoder[F, S, O] with
     def encode(a: O): F[S] = objectType.to(a).pure[F]
   end encodeObject
-  
-  // given midPriorityObjectEncoder[F[_], S, A](
-  //   using functor: Functor[F], objectType: ObjectType[S], encoder: Encoder[F, Object[S], A]
-  // ): MidPriority[Encoder[F, S, A]] =
-  //   MidPriority(Encoder.objectEncoder[F, S, A](encoder))
 end EncoderObjectInstances
