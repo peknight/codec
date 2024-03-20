@@ -171,6 +171,17 @@ trait Decoder[F[_], T, E, A]:
       def decode(t: T): F[Either[EE, A]] = self.decode(t).map(_.left.map(f))
       def decodeAccumulating(t: T): F[ValidatedNel[EE, A]] = self.decodeAccumulating(t).map(_.leftMap(_.map(f)))
   end mapError
+  def >>[TT, EE >: E](that: Decoder[F, TT, EE, T])(using Monad[F]): Decoder[F, TT, EE, A] =
+    new Decoder[F, TT, EE, A]:
+      def decode(tt: TT): F[Either[EE, A]] = that.decode(tt).flatMap {
+        case Right(t) => self.decode(t).map(_.left.map(_.asInstanceOf[EE]))
+        case Left(e) => e.asLeft[A].pure[F]
+      }
+      def decodeAccumulating(tt: TT): F[ValidatedNel[EE, A]] = that.decodeAccumulating(tt).flatMap {
+        case Valid(t) => self.decodeAccumulating(t).map(_.leftMap(_.asInstanceOf[NonEmptyList[EE]]))
+        case Invalid(e) => e.invalid[A].pure[F]
+      }
+  def <<[B, EE <: E](that: Decoder[F, A, EE, B])(using Monad[F]): Decoder[F, T, E, B] = that >> self
 end Decoder
 object Decoder extends DecoderCursorInstances
   with DecoderStringInstances

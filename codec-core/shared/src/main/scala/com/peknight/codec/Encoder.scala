@@ -3,9 +3,10 @@ package com.peknight.codec
 import cats.data.Validated
 import cats.syntax.applicative.*
 import cats.syntax.foldable.*
+import cats.syntax.flatMap.*
 import cats.syntax.functor.*
 import cats.syntax.traverse.*
-import cats.{Applicative, Contravariant, Foldable, Functor, Traverse}
+import cats.{Applicative, Contravariant, FlatMap, Foldable, Functor, Traverse}
 import com.peknight.codec.instances.*
 import com.peknight.codec.sum.{ArrayType, ObjectType, StringType}
 import com.peknight.generic.priority.PriorityInstancesF2
@@ -17,6 +18,9 @@ trait Encoder[F[_], S, A]:
   self =>
   def encode(a: A): F[S]
   def contramap[B](f: B => A): Encoder[F, S, B] = (b: B) => self.encode(f(b))
+  def <<[SS](that: Encoder[F, SS, S])(using FlatMap[F]): Encoder[F, SS, A] =
+    (a: A) => self.encode(a).flatMap(that.encode)
+  def >>[B](that: Encoder[F, A, B])(using FlatMap[F]): Encoder[F, S, B] = that << self
 end Encoder
 object Encoder extends EncoderStringInstances
   with EncoderArrayInstances
