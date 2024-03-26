@@ -6,7 +6,7 @@ import com.peknight.error.Error
 import cats.syntax.eq.*
 import cats.syntax.foldable.*
 
-case class PathToRoot private(value: Vector[PathElem]) extends AnyVal:
+case class PathToRoot(value: Vector[PathElem]) extends AnyVal:
   def asPathString: String = PathToRoot.toPathString(this)
   def prependElem(elem: PathElem): PathToRoot = PathToRoot(elem +: value)
   def appendElem(elem: PathElem): PathToRoot = PathToRoot(value :+ elem)
