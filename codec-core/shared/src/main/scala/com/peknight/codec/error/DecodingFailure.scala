@@ -37,7 +37,7 @@ end DecodingFailure
 object DecodingFailure:
   case class DecodingFailures(errors: NonEmptyList[DecodingFailure]) extends DecodingFailure:
     override protected def lowPriorityMessage: Option[String] = messages.mkString(", ").some
-    override def messages: List[String] =errors.toList.flatMap(_.messages)
+    override def messages: List[String] = errors.toList.flatMap(_.messages)
   end DecodingFailures
   object DecodingFailures:
     def apply(head: DecodingFailure, tail: List[DecodingFailure]): DecodingFailures =
