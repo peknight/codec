@@ -32,4 +32,6 @@ object CodecConfiguration:
   ): CodecConfiguration =
     Configuration(transformMemberNames, transformConstructorNames, discriminator, useDefaults, strictDecoding)
 
+  val default: com.peknight.codec.configuration.CodecConfiguration = apply()
+
 end CodecConfiguration
