@@ -3,7 +3,7 @@ package com.peknight.codec.error
 import cats.Monoid
 import cats.data.NonEmptyList
 import cats.syntax.option.*
-import com.peknight.codec.cursor.{Cursor, CursorOp, CursorType}
+import com.peknight.codec.cursor.{Cursor, CursorOp}
 import com.peknight.codec.error.DecodingFailure.{Common, Pure}
 import com.peknight.error.Error
 
@@ -63,9 +63,6 @@ trait DecodingFailure extends com.peknight.error.codec.DecodingFailure:
   end cursor
   def cursor[S](t: Cursor[S]): DecodingFailure =
     cursor[S](t.focus, t.pathString, t.history)
-  def cursorType[T, S](t: T)(using cursorType: CursorType.Aux[T, S]): DecodingFailure =
-    cursor[S](cursorType.focus(t), cursorType.pathString(t), cursorType.history(t))
-  end cursorType
 end DecodingFailure
 object DecodingFailure extends DecodingFailure:
   private[codec] object Success extends DecodingFailure with com.peknight.error.Success

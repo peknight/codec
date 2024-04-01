@@ -14,8 +14,8 @@ import cats.syntax.validated.*
 import cats.{Applicative, Apply, Eval, Functor, Monad, MonadError, SemigroupK}
 import com.peknight.cats.ext.instances.applicative.given
 import com.peknight.cats.ext.instances.eitherT.given
+import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.cursor.Cursor.{FailedCursor, SuccessCursor}
-import com.peknight.codec.cursor.{Cursor, CursorType}
 import com.peknight.codec.error.*
 import com.peknight.codec.instances.*
 import com.peknight.codec.sum.{ArrayType, NullType, ObjectType, StringType}
@@ -30,7 +30,6 @@ trait Decoder[F[_], T, E, A]:
   self =>
   def decode(t: T): F[Either[E, A]]
   def decodeAccumulating(t: T): F[ValidatedNel[E, A]]
-  def decodeS[S](s: S)(using cursorType: CursorType.Aux[T, S]): F[Either[E, A]] = decode(cursorType.to(s))
   def map[B](f: A => B)(using Functor[F]): Decoder[F, T, E, B] =
     new Decoder[F, T, E, B]:
       def decode(t: T): F[Either[E, B]] = self.decode(t).map(_.map(f))
@@ -150,11 +149,6 @@ trait Decoder[F[_], T, E, A]:
       def decode(t: T): F[Either[E, A]] = self.decode(f(t))
       def decodeAccumulating(t: T): F[ValidatedNel[E, A]] = self.decodeAccumulating(f(t))
   end prepare
-  def at(field: String)(using cursorType: CursorType[T]): Decoder[F, T, E, A] =
-    new Decoder[F, T, E, A]:
-      def decode(t: T): F[Either[E, A]] = self.decode(cursorType.downField(t, field))
-      def decodeAccumulating(t: T): F[ValidatedNel[E, A]] = self.decodeAccumulating(cursorType.downField(t, field))
-  end at
   def emap[B](f: A => T => Either[E, B])(using Functor[F]): Decoder[F, T, E, B] =
     new Decoder[F, T, E, B]:
       def decode(t: T): F[Either[E, B]] = self.decode(t).map {
@@ -264,6 +258,17 @@ object Decoder extends DecoderCursorInstances
     def handleErrorWith[A](fa: Decoder[F, T, E, A])(f: E => Decoder[F, T, E, A]): Decoder[F, T, E, A] =
       fa.handleErrorWith(f)
   end given
+
+  extension [F[_], S, E, A] (decoder: Decoder[F, Cursor[S], E, A])
+    def decodeS(s: S): F[Either[E, A]] = decoder.decode(Cursor.from(s))
+    def at(field: String)(using ObjectType[S])
+    : Decoder[F, Cursor[S], E, A] =
+      new Decoder[F, Cursor[S], E, A]:
+        def decode(cursor: Cursor[S]): F[Either[E, A]] = decoder.decode(cursor.downField(field))
+        def decodeAccumulating(cursor: Cursor[S]): F[ValidatedNel[E, A]] =
+          decoder.decodeAccumulating(cursor.downField(field))
+    end at
+  end extension
 
   /**
    * Attempt to decode a value at key k and remove it from the Cursor[S]

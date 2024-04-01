@@ -15,64 +15,61 @@ import com.peknight.generic.compiletime.summonAllSingletons
 import com.peknight.generic.migration.id.Migration
 
 trait EnumDecoderDerivation:
-  inline def derived[F[_], T, E, A](using configuration: Configuration)(using
+  inline def derived[F[_], T, A](using configuration: Configuration)(using
     functor: Functor[F],
-    failure: Migration[DecodingFailure, E],
-    stringDecoder: Decoder[F, T, E, String],
+    stringDecoder: Decoder[F, T, DecodingFailure, String],
     generic: Generic.Sum[A]
-  ): EnumDecoder[F, T, E, A] =
+  ): EnumDecoder[F, T, DecodingFailure, A] =
     val singletons = summonAllSingletons[generic.Repr](generic.label)
-    new EnumDecoder[F, T, E, A]:
-      def decoders: Map[String, Decoder[F, T, E, _]] = enumDecodersDict[F, T, E, A](this, configuration, generic)
-      def decode(t: T): F[Either[E, A]] =
-        decodeEnumEither[F, T, E, A, generic.Repr](t, configuration, failure, stringDecoder, generic, singletons)
-      def decodeAccumulating(t: T): F[ValidatedNel[E, A]] =
-        decodeEnumValidatedNel[F, T, E, A, generic.Repr](t, configuration, failure, stringDecoder, generic, singletons)
+    new EnumDecoder[F, T, DecodingFailure, A]:
+      def decoders: Map[String, Decoder[F, T, DecodingFailure, _]] =
+        enumDecodersDict[F, T, DecodingFailure, A](this, configuration, generic)
+      def decode(t: T): F[Either[DecodingFailure, A]] =
+        decodeEnumEither[F, T, A, generic.Repr](t, configuration, stringDecoder, generic, singletons)
+      def decodeAccumulating(t: T): F[ValidatedNel[DecodingFailure, A]] =
+        decodeEnumValidatedNel[F, T, A, generic.Repr](t, configuration, stringDecoder, generic, singletons)
   end derived
 
-  private[derivation] def decodeEnumEither[F[_]: Functor, T, E, A, Repr <: Tuple](
+  private[derivation] def decodeEnumEither[F[_]: Functor, T, A, Repr <: Tuple](
     t: T,
     configuration: Configuration,
-    failure: Migration[DecodingFailure, E],
-    stringDecoder: Decoder[F, T, E, String],
+    stringDecoder: Decoder[F, T, DecodingFailure, String],
     generic: Generic.Sum[A],
     singletons: Repr
-  ): F[Either[E, A]] =
+  ): F[Either[DecodingFailure, A]] =
     stringDecoder.decode(t).map {
       case Right(caseName) =>
-        handleDecodeEnum[[X] =>> Either[E, X], T, E, A, Repr](t, caseName, configuration, failure, _.asLeft[A], generic,
+        handleDecodeEnum[[X] =>> Either[DecodingFailure, X], T, A, Repr](t, caseName, configuration, _.asLeft[A], generic,
           singletons)
       case Left(e) => e.asLeft[A]
     }
 
-  private[derivation] def decodeEnumValidatedNel[F[_]: Functor, T, E, A, Repr <: Tuple](
+  private[derivation] def decodeEnumValidatedNel[F[_]: Functor, T, A, Repr <: Tuple](
     t: T,
     configuration: Configuration,
-    failure: Migration[DecodingFailure, E],
-    stringDecoder: Decoder[F, T, E, String],
+    stringDecoder: Decoder[F, T, DecodingFailure, String],
     generic: Generic.Sum[A],
     singletons: Repr
-  ): F[ValidatedNel[E, A]] =
+  ): F[ValidatedNel[DecodingFailure, A]] =
     stringDecoder.decodeAccumulating(t).map {
       case Valid(caseName) =>
-        handleDecodeEnum[[X] =>> ValidatedNel[E, X], T, E, A, Repr](t, caseName, configuration, failure,
+        handleDecodeEnum[[X] =>> ValidatedNel[DecodingFailure, X], T, A, Repr](t, caseName, configuration,
           _.invalidNel[A], generic, singletons)
       case Invalid(e) => e.invalid[A]
     }
 
-  private[this] def handleDecodeEnum[G[_]: Applicative, T, E, A, Repr <: Tuple](
+  private[this] def handleDecodeEnum[G[_]: Applicative, T, A, Repr <: Tuple](
     t: T,
     caseName: String,
     configuration: Configuration,
-    failure: Migration[DecodingFailure, E],
-    asLeft: E => G[A],
+    asLeft: DecodingFailure => G[A],
     generic: Generic.Sum[A],
     singletons: Repr
   ): G[A] =
     generic.labels.zip(singletons).toList.asInstanceOf[List[(String, A)]]
       .find(tuple => configuration.transformConstructorNames(tuple._1) == caseName)
       .map(_._2)
-      .fold(asLeft(failure.migrate(NoSuchEnum(caseName).label(generic.label).value(t))))(_.pure[G])
+      .fold(asLeft(NoSuchEnum(caseName).label(generic.label).value(t)))(_.pure[G])
 
   private[derivation] def enumDecodersDict[F[_], T, E, A](
     decoder: Decoder[F, T, E, A],

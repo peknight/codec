@@ -246,15 +246,6 @@ object Cursor:
       focusEq && historyEq
   end given
 
-  given [S](using ObjectType[S]): CursorType[Cursor[S]] with
-    type Sum = S
-    def focus(t: Cursor[S]): Option[S] = t.focus
-    def downField(t: Cursor[S], k: String): Cursor[S] = t.downField(k)
-    def pathString(t: Cursor[S]): String = t.pathString
-    def history(t: Cursor[S]): List[CursorOp] = t.history
-    def to(s: S): Cursor[S] = from(s)
-  end given
-
   def from[S](value: S): SuccessCursor[S] = TCursor(value, None, None)
 
   sealed trait SuccessCursor[S] extends Cursor[S]:
@@ -289,7 +280,7 @@ object Cursor:
     def downArray(using ArrayType[S]): Cursor[S] =
       ArrayType[S].asArray(value).filter(_.nonEmpty) match
         case Some(values) =>
-          ACursor(values, 0, this, false, ArrayType[S], this, Some(CursorOp.DownArray))
+          ACursor(values, 0, this, false, ArrayType[S], Some(this), Some(CursorOp.DownArray))
         case _ => fail(CursorOp.DownArray)
 
     def find(p: S => Boolean): Cursor[S] =
@@ -302,17 +293,17 @@ object Cursor:
     def downField(k: String)(using objectType: ObjectType[S]): Cursor[S] =
       objectType.asObject(value) match
         case Some(o) if objectType.contains(o, k) =>
-          OCursor[S, objectType.Obj](o, k, this, false, objectType, this,
+          OCursor[S, objectType.Obj](o, k, this, false, objectType, Some(this),
             Some(CursorOp.DownField(k)))
         case _ => fail(CursorOp.DownField(k))
 
     def downN(n: Int)(using ArrayType[S]): Cursor[S] =
       ArrayType[S].asArray(value) match
         case Some(values) if n >= 0 && values.lengthCompare(n) > 0 =>
-          ACursor(values, n, this, false, ArrayType[S], this, Some(CursorOp.DownN(n)))
+          ACursor(values, n, this, false, ArrayType[S], Some(this), Some(CursorOp.DownN(n)))
         case _ => fail(CursorOp.DownN(n))
 
-    protected[this] def fail(op: CursorOp): Cursor[S] = FCursor(this, op)
+    protected[this] def fail(op: CursorOp): Cursor[S] = FCursor(Some(this), Some(op))
   end SuccessCursor
 
   type SCursor[S] = SuccessCursor[S]
@@ -342,17 +333,15 @@ object Cursor:
     def parent: SuccessCursor[S]
     protected[this] def changed: Boolean
     protected[this] def objectType: ObjectType.Aux[S, O]
-    protected[this] def lastCursorValue: SuccessCursor[S]
-    def lastCursor: Option[SuccessCursor[S]] = Some(lastCursorValue)
     def value: S = objectType.applyUnsafe(obj, keyValue)
     def index: Option[Int] = None
     def key: Option[String] = Some(keyValue)
 
     def replace(newValue: S, cursor: SuccessCursor[S], op: Option[CursorOp]): SuccessCursor[S] =
-      OCursor(objectType.add(obj, keyValue, newValue), keyValue, parent, true, objectType, cursor, op)
+      OCursor(objectType.add(obj, keyValue, newValue), keyValue, parent, true, objectType, Some(cursor), op)
 
     def addOp(cursor: SuccessCursor[S], op: CursorOp): SuccessCursor[S] =
-      OCursor(obj, keyValue, parent, changed, objectType, cursor, Some(op))
+      OCursor(obj, keyValue, parent, changed, objectType, Some(cursor), Some(op))
 
     def up: Cursor[S] = up(changed, parent, objectType.to(obj))
 
@@ -361,14 +350,14 @@ object Cursor:
 
     def field(k: String): Cursor[S] =
       if !objectType.contains(obj, k) then fail(CursorOp.Field(k))
-      else OCursor(obj, k, parent, changed, objectType, this, Some(CursorOp.Field(k)))
+      else OCursor(obj, k, parent, changed, objectType, Some(this), Some(CursorOp.Field(k)))
 
     def left: Cursor[S] = fail(CursorOp.MoveLeft)
     def right: Cursor[S] = fail(CursorOp.MoveRight)
   end ObjectCursor
 
   private[codec] case class OCursor[S, O](obj: O, keyValue: String, parent: SuccessCursor[S], changed: Boolean,
-                                          objectType: ObjectType.Aux[S, O], lastCursorValue: SuccessCursor[S],
+                                          objectType: ObjectType.Aux[S, O], lastCursor: Option[SuccessCursor[S]],
                                           lastOp: Option[CursorOp]) extends ObjectCursor[S, O]
 
   private[codec] sealed trait ArrayCursor[S] extends SuccessCursor[S]:
@@ -377,18 +366,16 @@ object Cursor:
     def parent: SuccessCursor[S]
     protected[this] def changed: Boolean
     protected[this] def arrayType: ArrayType[S]
-    protected[this] def lastCursorValue: SuccessCursor[S]
-    def lastCursor: Option[SuccessCursor[S]] = Some(lastCursorValue)
     def value: S = array(indexValue)
     def index: Option[Int] = Some(indexValue)
     def key: Option[String] = None
     private[this] def valuesExcept: Vector[S] = array.take(indexValue) ++ array.drop(indexValue + 1)
 
     def replace(newValue: S, cursor: SuccessCursor[S], op: Option[CursorOp]): SuccessCursor[S] =
-      ACursor(array.updated(indexValue, newValue), indexValue, parent, true, arrayType, cursor, op)
+      ACursor(array.updated(indexValue, newValue), indexValue, parent, true, arrayType, Some(cursor), op)
 
     def addOp(cursor: SuccessCursor[S], op: CursorOp): SuccessCursor[S] =
-      ACursor(array, indexValue, parent, changed, arrayType, cursor, Some(op))
+      ACursor(array, indexValue, parent, changed, arrayType, Some(cursor), Some(op))
 
     def up: Cursor[S] = up(changed, parent, arrayType.to(array))
 
@@ -397,37 +384,33 @@ object Cursor:
 
     def left: Cursor[S] =
       if indexValue == 0 then fail(CursorOp.MoveLeft)
-      else ACursor(array, indexValue - 1, parent, changed, arrayType, this, Some(CursorOp.MoveLeft))
+      else ACursor(array, indexValue - 1, parent, changed, arrayType, Some(this), Some(CursorOp.MoveLeft))
 
     def right: Cursor[S] =
       if indexValue == array.size - 1 then fail(CursorOp.MoveRight)
-      else ACursor(array, indexValue + 1, parent, changed, arrayType, this, Some(CursorOp.MoveRight))
+      else ACursor(array, indexValue + 1, parent, changed, arrayType, Some(this), Some(CursorOp.MoveRight))
 
     def field(k: String): Cursor[S] = fail(CursorOp.Field(k))
   end ArrayCursor
   private[codec] case class ACursor[S](array: Vector[S], indexValue: Int, parent: SuccessCursor[S], changed: Boolean,
-                                       arrayType: ArrayType[S], lastCursorValue: SuccessCursor[S],
+                                       arrayType: ArrayType[S], lastCursor: Option[SuccessCursor[S]],
                                        lastOp: Option[CursorOp]) extends ArrayCursor[S]
 
   sealed trait FailedCursor[S] extends Cursor[S]:
-    protected[this] def lastCursorValue: SuccessCursor[S]
-    protected[this] def lastOpValue: CursorOp
-    protected[codec] def lastCursor: Option[SuccessCursor[S]] = Some(lastCursorValue)
-    protected[codec] def lastOp: Option[CursorOp] = Some(lastOpValue)
     def incorrectFocusO(using ObjectType[S]): Boolean =
-      lastOpValue.requiresObject && !ObjectType[S].isObject(lastCursorValue.value)
+      lastOp.exists(_.requiresObject) && lastCursor.exists(lc => !ObjectType[S].isObject(lc.value))
     def incorrectFocusA(using ArrayType[S]): Boolean =
-      lastOpValue.requiresArray && !ArrayType[S].isArray(lastCursorValue.value)
+      lastOp.exists(_.requiresArray) && lastCursor.exists(lc => !ArrayType[S].isArray(lc.value))
     def incorrectFocus(using ObjectType[S], ArrayType[S]): Boolean = incorrectFocusO || incorrectFocusA
     def missingField: Boolean =
-      lastOpValue match
-        case _: CursorOp.Field | _: CursorOp.DownField => true
+      lastOp match
+        case Some(_: CursorOp.Field | _: CursorOp.DownField) => true
         case _ => false
     def succeeded: Boolean = false
     def success: Option[SuccessCursor[S]] = None
     def focus: Option[S] = None
     def top: Option[S] = None
-    def root: Option[SuccessCursor[S]] = lastCursorValue.root
+    def root: Option[SuccessCursor[S]] = lastCursor.flatMap(_.root)
     def withFocus(f: S => S): Cursor[S] = this
     def withFocusM[F[_]: Applicative](f: S => F[S]): F[Cursor[S]] = this.pure[F]
 
@@ -447,6 +430,6 @@ object Cursor:
     def field(k: String): Cursor[S] = this
   end FailedCursor
 
-  case class FCursor[S](lastCursorValue: SuccessCursor[S], lastOpValue: CursorOp) extends FailedCursor[S]
+  case class FCursor[S](lastCursor: Option[SuccessCursor[S]], lastOp: Option[CursorOp]) extends FailedCursor[S]
 end Cursor
 

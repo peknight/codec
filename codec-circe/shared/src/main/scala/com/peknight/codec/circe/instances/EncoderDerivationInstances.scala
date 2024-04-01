@@ -7,7 +7,7 @@ import com.peknight.generic.Generic
 import io.circe.Json
 import io.circe.`export`.Exported
 
-trait EncoderDerivationInstances extends EncoderCirceInstances:
+trait EncoderDerivationInstances:
   given derivedEncoder[A](using
    configuration: EncoderConfiguration,
    instances: => Generic.Instances[[X] =>> Encoder[Json, X], A]
