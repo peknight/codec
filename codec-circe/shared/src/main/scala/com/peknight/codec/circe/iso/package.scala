@@ -1,4 +1,4 @@
-package com.peknight.codec.circe.instances
+package com.peknight.codec.circe
 
 import cats.Id
 import cats.data.ValidatedNel
@@ -17,7 +17,8 @@ import io.circe.cursor.CursorOps
 import io.circe.derivation.{ConfiguredCodec, ConfiguredDecoder, ConfiguredEncoder, SumOrProductOps}
 import io.circe.{ACursor, HCursor, Json, JsonObject}
 
-trait IsomorphismInstances:
+package object iso:
+
   given cursorOpIsomorphism: Isomorphism[CursorOp, io.circe.CursorOp] with
     given CanEqual[io.circe.CursorOp, io.circe.CursorOp] = CanEqual.derived
     def to(a: CursorOp): io.circe.CursorOp = a match
@@ -136,5 +137,7 @@ trait IsomorphismInstances:
           def decodeAccumulating(cursor: Cursor[Json]): ValidatedNel[DecodingFailure, A] =
             c.tryDecodeAccumulating(cursorIsomorphism.to(cursor)).leftMap(_.map(decodingFailureIsomorphism.from))
   end codecIsomorphism
-end IsomorphismInstances
-object IsomorphismInstances extends IsomorphismInstances
+
+  def migrateEncoder[A](encoder: Encoder[Json, A]): io.circe.Encoder[A] = encoderIsomorphism.to(encoder)
+  def migrateDecoder[A](decoder: Decoder[Json, A]): io.circe.Decoder[A] = decoderIsomorphism.to(decoder)
+end iso

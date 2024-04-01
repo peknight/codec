@@ -1,7 +1,6 @@
 package com.peknight.codec.circe
 
-import cats.data.NonEmptyList
-import com.peknight.codec.circe.instances.IsomorphismInstances.{cursorIsomorphism, decodingFailureIsomorphism, successCursorIsomorphism}
+import com.peknight.codec.circe.iso.{cursorIsomorphism, decodingFailureIsomorphism, successCursorIsomorphism}
 import io.circe.Decoder.{AccumulatingResult, Result}
 import io.circe.{ACursor, HCursor, Json}
 

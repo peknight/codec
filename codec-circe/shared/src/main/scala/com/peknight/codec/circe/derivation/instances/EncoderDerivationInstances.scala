@@ -1,4 +1,4 @@
-package com.peknight.codec.circe.instances
+package com.peknight.codec.circe.derivation.instances
 
 import com.peknight.codec.circe.derivation.EncoderDerivation
 import com.peknight.codec.configuration.EncoderConfiguration
