@@ -12,31 +12,31 @@ trait EncoderArrayInstances extends EncoderArrayInstances1:
     Encoder.vectorEncoder[F, S, A].contramap(_.toVector)
 
   given encodeSeq[F[_], S, A](using Applicative[F], Encoder[F, S, A], ArrayType[S]): Encoder[F, S, Seq[A]] =
-    Encoder.arrayEncoder[F, S, Seq[A]](vectorEncodeSeq[F, S, A])
+    Encoder.arrayEncoder[F, S, Seq[A]]
 
   given vectorEncodeSet[F[_], S, A](using Applicative[F], Encoder[F, S, A]): Encoder[F, Vector[S], Set[A]] =
     Encoder.vectorEncoder[F, S, A].contramap(_.toVector)
 
   given encodeSet[F[_], S, A](using Applicative[F], Encoder[F, S, A], ArrayType[S]): Encoder[F, S, Set[A]] =
-    Encoder.arrayEncoder[F, S, Set[A]](vectorEncodeSet[F, S, A])
+    Encoder.arrayEncoder[F, S, Set[A]]
 
   given vectorEncodeList[F[_], S, A](using Applicative[F], Encoder[F, S, A]): Encoder[F, Vector[S], List[A]] =
     Encoder.vectorEncoder[F, S, A].contramap(_.toVector)
 
   given encodeList[F[_], S, A](using Applicative[F], Encoder[F, S, A], ArrayType[S]): Encoder[F, S, List[A]] =
-    Encoder.arrayEncoder[F, S, List[A]](vectorEncodeList[F, S, A])
+    Encoder.arrayEncoder[F, S, List[A]]
 
   given vectorEncodeVector[F[_], S, A](using Applicative[F], Encoder[F, S, A]): Encoder[F, Vector[S], Vector[A]] =
     Encoder.vectorEncoder[F, S, A]
 
   given encodeVector[F[_], S, A](using Applicative[F], Encoder[F, S, A], ArrayType[S]): Encoder[F, S, Vector[A]] =
-    Encoder.arrayEncoder[F, S, Vector[A]](vectorEncodeVector[F, S, A])
+    Encoder.arrayEncoder[F, S, Vector[A]]
 
   given vectorEncodeChain[F[_], S, A](using Applicative[F], Encoder[F, S, A]): Encoder[F, Vector[S], Chain[A]] =
     Encoder.vectorEncoder[F, S, A].contramap(_.toVector)
 
   given encodeChain[F[_], S, A](using Applicative[F], Encoder[F, S, A], ArrayType[S]): Encoder[F, S, Chain[A]] =
-    Encoder.arrayEncoder[F, S, Chain[A]](vectorEncodeChain[F, S, A])
+    Encoder.arrayEncoder[F, S, Chain[A]]
 
   given vectorEncodeNonEmptyList[F[_], S, A](using Applicative[F], Encoder[F, S, A])
   : Encoder[F, Vector[S], NonEmptyList[A]] =
@@ -44,7 +44,7 @@ trait EncoderArrayInstances extends EncoderArrayInstances1:
 
   given encodeNonEmptyList[F[_], S, A](using Applicative[F], Encoder[F, S, A], ArrayType[S])
   : Encoder[F, S, NonEmptyList[A]] =
-    Encoder.arrayEncoder[F, S, NonEmptyList[A]](vectorEncodeNonEmptyList[F, S, A])
+    Encoder.arrayEncoder[F, S, NonEmptyList[A]]
 
   given vectorEncodeNonEmptyVector[F[_], S, A](using Applicative[F], Encoder[F, S, A])
   : Encoder[F, Vector[S], NonEmptyVector[A]] =
@@ -52,7 +52,7 @@ trait EncoderArrayInstances extends EncoderArrayInstances1:
 
   given encodeNonEmptyVector[F[_], S, A](using Applicative[F], Encoder[F, S, A], ArrayType[S])
   : Encoder[F, S, NonEmptyVector[A]] =
-    Encoder.arrayEncoder[F, S, NonEmptyVector[A]](vectorEncodeNonEmptyVector[F, S, A])
+    Encoder.arrayEncoder[F, S, NonEmptyVector[A]]
 
   given vectorEncodeNonEmptySet[F[_], S, A](using Applicative[F], Encoder[F, S, A])
   : Encoder[F, Vector[S], NonEmptySet[A]] =
@@ -60,7 +60,7 @@ trait EncoderArrayInstances extends EncoderArrayInstances1:
 
   given encodeNonEmptySet[F[_], S, A](using Applicative[F], Encoder[F, S, A], ArrayType[S])
   : Encoder[F, S, NonEmptySet[A]] =
-    Encoder.arrayEncoder[F, S, NonEmptySet[A]](vectorEncodeNonEmptySet[F, S, A])
+    Encoder.arrayEncoder[F, S, NonEmptySet[A]]
 
   given vectorEncodeNonEmptyChain[F[_], S, A](using Applicative[F], Encoder[F, S, A])
   : Encoder[F, Vector[S], NonEmptyChain[A]] =
@@ -68,7 +68,7 @@ trait EncoderArrayInstances extends EncoderArrayInstances1:
 
   given encodeNonEmptyChain[F[_], S, A](using Applicative[F], Encoder[F, S, A], ArrayType[S])
   : Encoder[F, S, NonEmptyChain[A]] =
-    Encoder.arrayEncoder[F, S, NonEmptyChain[A]](vectorEncodeNonEmptyChain[F, S, A])
+    Encoder.arrayEncoder[F, S, NonEmptyChain[A]]
 
   given vectorEncodeOneAnd[F[_], S, A, G[_]](
     using
@@ -85,7 +85,7 @@ trait EncoderArrayInstances extends EncoderArrayInstances1:
     ev: G[A] => Iterable[A],
     arrayType: ArrayType[S]
   ): Encoder[F, S, OneAnd[G, A]] =
-    Encoder.arrayEncoder[F, S, OneAnd[G, A]](vectorEncodeOneAnd[F, S, A, G])
+    Encoder.arrayEncoder[F, S, OneAnd[G, A]]
 
   given vectorEncodeTuple[F[_], S, A <: Tuple](
     using
@@ -103,5 +103,5 @@ trait EncoderArrayInstances extends EncoderArrayInstances1:
     arrayType: ArrayType[S],
     instances: => Generic.Product.Instances[[X] =>> Encoder[F, S, X], A]
   ): Encoder[F, S, A] =
-    Encoder.arrayEncoder[F, S, A](vectorEncodeTuple[F, S, A])
+    Encoder.arrayEncoder[F, S, A]
 end EncoderArrayInstances

@@ -18,7 +18,7 @@ trait EncoderObjectInstances:
   end objectEncodeUnit
 
   given encodeUnit[F[_]: Applicative, S: ObjectType]: Encoder[F, S, Unit] =
-    Encoder.objectEncoder[F, S, Unit](objectEncodeUnit[F, S])
+    Encoder.objectEncoder[F, S, Unit]
 
   given objectEncodeNonEmptyMap[F[_], S, K, V](
     using applicative: Applicative[F], keyEncoder: Encoder[F, String, K], valueEncoder: Encoder[F, S, V]
@@ -27,7 +27,7 @@ trait EncoderObjectInstances:
 
   given encodeNonEmptyMap[F[_], S, K, V](using Applicative[F], Encoder[F, String, K], Encoder[F, S, V], ObjectType[S])
   : Encoder[F, S, NonEmptyMap[K, V]] =
-    Encoder.objectEncoder[F, S, NonEmptyMap[K, V]](objectEncodeNonEmptyMap[F, S, K, V])
+    Encoder.objectEncoder[F, S, NonEmptyMap[K, V]]
 
   given objectEncodeMap[F[_], S, K, V](
     using applicative: Applicative[F], keyEncoder: Encoder[F, String, K], valueEncoder: Encoder[F, S, V]
@@ -36,7 +36,7 @@ trait EncoderObjectInstances:
 
   given encodeMap[F[_], S, K, V](using Applicative[F], Encoder[F, String, K], Encoder[F, S, V], ObjectType[S])
   : Encoder[F, S, ImmutableMap[K, V]] =
-    Encoder.objectEncoder[F, S, ImmutableMap[K, V]](objectEncodeMap[F, S, K, V])
+    Encoder.objectEncoder[F, S, ImmutableMap[K, V]]
 
   given objectEncodeMapLike[F[_], S, K, V, M[X, Y] <: Map[X, Y]](
     using
@@ -54,7 +54,7 @@ trait EncoderObjectInstances:
   given encodeMapLike[F[_], S, K, V, M[X, Y] <: Map[X, Y]](
     using Applicative[F], Encoder[F, String, K], Encoder[F, S, V], M[K, V] => Iterable[(K, V)], ObjectType[S]
   ): Encoder[F, S, M[K, V]] =
-    Encoder.objectEncoder[F, S, M[K, V]](objectEncodeMapLike[F, S, K, V, M])
+    Encoder.objectEncoder[F, S, M[K, V]]
 
   given encodeObject[F[_], S, O](using applicative: Applicative[F], objectType: ObjectType.Aux[S, O])
   : Encoder[F, S, O] with

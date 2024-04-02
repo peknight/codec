@@ -14,6 +14,6 @@ trait DecoderObjectInstances:
     objectType: ObjectType.Aux[S, Object[S]],
     decoder: Decoder[F, Object[S], DecodingFailure, A]
   ): MidPriority[Decoder[F, Cursor[S], DecodingFailure, A]] =
-    MidPriority(Decoder.objectDecoder[F, S, A](decoder))
+    MidPriority(Decoder.objectDecoder[F, S, A])
 end DecoderObjectInstances
 object DecoderObjectInstances extends DecoderObjectInstances

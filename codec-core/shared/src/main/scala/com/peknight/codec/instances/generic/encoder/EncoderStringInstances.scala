@@ -8,6 +8,6 @@ import com.peknight.generic.priority.MidPriority
 trait EncoderStringInstances:
   given stringEncoder[F[_], S, A](using functor: Functor[F], stringType: StringType[S], encoder: Encoder[F, String, A])
   : MidPriority[Encoder[F, S, A]] =
-    MidPriority(Encoder.stringEncoder[F, S, A](encoder))
+    MidPriority(Encoder.stringEncoder[F, S, A])
 end EncoderStringInstances
 object EncoderStringInstances extends EncoderStringInstances

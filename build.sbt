@@ -89,12 +89,21 @@ lazy val codecCiris = (crossProject(JSPlatform, JVMPlatform) in file("codec-ciri
     )
   )
 
-
+lazy val codecIp4s = (crossProject(JSPlatform, JVMPlatform) in file("codec-ip4s"))
+  .dependsOn(codecCore)
+  .settings(commonSettings)
+  .settings(
+    name := "codec-ip4s",
+    libraryDependencies ++= Seq(
+      "com.comcast" %%% "ip4s-core" % ip4sCoreVersion,
+    )
+  )
 
 val circeVersion = "0.14.6"
 val doobieVersion = "1.0.0-RC4"
 val http4sVersion = "1.0.0-M34"
 val cirisVersion = "3.2.0"
+val ip4sCoreVersion = "3.3.0"
 val scalaTestVersion = "3.2.16"
 val pekVersion = "0.1.0-SNAPSHOT"
 val pekGenericVersion = pekVersion

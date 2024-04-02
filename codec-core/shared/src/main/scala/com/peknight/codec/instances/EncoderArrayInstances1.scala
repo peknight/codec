@@ -20,5 +20,5 @@ trait EncoderArrayInstances1:
     ev: G[A] => Iterable[A],
     arrayType: ArrayType[S]
   ): Encoder[F, S, G[A]] =
-    Encoder.arrayEncoder[F, S, G[A]](vectorEncodeIterable[F, S, A, G])
+    Encoder.arrayEncoder[F, S, G[A]]
 end EncoderArrayInstances1

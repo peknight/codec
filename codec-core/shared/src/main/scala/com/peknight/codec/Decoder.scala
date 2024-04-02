@@ -291,6 +291,13 @@ object Decoder extends DecoderCursorInstances
     else if List("0", "f", "no", "n").exists(t.equalsIgnoreCase) then Some(false)
     else None
 
+  def decodeWithOption[F[_]: Applicative, A: ClassTag](f: String => Option[A]): Decoder[F, String, DecodingFailure, A] =
+    instance[F, String, DecodingFailure, A] { t =>
+      f(t) match
+        case Some(value) => value.asRight.pure
+        case None => WrongClassTag[A].value(t).asLeft.pure
+    }
+
   def decodeWithTry[F[_]: Applicative, A: ClassTag](f: String => A): Decoder[F, String, DecodingFailure, A] =
     instance[F, String, DecodingFailure, A] { t =>
       Try(f(t)) match
@@ -438,7 +445,7 @@ object Decoder extends DecoderCursorInstances
         case (fCursor: FailedCursor[S], sCursor: FailedCursor[S]) => MissingField.cursor(t).asLeft.pure
     }
 
-  def stringDecoder[F[_], S, A](decoder: Decoder[F, String, DecodingFailure, A])(
+  def stringDecoder[F[_], S, A](using decoder: Decoder[F, String, DecodingFailure, A])(
     using
     applicative: Applicative[F],
     stringType: StringType[S],
@@ -450,7 +457,7 @@ object Decoder extends DecoderCursorInstances
         case None => WrongClassTag[A].cursor(t).asLeft.pure
     }
 
-  def objectDecoder[F[_], S, A](decoder: Decoder[F, Object[S], DecodingFailure, A])(
+  def objectDecoder[F[_], S, A](using decoder: Decoder[F, Object[S], DecodingFailure, A])(
     using
     applicative: Applicative[F],
     objectType: ObjectType.Aux[S, Object[S]]
@@ -461,12 +468,12 @@ object Decoder extends DecoderCursorInstances
         case None => NotObject.cursor(t).asLeft.pure
     }
 
-  def migrationDecoder[F[_], T, E, A](migration: Migration[F, T, A])(using functor: Functor[F]): Decoder[F, T, E, A] =
+  def migrationDecoder[F[_], T, E, A](using migration: Migration[F, T, A])(using functor: Functor[F]): Decoder[F, T, E, A] =
     new Decoder[F, T, E, A]:
       def decode(t: T): F[Either[E, A]] = migration.migrate(t).map(_.asRight[E])
       def decodeAccumulating(t: T): F[ValidatedNel[E, A]] = migration.migrate(t).map(_.validNel[E])
 
-  def encoderDecoder[F[_], T, E, A](encoder: Encoder[F, A, T])(using functor: Functor[F]): Decoder[F, T, E, A] =
+  def encoderDecoder[F[_], T, E, A](using encoder: Encoder[F, A, T])(using functor: Functor[F]): Decoder[F, T, E, A] =
     new Decoder[F, T, E, A]:
       def decode(t: T): F[Either[E, A]] = encoder.encode(t).map(_.asRight[E])
       def decodeAccumulating(t: T): F[ValidatedNel[E, A]] = encoder.encode(t).map(_.validNel[E])

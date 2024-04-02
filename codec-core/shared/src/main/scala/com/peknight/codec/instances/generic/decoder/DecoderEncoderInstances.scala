@@ -7,7 +7,7 @@ import com.peknight.generic.priority.MidPriority
 trait DecoderEncoderInstances:
   given encoderDecoder[F[_], T, E, A] (using functor: Functor[F], encoder: Encoder[F, A, T])
   : MidPriority[Decoder[F, T, E, A]] =
-    MidPriority(Decoder.encoderDecoder[F, T, E, A](encoder))
+    MidPriority(Decoder.encoderDecoder[F, T, E, A])
   end encoderDecoder
 end DecoderEncoderInstances
 object DecoderEncoderInstances extends DecoderEncoderInstances

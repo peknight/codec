@@ -77,17 +77,17 @@ object Encoder extends EncoderStringInstances
     case Validated.Valid(valid) => encodeA.encode(valid).map(r => Object.singleton(successKey, r))
   }
   
-  def migrationEncoder[F[_], S, A](migration: Migration[F, A, S]): Encoder[F, S, A] = migration.migrate(_)
+  def migrationEncoder[F[_], S, A](using migration: Migration[F, A, S]): Encoder[F, S, A] = migration.migrate(_)
 
-  def stringEncoder[F[_], S, A](encoder: Encoder[F, String, A])(using functor: Functor[F], stringType: StringType[S])
+  def stringEncoder[F[_], S, A](using encoder: Encoder[F, String, A])(using functor: Functor[F], stringType: StringType[S])
   : Encoder[F, S, A] =
     encoder.encode(_).map(str => stringType.to(str))
 
-  def arrayEncoder[F[_], S, A](encoder: Encoder[F, Vector[S], A])(using functor: Functor[F], arrayType: ArrayType[S])
+  def arrayEncoder[F[_], S, A](using encoder: Encoder[F, Vector[S], A])(using functor: Functor[F], arrayType: ArrayType[S])
   : Encoder[F, S, A] =
     encoder.encode(_).map(arrayType.to)
 
-  def objectEncoder[F[_], S, A](encoder: Encoder[F, Object[S], A])(using functor: Functor[F], objectType: ObjectType[S])
+  def objectEncoder[F[_], S, A](using encoder: Encoder[F, Object[S], A])(using functor: Functor[F], objectType: ObjectType[S])
   : Encoder[F, S, A] =
     encoder.encode(_).map(obj => objectType.to(objectType.fromObject(obj)))
 

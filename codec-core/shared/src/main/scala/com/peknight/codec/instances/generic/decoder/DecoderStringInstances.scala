@@ -17,6 +17,6 @@ trait DecoderStringInstances:
     classTag: ClassTag[A],
     decoder: Decoder[F, String, DecodingFailure, A]
   ): MidPriority[Decoder[F, Cursor[S], DecodingFailure, A]] =
-    MidPriority(Decoder.stringDecoder[F, S, A](decoder))
+    MidPriority(Decoder.stringDecoder[F, S, A])
 end DecoderStringInstances
 object DecoderStringInstances extends DecoderStringInstances
