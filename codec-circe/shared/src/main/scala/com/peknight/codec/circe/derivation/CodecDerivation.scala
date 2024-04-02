@@ -2,7 +2,7 @@ package com.peknight.codec.circe.derivation
 
 import cats.Id
 import com.peknight.codec.circe.iso.codecIsomorphism
-import com.peknight.codec.circe.sum.given
+import com.peknight.codec.circe.sum.JsonTypeInstances.given
 import com.peknight.codec.configuration.CodecConfiguration
 import com.peknight.codec.cursor.id.Decoder
 import com.peknight.codec.id.Encoder

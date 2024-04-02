@@ -1,13 +1,14 @@
 package com.peknight.codec.circe.derivation.instances
 
 import com.peknight.codec.circe.derivation.DecoderDerivation
+import com.peknight.codec.circe.sum.JsonTypeInstances
 import com.peknight.codec.configuration.DecoderConfiguration
 import com.peknight.codec.cursor.id.Decoder
 import com.peknight.generic.Generic
 import io.circe.Json
 import io.circe.`export`.Exported
 
-trait DecoderDerivationInstances:
+trait DecoderDerivationInstances extends JsonTypeInstances:
   given derivedDecoder[A](using
    configuration: DecoderConfiguration,
    instances: => Generic.Instances[[X] =>> Decoder[Json, X], A]
