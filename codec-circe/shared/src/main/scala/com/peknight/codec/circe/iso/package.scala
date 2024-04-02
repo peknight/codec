@@ -138,6 +138,8 @@ package object iso:
             c.tryDecodeAccumulating(cursorIsomorphism.to(cursor)).leftMap(_.map(decodingFailureIsomorphism.from))
   end codecIsomorphism
 
-  def migrateEncoder[A](encoder: Encoder[Json, A]): io.circe.Encoder[A] = encoderIsomorphism.to(encoder)
-  def migrateDecoder[A](decoder: Decoder[Json, A]): io.circe.Decoder[A] = decoderIsomorphism.to(decoder)
+  def encoder[A](using encoder: Encoder[Json, A]): io.circe.Encoder[A] = encoderIsomorphism.to(encoder)
+  def decoder[A](using decoder: Decoder[Json, A]): io.circe.Decoder[A] = decoderIsomorphism.to(decoder)
+  def codec[A](using encoder: Encoder[Json, A], decoder: Decoder[Json, A]): io.circe.Codec[A] =
+    codecIsomorphism.to(com.peknight.codec.Codec(encoder, decoder))
 end iso

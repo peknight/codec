@@ -1,4 +1,4 @@
-package com.peknight.codec.circe.iso
+package com.peknight.codec.circe
 
 package object instances:
   object all extends EncoderIsomorphismInstances with DecoderIsomorphismInstances
