@@ -9,6 +9,7 @@ import cats.syntax.traverse.*
 import cats.{Applicative, Contravariant, FlatMap, Foldable, Functor, Traverse}
 import com.peknight.codec.instances.*
 import com.peknight.codec.sum.{ArrayType, ObjectType, StringType}
+import com.peknight.generic.migration.Migration
 import com.peknight.generic.priority.PriorityInstancesF2
 
 import java.time.format.DateTimeFormatter
@@ -26,7 +27,6 @@ object Encoder extends EncoderStringInstances
   with EncoderArrayInstances
   with EncoderObjectInstances
   with EncoderNullInstances
-  with EncoderMigrationInstances
   with EncoderDerivationInstances
   with PriorityInstancesF2[Encoder]:
 
@@ -76,6 +76,8 @@ object Encoder extends EncoderStringInstances
     case Validated.Invalid(invalid) => encodeE.encode(invalid).map(l => Object.singleton(failureKey, l))
     case Validated.Valid(valid) => encodeA.encode(valid).map(r => Object.singleton(successKey, r))
   }
+  
+  def migrationEncoder[F[_], S, A](migration: Migration[F, A, S]): Encoder[F, S, A] = migration.migrate(_)
 
   def stringEncoder[F[_], S, A](encoder: Encoder[F, String, A])(using functor: Functor[F], stringType: StringType[S])
   : Encoder[F, S, A] =

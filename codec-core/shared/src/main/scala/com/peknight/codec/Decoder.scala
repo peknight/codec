@@ -19,6 +19,7 @@ import com.peknight.codec.cursor.Cursor.{FailedCursor, SuccessCursor}
 import com.peknight.codec.error.*
 import com.peknight.codec.instances.*
 import com.peknight.codec.sum.{ArrayType, NullType, ObjectType, StringType}
+import com.peknight.generic.migration.Migration
 import com.peknight.generic.priority.PriorityInstancesF3
 
 import java.time.format.DateTimeFormatter
@@ -182,7 +183,6 @@ object Decoder extends DecoderCursorInstances
   with DecoderArrayInstances
   with DecoderObjectInstances
   with DecoderNullInstances
-  with DecoderMigrationInstances
   with DecoderDerivationInstances
   with PriorityInstancesF3[Decoder]:
 
@@ -460,6 +460,16 @@ object Decoder extends DecoderCursorInstances
         case Some(o) => decoder.decode(o).map(_.left.map(_.cursor(t)))
         case None => NotObject.cursor(t).asLeft.pure
     }
+
+  def migrationDecoder[F[_], T, E, A](migration: Migration[F, T, A])(using functor: Functor[F]): Decoder[F, T, E, A] =
+    new Decoder[F, T, E, A]:
+      def decode(t: T): F[Either[E, A]] = migration.migrate(t).map(_.asRight[E])
+      def decodeAccumulating(t: T): F[ValidatedNel[E, A]] = migration.migrate(t).map(_.validNel[E])
+
+  def encoderDecoder[F[_], T, E, A](encoder: Encoder[F, A, T])(using functor: Functor[F]): Decoder[F, T, E, A] =
+    new Decoder[F, T, E, A]:
+      def decode(t: T): F[Either[E, A]] = encoder.encode(t).map(_.asRight[E])
+      def decodeAccumulating(t: T): F[ValidatedNel[E, A]] = encoder.encode(t).map(_.validNel[E])
 
   def objectUnit[S](s: S)(using objectType: ObjectType[S]): Option[Unit] =
     objectType.asObject(s).filter(objectType.isEmpty).as(())

@@ -13,7 +13,7 @@ import java.time.temporal.ChronoField
 import java.util.{Currency, UUID}
 import scala.concurrent.duration.Duration
 
-trait EncoderStringInstances extends EncoderStringInstances1:
+trait EncoderStringInstances:
   given stringEncodeString[F[_]: Applicative]: Encoder[F, String, String] =
     Encoder.instance[F, String, String](_.pure[F])
 

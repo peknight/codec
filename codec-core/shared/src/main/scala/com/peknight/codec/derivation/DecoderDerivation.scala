@@ -14,7 +14,6 @@ import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.error.*
 import com.peknight.codec.sum.{NullType, ObjectType}
 import com.peknight.generic.Generic
-import com.peknight.generic.migration.id.Migration
 import com.peknight.generic.tuple.syntax.sequence
 
 trait DecoderDerivation:

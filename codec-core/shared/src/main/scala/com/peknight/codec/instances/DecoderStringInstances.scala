@@ -14,7 +14,7 @@ import java.time.*
 import java.util.{Currency, UUID}
 import scala.reflect.ClassTag
 
-trait DecoderStringInstances extends DecoderStringInstances1:
+trait DecoderStringInstances:
   given stringDecodeString[F[_]: Applicative]: Decoder[F, String, DecodingFailure, String] =
     Decoder.instance[F, String, DecodingFailure, String](_.asRight.pure)
 

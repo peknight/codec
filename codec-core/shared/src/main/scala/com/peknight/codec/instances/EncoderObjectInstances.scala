@@ -12,7 +12,7 @@ import com.peknight.codec.{Encoder, Object}
 import scala.collection.Map
 import scala.collection.immutable.Map as ImmutableMap
 
-trait EncoderObjectInstances extends EncoderObjectInstances1:
+trait EncoderObjectInstances:
   given objectEncodeUnit[F[_] : Applicative, S]: Encoder[F, Object[S], Unit] with
     def encode(a: Unit): F[Object[S]] = Object.empty[S].pure[F]
   end objectEncodeUnit

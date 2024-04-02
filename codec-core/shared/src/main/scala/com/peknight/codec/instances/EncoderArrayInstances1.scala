@@ -4,7 +4,7 @@ import cats.Applicative
 import com.peknight.codec.Encoder
 import com.peknight.codec.sum.ArrayType
 
-trait EncoderArrayInstances1 extends EncoderArrayInstances2:
+trait EncoderArrayInstances1:
   given vectorEncodeIterable[F[_], S, A, G[_]](
     using
     applicative: Applicative[F],
