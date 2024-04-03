@@ -1,13 +1,12 @@
 package com.peknight.codec
 
 import cats.data.Kleisli
-import cats.kernel.CommutativeMonoid
 import cats.syntax.applicative.*
 import cats.syntax.apply.*
 import cats.syntax.foldable.*
 import cats.syntax.functor.*
 import cats.syntax.semigroup.*
-import cats.{Applicative, Eval, Foldable, Monad, Semigroup}
+import cats.{Applicative, Foldable, Monad, Semigroup}
 
 trait Object[S]:
   def applyUnsafe(key: String): S = apply(key).getOrElse(throw new NoSuchElementException(s"key not found: $key"))
