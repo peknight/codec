@@ -41,6 +41,7 @@ lazy val codecCore = (crossProject(JSPlatform, JVMPlatform) in file("codec-core"
       "com.peknight" %%% "generic-migration" % pekGenericVersion,
       "com.peknight" %%% "cats-ext" % pekExtVersion,
       "com.peknight" %%% "error-core" % pekErrorVersion,
+      "org.typelevel" %%% "cats-parse" % catsParseVersion,
     ),
   )
 
@@ -100,6 +101,7 @@ lazy val codecIp4s = (crossProject(JSPlatform, JVMPlatform) in file("codec-ip4s"
   )
 
 val circeVersion = "0.14.6"
+val catsParseVersion = "0.3.10"
 val doobieVersion = "1.0.0-RC4"
 val http4sVersion = "1.0.0-M34"
 val cirisVersion = "3.2.0"
