@@ -1,6 +1,9 @@
 package com.peknight.codec.number
 
+import cats.parse.Numbers.digits0
 import cats.parse.Parser
+import cats.syntax.either.*
+import cats.syntax.option.*
 import com.peknight.error.parse.ParsingFailure
 
 import java.math.BigInteger
@@ -19,7 +22,7 @@ import scala.annotation.tailrec
  * between positive and negative zeros (unlike `BigDecimal`), which may be useful in some
  * applications.
  */
-sealed trait BiggerDecimal extends Serializable:
+sealed trait BiggerDecimal extends Serializable derives CanEqual:
   def isWhole: Boolean
   def isNegativeZero: Boolean
 
@@ -77,8 +80,8 @@ object BiggerDecimal:
   private[number] val MinLong: BigDecimal = BigDecimal(Long.MinValue)
   private[this] val MaxLongString = "9223372036854775807"
   private[this] val MinLongString = "-9223372036854775808"
-  private[this] val ZeroInt: BigInt = BigInt(0)
-  private[this] val ZeroDecimal: BigDecimal = BigDecimal(0)
+  private[number] val ZeroInt: BigInt = BigInt(0)
+  private[number] val ZeroDecimal: BigDecimal = BigDecimal(0)
 
   /**
    * Represents numbers as an unscaled value and a scale.
@@ -87,7 +90,7 @@ object BiggerDecimal:
    * First, the scale is a `java.math.BigInteger`, not a [[scala.Int]], and the unscaled value will
    * never be an exact multiple of ten (in order to facilitate comparison).
    */
-  private[number] case class SigAndExp(unscaled: BigInt, scale: BigInt) extends BiggerDecimal:
+  private[codec] case class SigAndExp(unscaled: BigInt, scale: BigInt) extends BiggerDecimal:
     def isWhole: Boolean = scale.signum < 1
     def isNegativeZero: Boolean = false
     def signum: Int = unscaled.signum
@@ -126,34 +129,34 @@ object BiggerDecimal:
 
     override def toString: String =
       if scale == ZeroInt then unscaled.toString
-      else s"${unscaled}e${scale.negate}"
+      else s"${unscaled}e${scale.underlying().negate()}"
 
     override private[codec] def appendToStringBuilder(builder: StringBuilder): Unit =
       builder.append(unscaled)
-      if scale != ZeroInt then builder.append('e').append(scale.negate) else ()
+      if scale != ZeroInt then builder.append('e').append(scale.underlying().negate()) else ()
     end appendToStringBuilder
   end SigAndExp
 
-  private[this] sealed trait Zero extends BiggerDecimal:
+  private[codec] sealed trait Zero extends BiggerDecimal:
     final def isWhole: Boolean = true
     final def signum: Int = 0
     final val toBigDecimal: Option[BigDecimal] = Some(ZeroDecimal)
     final def toBigIntWithMaxDigits(maxDigits: BigInt): Option[BigInt] = Some(ZeroInt)
     final val toLong: Option[Long] = Some(0L)
     private[codec] def appendToStringBuilder(builder: StringBuilder): Unit = builder.append(toString)
-  end BiggerDecimal
+  end Zero
 
-  private[this] object UnsignedZero extends Zero:
+  private[codec] object UnsignedZero extends Zero:
     final def isNegativeZero: Boolean = false
     final def toDouble: Double = 0.0
     final def toFloat: Float = 0.0f
-    final override def equals(obj: Any): Boolean = that match
+    final override def equals(that: Any): Boolean = that match
       case other: Zero => !other.isNegativeZero
       case _ => false
     final override def hashCode: Int = 0.0.hashCode
     final override def toString: String = "0"
   end UnsignedZero
-  object NegativeZero extends Zero:
+  private[codec] object NegativeZero extends Zero:
     final def isNegativeZero: Boolean = true
     final def toDouble: Double = -0.0
     final def toFloat: Float = -0.0f
@@ -163,6 +166,10 @@ object BiggerDecimal:
     final override def hashCode: Int = -0.0.hashCode
     final override def toString: String = "-0"
   end NegativeZero
+
+  val unsignedZero: BiggerDecimal = UnsignedZero
+  val negativeZero: BiggerDecimal = NegativeZero
+  def apply(unscaled: BigInt, scaled: BigInt): BiggerDecimal = SigAndExp(unscaled, scaled)
 
   private[this] def fromUnscaledAndScale(unscaled: BigInt, scale: Long): BiggerDecimal =
     @tailrec def go(current: BigInteger, depth: Long, divAndRem: Array[BigInteger])
@@ -192,7 +199,7 @@ object BiggerDecimal:
 
   def fromFloat(f: Float): BiggerDecimal =
     if java.lang.Float.compare(f, -0.0f) == 0 then NegativeZero
-    else fromBigDecimal(BigDecimaljava.lang.Float.toString(f))
+    else fromBigDecimal(BigDecimal(java.lang.Float.toString(f)))
 
   /**
    * Is a string representing an integral value a valid [[scala.Long]]?
@@ -204,8 +211,55 @@ object BiggerDecimal:
     val bound = if s.charAt(0) == '-' then MinLongString else MaxLongString
     s.length < bound.length || (s.length == bound.length && s.compareTo(bound) <= 0)
 
+  /**
+   * Parse string into [[BiggerDecimal]].
+   */
   def parseBiggerDecimal(input: String): Either[ParsingFailure, Option[BiggerDecimal]] =
     if input.isEmpty then none[BiggerDecimal].asRight[ParsingFailure]
-    else ???
+    else
+      val negativeParser = (Parser.char('-').as(true) | Parser.char('+').as(false)).?.map(_.getOrElse(false))
+      val parser =
+        for
+          negativeFlag <- negativeParser
+          integral <- digits0
+          fractional <- (Parser.char('.') *> digits0).?.map(_.filter(_.nonEmpty))
+          exponent <- (Parser.charIn("eE") *> (negativeParser ~ digits0)).?
+        yield
+          val negativeStr = if negativeFlag then "-" else ""
+          val integralStr = if integral.nonEmpty then integral else "0"
+          val fractionalStr = fractional.getOrElse("")
+          val unsignedStr = s"$integralStr$fractionalStr"
+          val zeros: Int = unsignedStr
+            .zipWithIndex
+            .findLast(_._1 != '0')
+            .map(unsignedStr.length - 1 - _._2)
+            .getOrElse(0)
+          if unsignedStr.length == zeros then
+            if negativeFlag then NegativeZero else UnsignedZero
+          else
+            val unscaledStr =
+              if zeros == 0 then s"$negativeStr$unsignedStr"
+              else s"$negativeStr${unsignedStr.substring(0, unsignedStr.length - zeros)}"
+            val unscaled = BigInt(unscaledStr)
+            if unscaled == ZeroInt then
+              if negativeFlag then NegativeZero else UnsignedZero
+            else
+              val rescale = BigInt(fractionalStr.length - zeros)
+              val scale =
+                exponent match
+                  case Some((expNeg, exp)) => rescale - (if expNeg then BigInt(s"-$exp") else BigInt(exp))
+                  case None => rescale
+              SigAndExp(unscaled, scale)
+      parser.parseAll(input).left.map(ParsingFailure.apply).map(_.some)
 
+  /**
+   * Parse string into [[BiggerDecimal]]. throw exception on parsing failure.
+   */
+  def parseBiggerDecimalUnsafe(input: String): BiggerDecimal =
+    parseBiggerDecimal(input) match
+      case Left(error) =>
+        throw error.to(NumberFormatException(s"For input string \"$input\""))
+      case Right(None) =>
+        throw Error(NumberFormatException(s"For input string \"$input\""))
+      case Right(Some(value)) => value
 end BiggerDecimal

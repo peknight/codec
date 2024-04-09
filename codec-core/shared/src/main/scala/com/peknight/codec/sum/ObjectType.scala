@@ -1,7 +1,7 @@
 package com.peknight.codec.sum
 
 import cats.Foldable
-import com.peknight.codec.Object
+import com.peknight.codec.obj.Object
 
 trait ObjectType[S]:
   type Obj

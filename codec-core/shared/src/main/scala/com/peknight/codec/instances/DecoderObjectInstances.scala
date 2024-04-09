@@ -7,7 +7,8 @@ import cats.{Applicative, Monad, Order}
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.error.*
 import com.peknight.codec.sum.{ArrayType, NullType, ObjectType}
-import com.peknight.codec.{Decoder, Object}
+import com.peknight.codec.Decoder
+import com.peknight.codec.obj.Object
 
 import scala.collection.immutable.{SortedMap, Map as ImmutableMap}
 

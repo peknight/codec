@@ -1,11 +1,14 @@
 package com.peknight.codec.circe.sum
 
 import cats.Foldable
-import com.peknight.codec.Object
-import com.peknight.codec.sum.{ArrayType, NullType, ObjectType, StringType}
+import com.peknight.codec.circe.iso.numberIsomorphism
+import com.peknight.codec.number.Number
+import com.peknight.codec.obj.Object
+import com.peknight.codec.sum.{ArrayType, BooleanType, NullType, NumberType, ObjectType, StringType}
 import io.circe.{Json, JsonObject}
 
-trait JsonType extends StringType[Json] with ArrayType[Json] with ObjectType[Json] with NullType[Json]:
+trait JsonType extends StringType[Json] with ArrayType[Json] with ObjectType[Json] with NullType[Json]
+  with NumberType[Json] with BooleanType[Json]:
   def to(s: String): Json = Json.fromString(s)
   def asString(s: Json): Option[String] = s.asString
   override def isString(s: Json): Boolean = s.isString
@@ -35,5 +38,14 @@ trait JsonType extends StringType[Json] with ArrayType[Json] with ObjectType[Jso
   def unit: Json = Json.Null
   def asNull(s: Json): Option[Unit] = s.asNull
   override def isNull(s: Json): Boolean = s.isNull
+
+  def to(n: Number): Json = Json.fromJsonNumber(numberIsomorphism.to(n))
+  def asNumber(s: Json): Option[Number] = s.asNumber.map(numberIsomorphism.from)
+  override def isNumber(s: Json): Boolean = s.isNumber
+
+  def to(b: Boolean): Json = Json.fromBoolean(b)
+
+  def asBoolean(s: Json): Option[Boolean] = s.asBoolean
+  override def isBoolean(s: Json): Boolean = s.isBoolean
 end JsonType
 object JsonType extends JsonType

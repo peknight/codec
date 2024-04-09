@@ -2,13 +2,14 @@ package com.peknight.codec
 
 import cats.data.Validated
 import cats.syntax.applicative.*
-import cats.syntax.foldable.*
 import cats.syntax.flatMap.*
+import cats.syntax.foldable.*
 import cats.syntax.functor.*
 import cats.syntax.traverse.*
 import cats.{Applicative, Contravariant, FlatMap, Foldable, Functor, Traverse}
 import com.peknight.codec.instances.*
-import com.peknight.codec.sum.{ArrayType, ObjectType, StringType}
+import com.peknight.codec.number.Number
+import com.peknight.codec.sum.*
 import com.peknight.generic.migration.Migration
 import com.peknight.generic.priority.PriorityInstancesF2
 
@@ -23,7 +24,7 @@ trait Encoder[F[_], S, A]:
     (a: A) => self.encode(a).flatMap(that.encode)
   def >>[B](that: Encoder[F, A, B])(using FlatMap[F]): Encoder[F, S, B] = that << self
 end Encoder
-object Encoder extends EncoderStringInstances
+object Encoder extends EncoderValueInstances
   with EncoderArrayInstances
   with EncoderObjectInstances
   with EncoderNullInstances
@@ -65,16 +66,16 @@ object Encoder extends EncoderStringInstances
 
   def objectEncodeEither[F[_], S, A, B](leftKey: String, rightKey: String)
                                        (using functor: Functor[F], encodeA: Encoder[F, S, A], encodeB: Encoder[F, S, B])
-  : Encoder[F, Object[S], Either[A, B]] = {
-    case Left(left) => encodeA.encode(left).map(l => Object.singleton(leftKey, l))
-    case Right(right) => encodeB.encode(right).map(r => Object.singleton(rightKey, r))
+  : Encoder[F, obj.Object[S], Either[A, B]] = {
+    case Left(left) => encodeA.encode(left).map(l => obj.Object.singleton(leftKey, l))
+    case Right(right) => encodeB.encode(right).map(r => obj.Object.singleton(rightKey, r))
   }
 
   def objectEncodeValidated[F[_], S, E, A](failureKey: String, successKey: String)(
     using functor: Functor[F], encodeE: Encoder[F, S, E], encodeA: Encoder[F, S, A]
-  ): Encoder[F, Object[S], Validated[E, A]] = {
-    case Validated.Invalid(invalid) => encodeE.encode(invalid).map(l => Object.singleton(failureKey, l))
-    case Validated.Valid(valid) => encodeA.encode(valid).map(r => Object.singleton(successKey, r))
+  ): Encoder[F, obj.Object[S], Validated[E, A]] = {
+    case Validated.Invalid(invalid) => encodeE.encode(invalid).map(l => obj.Object.singleton(failureKey, l))
+    case Validated.Valid(valid) => encodeA.encode(valid).map(r => obj.Object.singleton(successKey, r))
   }
   
   def migrationEncoder[F[_], S, A](using migration: Migration[F, A, S]): Encoder[F, S, A] = migration.migrate(_)
@@ -87,8 +88,15 @@ object Encoder extends EncoderStringInstances
   : Encoder[F, S, A] =
     encoder.encode(_).map(arrayType.to)
 
-  def objectEncoder[F[_], S, A](using encoder: Encoder[F, Object[S], A])(using functor: Functor[F], objectType: ObjectType[S])
+  def objectEncoder[F[_], S, A](using encoder: Encoder[F, obj.Object[S], A])(using functor: Functor[F], objectType: ObjectType[S])
   : Encoder[F, S, A] =
     encoder.encode(_).map(obj => objectType.to(objectType.fromObject(obj)))
+
+  def numberEncoder[F[_], S, A](using encoder: Encoder[F, Number, A])(using functor: Functor[F], numberType: NumberType[S])
+  : Encoder[F, S, A] =
+    encoder.encode(_).map(numberType.to)
+
+  def booleanEncoder[F[_], S](using applicative: Applicative[F], booleanType: BooleanType[S]): Encoder[F, S, Boolean] =
+    booleanType.to(_).pure[F]
 
 end Encoder

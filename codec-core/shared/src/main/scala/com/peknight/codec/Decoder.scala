@@ -179,7 +179,7 @@ trait Decoder[F[_], T, E, A]:
   def <<[B, EE <: E](that: Decoder[F, A, EE, B])(using Monad[F]): Decoder[F, T, E, B] = that >> self
 end Decoder
 object Decoder extends DecoderCursorInstances
-  with DecoderStringInstances
+  with DecoderValueInstances
   with DecoderArrayInstances
   with DecoderObjectInstances
   with DecoderNullInstances
@@ -457,10 +457,10 @@ object Decoder extends DecoderCursorInstances
         case None => WrongClassTag[A].cursor(t).asLeft.pure
     }
 
-  def objectDecoder[F[_], S, A](using decoder: Decoder[F, Object[S], DecodingFailure, A])(
+  def objectDecoder[F[_], S, A](using decoder: Decoder[F, obj.Object[S], DecodingFailure, A])(
     using
     applicative: Applicative[F],
-    objectType: ObjectType.Aux[S, Object[S]]
+    objectType: ObjectType.Aux[S, obj.Object[S]]
   ): Decoder[F, Cursor[S], DecodingFailure, A] =
     cursor[F, S, A] { t =>
       objectType.asObject(t.value) match

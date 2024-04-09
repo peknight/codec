@@ -9,7 +9,7 @@ import com.peknight.generic.priority.MidPriority
 
 import scala.reflect.ClassTag
 
-trait DecoderStringInstances:
+trait DecoderValueInstances:
   given stringDecoder[F[_], S, A](
     using
     applicative: Applicative[F],
@@ -18,5 +18,5 @@ trait DecoderStringInstances:
     decoder: Decoder[F, String, DecodingFailure, A]
   ): MidPriority[Decoder[F, Cursor[S], DecodingFailure, A]] =
     MidPriority(Decoder.stringDecoder[F, S, A])
-end DecoderStringInstances
-object DecoderStringInstances extends DecoderStringInstances
+end DecoderValueInstances
+object DecoderValueInstances extends DecoderValueInstances

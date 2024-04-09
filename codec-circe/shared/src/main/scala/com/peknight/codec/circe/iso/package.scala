@@ -1,6 +1,7 @@
 package com.peknight.codec.circe
 
 import cats.Id
+import com.peknight.codec.number.{BiggerDecimal, Number}
 import cats.data.ValidatedNel
 import com.peknight.codec.cursor.Cursor.{FailedCursor, SuccessCursor}
 import com.peknight.codec.cursor.id.{Codec, Decoder}
@@ -15,7 +16,8 @@ import com.peknight.generic.migration.id.Isomorphism
 import io.circe.DecodingFailure.Reason.WrongTypeExpectation
 import io.circe.cursor.CursorOps
 import io.circe.derivation.{ConfiguredCodec, ConfiguredDecoder, ConfiguredEncoder, SumOrProductOps}
-import io.circe.{ACursor, HCursor, Json, JsonObject}
+import io.circe.numbers.BiggerDecimalOps
+import io.circe.{ACursor, HCursor, Json, JsonNumber, JsonNumberOps, JsonObject, numbers}
 
 package object iso:
 
@@ -137,6 +139,29 @@ package object iso:
           def decodeAccumulating(cursor: Cursor[Json]): ValidatedNel[DecodingFailure, A] =
             c.tryDecodeAccumulating(cursorIsomorphism.to(cursor)).leftMap(_.map(decodingFailureIsomorphism.from))
   end codecIsomorphism
+
+  given biggerDecimalIsomorphism: Isomorphism[BiggerDecimal, io.circe.numbers.BiggerDecimal] with
+    def to(a: BiggerDecimal): Id[io.circe.numbers.BiggerDecimal] = a match
+      case BiggerDecimal.SigAndExp(unscaled, scale) => BiggerDecimalOps.sigAndExp(unscaled, scale)
+      case BiggerDecimal.UnsignedZero => io.circe.numbers.BiggerDecimal.fromLong(0L)
+      case BiggerDecimal.NegativeZero => io.circe.numbers.BiggerDecimal.NegativeZero
+
+    def from(b: io.circe.numbers.BiggerDecimal): Id[BiggerDecimal] = BiggerDecimalOps.migrate(b)
+  end biggerDecimalIsomorphism
+
+  given numberIsomorphism: Isomorphism[Number, JsonNumber] with
+    def to(a: Number): Id[JsonNumber] = a match
+      case Number.DecimalNum(input) => JsonNumber.fromDecimalStringUnsafe(input)
+      case Number.BiggerDecimalNum(value, input) =>
+        JsonNumberOps.fromBiggerDecimal(biggerDecimalIsomorphism.to(value), input)
+      case Number.BigDecimalNum(value) => JsonNumberOps.fromBigDecimal(value)
+      case Number.LongNum(value) => JsonNumberOps.fromLong(value)
+      case Number.DoubleNum(value) => JsonNumberOps.fromDouble(value)
+      case Number.FloatNum(value) => JsonNumberOps.fromFloat(value)
+
+    def from(b: JsonNumber): Id[Number] = JsonNumberOps.migrate(b)
+
+  end numberIsomorphism
 
   def encoder[A](using encoder: Encoder[Json, A]): io.circe.Encoder[A] = encoderIsomorphism.to(encoder)
   def decoder[A](using decoder: Decoder[Json, A]): io.circe.Decoder[A] = decoderIsomorphism.to(decoder)

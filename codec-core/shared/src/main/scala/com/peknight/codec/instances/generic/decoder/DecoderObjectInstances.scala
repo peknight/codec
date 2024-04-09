@@ -4,7 +4,8 @@ import cats.Applicative
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.error.DecodingFailure
 import com.peknight.codec.sum.ObjectType
-import com.peknight.codec.{Decoder, Object}
+import com.peknight.codec.Decoder
+import com.peknight.codec.obj.Object
 import com.peknight.generic.priority.MidPriority
 
 trait DecoderObjectInstances:

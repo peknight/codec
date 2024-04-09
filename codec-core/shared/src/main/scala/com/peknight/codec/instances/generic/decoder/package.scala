@@ -1,9 +1,9 @@
 package com.peknight.codec.instances.generic
 
 package object decoder:
-  object all extends DecoderEncoderInstances with DecoderObjectInstances with DecoderStringInstances
+  object all extends DecoderEncoderInstances with DecoderObjectInstances with DecoderValueInstances
   object encoder extends DecoderEncoderInstances
   object migration extends DecoderMigrationInstances
   object obj extends DecoderObjectInstances
-  object string extends DecoderStringInstances
+  object value extends DecoderValueInstances
 end decoder

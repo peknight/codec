@@ -1,4 +1,4 @@
-package com.peknight.codec
+package com.peknight.codec.obj
 
 import cats.data.Kleisli
 import cats.syntax.applicative.*
@@ -8,7 +8,7 @@ import cats.syntax.functor.*
 import cats.syntax.semigroup.*
 import cats.{Applicative, Foldable, Monad, Semigroup}
 
-trait Object[S]:
+trait Object[S] extends Serializable:
   def applyUnsafe(key: String): S = apply(key).getOrElse(throw new NoSuchElementException(s"key not found: $key"))
   def apply(key: String): Option[S]
   def contains(key: String): Boolean

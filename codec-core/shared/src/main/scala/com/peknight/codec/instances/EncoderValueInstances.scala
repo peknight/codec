@@ -3,8 +3,9 @@ package com.peknight.codec.instances
 import cats.Applicative
 import cats.syntax.applicative.*
 import com.peknight.codec.Encoder
-import com.peknight.codec.sum.StringType
+import com.peknight.codec.sum.{BooleanType, NumberType, StringType}
 import com.peknight.generic.priority.HighPriority
+import com.peknight.codec.number.Number
 
 import java.net.URI
 import java.time.*
@@ -13,53 +14,71 @@ import java.time.temporal.ChronoField
 import java.util.{Currency, UUID}
 import scala.concurrent.duration.Duration
 
-trait EncoderStringInstances:
+trait EncoderValueInstances extends EncoderValueInstances1:
   given stringEncodeString[F[_]: Applicative]: Encoder[F, String, String] =
     Encoder.instance[F, String, String](_.pure[F])
 
   given encodeString[F[_]: Applicative, S: StringType]: Encoder[F, S, String] = Encoder.stringEncoder[F, S, String]
 
-  given stringEncodeBoolean[F[_]: Applicative]: Encoder[F, String, Boolean] = Encoder.toStringEncoder[F, Boolean]
-
-  given encodeBoolean[F[_]: Applicative, S: StringType]: Encoder[F, S, Boolean] = Encoder.stringEncoder[F, S, Boolean]
+  given booleanEncodeBoolean[F[_]: Applicative]: Encoder[F, Boolean, Boolean] with
+    def encode(a: Boolean): F[Boolean] = a.pure[F]
+  end booleanEncodeBoolean
+  given encodeBooleanBoolean[F[_]: Applicative, S: BooleanType]: Encoder[F, S, Boolean] =
+    Encoder.booleanEncoder[F, S]
 
   given stringEncodeChar[F[_]: Applicative]: Encoder[F, String, Char] = Encoder.toStringEncoder[F, Char]
 
   given encodeChar[F[_]: Applicative, S: StringType]: Encoder[F, S, Char] = Encoder.stringEncoder[F, S, Char]
 
-  given stringEncodeFloat[F[_]: Applicative]: Encoder[F, String, Float] = Encoder.toStringEncoder[F, Float]
+  given numberEncodeFloat[F[_]: Applicative]: Encoder[F, Number, Float] with
+    def encode(a: Float): F[Number] = Number.fromFloat(a).pure[F]
+  end numberEncodeFloat
 
-  given encodeFloat[F[_]: Applicative, S: StringType]: Encoder[F, S, Float] = Encoder.stringEncoder[F, S, Float]
+  given encodeNumberFloat[F[_]: Applicative, S: NumberType]: Encoder[F, S, Float] = Encoder.numberEncoder[F, S, Float]
 
-  given stringEncodeDouble[F[_]: Applicative]: Encoder[F, String, Double] = Encoder.toStringEncoder[F, Double]
+  given numberEncodeDouble[F[_]: Applicative]: Encoder[F, Number, Double] with
+    def encode(a: Double): F[Number] = Number.fromDouble(a).pure[F]
+  end numberEncodeDouble
 
-  given encodeDouble[F[_]: Applicative, S: StringType]: Encoder[F, S, Double] = Encoder.stringEncoder[F, S, Double]
+  given encodeNumberDouble[F[_]: Applicative, S: NumberType]: Encoder[F, S, Double] = Encoder.numberEncoder[F, S, Double]
 
-  given stringEncodeByte[F[_]: Applicative]: Encoder[F, String, Byte] = Encoder.toStringEncoder[F, Byte]
+  given numberEncodeByte[F[_] : Applicative]: Encoder[F, Number, Byte] with
+    def encode(a: Byte): F[Number] = Number.fromByte(a).pure[F]
+  end numberEncodeByte
 
-  given encodeByte[F[_]: Applicative, S: StringType]: Encoder[F, S, Byte] = Encoder.stringEncoder[F, S, Byte]
+  given encodeNumberByte[F[_] : Applicative, S: NumberType]: Encoder[F, S, Byte] = Encoder.numberEncoder[F, S, Byte]
 
-  given stringEncodeShort[F[_]: Applicative]: Encoder[F, String, Short] = Encoder.toStringEncoder[F, Short]
+  given numberEncodeShort[F[_] : Applicative]: Encoder[F, Number, Short] with
+    def encode(a: Short): F[Number] = Number.fromShort(a).pure[F]
+  end numberEncodeShort
 
-  given encodeShort[F[_]: Applicative, S: StringType]: Encoder[F, S, Short] = Encoder.stringEncoder[F, S, Short]
+  given encodeNumberShort[F[_] : Applicative, S: NumberType]: Encoder[F, S, Short] = Encoder.numberEncoder[F, S, Short]
 
-  given stringEncodeInt[F[_]: Applicative]: Encoder[F, String, Int] = Encoder.toStringEncoder[F, Int]
+  given numberEncodeInt[F[_] : Applicative]: Encoder[F, Number, Int] with
+    def encode(a: Int): F[Number] = Number.fromInt(a).pure[F]
+  end numberEncodeInt
 
-  given encodeInt[F[_]: Applicative, S: StringType]: Encoder[F, S, Int] = Encoder.stringEncoder[F, S, Int]
+  given encodeNumberInt[F[_] : Applicative, S: NumberType]: Encoder[F, S, Int] = Encoder.numberEncoder[F, S, Int]
 
-  given stringEncodeLong[F[_]: Applicative]: Encoder[F, String, Long] = Encoder.toStringEncoder[F, Long]
+  given numberEncodeLong[F[_] : Applicative]: Encoder[F, Number, Long] with
+    def encode(a: Long): F[Number] = Number.fromLong(a).pure[F]
+  end numberEncodeLong
 
-  given encodeLong[F[_]: Applicative, S: StringType]: Encoder[F, S, Long] = Encoder.stringEncoder[F, S, Long]
+  given encodeNumberLong[F[_] : Applicative, S: NumberType]: Encoder[F, S, Long] = Encoder.numberEncoder[F, S, Long]
 
-  given stringEncodeBigInt[F[_]: Applicative]: Encoder[F, String, BigInt] = Encoder.toStringEncoder[F, BigInt]
+  given numberEncodeBigInt[F[_] : Applicative]: Encoder[F, Number, BigInt] with
+    def encode(a: BigInt): F[Number] = Number.fromBigInt(a).pure[F]
+  end numberEncodeBigInt
 
-  given encodeBigInt[F[_]: Applicative, S: StringType]: Encoder[F, S, BigInt] = Encoder.stringEncoder[F, S, BigInt]
+  given encodeNumberBigInt[F[_] : Applicative, S: NumberType]: Encoder[F, S, BigInt] =
+    Encoder.numberEncoder[F, S, BigInt]
 
-  given stringEncodeBigDecimal[F[_]: Applicative]: Encoder[F, String, BigDecimal] =
-    Encoder.toStringEncoder[F, BigDecimal]
+  given numberEncodeBigDecimal[F[_] : Applicative]: Encoder[F, Number, BigDecimal] with
+    def encode(a: BigDecimal): F[Number] = Number.fromBigDecimal(a).pure[F]
+  end numberEncodeBigDecimal
 
-  given encodeBigDecimal[F[_]: Applicative, S: StringType]: Encoder[F, S, BigDecimal] =
-    Encoder.stringEncoder[F, S, BigDecimal]
+  given encodeNumberBigDecimal[F[_] : Applicative, S: NumberType]: Encoder[F, S, BigDecimal] =
+    Encoder.numberEncoder[F, S, BigDecimal]
 
   given stringEncodeUUID[F[_]: Applicative]: Encoder[F, String, UUID] = Encoder.toStringEncoder[F, UUID]
 
@@ -162,4 +181,4 @@ trait EncoderStringInstances:
 
   given encodeCurrency[F[_]: Applicative, S: StringType]: HighPriority[Encoder[F, S, Currency]] =
     HighPriority(Encoder.stringEncoder[F, S, Currency])
-end EncoderStringInstances
+end EncoderValueInstances

@@ -7,7 +7,8 @@ import cats.syntax.apply.*
 import cats.syntax.functor.*
 import cats.syntax.traverse.*
 import com.peknight.codec.sum.ObjectType
-import com.peknight.codec.{Encoder, Object}
+import com.peknight.codec.Encoder
+import com.peknight.codec.obj.Object
 
 import scala.collection.Map
 import scala.collection.immutable.Map as ImmutableMap

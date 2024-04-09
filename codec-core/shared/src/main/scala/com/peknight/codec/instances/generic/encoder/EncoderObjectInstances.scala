@@ -2,7 +2,8 @@ package com.peknight.codec.instances.generic.encoder
 
 import cats.Functor
 import com.peknight.codec.sum.ObjectType
-import com.peknight.codec.{Encoder, Object}
+import com.peknight.codec.Encoder
+import com.peknight.codec.obj.Object
 import com.peknight.generic.priority.MidPriority
 
 trait EncoderObjectInstances:

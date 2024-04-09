@@ -5,8 +5,9 @@ import cats.syntax.applicative.*
 import cats.syntax.either.*
 import com.peknight.codec.Decoder
 import com.peknight.codec.cursor.Cursor
-import com.peknight.codec.error.{DecodingFailure, WrongClassTag}
-import com.peknight.codec.sum.StringType
+import com.peknight.codec.error.{DecodingFailure, NotNumber, WrongClassTag}
+import com.peknight.codec.number.Number
+import com.peknight.codec.sum.{NumberType, StringType}
 import com.peknight.generic.priority.HighPriority
 
 import java.net.URI
@@ -14,18 +15,20 @@ import java.time.*
 import java.util.{Currency, UUID}
 import scala.reflect.ClassTag
 
-trait DecoderStringInstances:
+trait DecoderValueInstances extends DecoderValueInstances1:
+  given decodeNumber[F[_], S](using applicative: Applicative[F], numberType: NumberType[S])
+  : Decoder[F, Cursor[S], DecodingFailure, Number] =
+    Decoder.cursor[F, S, Number] { t =>
+      numberType.asNumber(t.value) match
+        case Some(n) => n.asRight.pure
+        case None => NotNumber.cursor(t).asLeft.pure
+    }
+
   given stringDecodeString[F[_]: Applicative]: Decoder[F, String, DecodingFailure, String] =
     Decoder.instance[F, String, DecodingFailure, String](_.asRight.pure)
 
   given decodeString[F[_]: Applicative, S: StringType]: Decoder[F, Cursor[S], DecodingFailure, String] =
     Decoder.stringDecoder[F, S, String]
-
-  given stringDecodeBoolean[F[_] : Applicative]: Decoder[F, String, DecodingFailure, Boolean] =
-    Decoder.decodeWithOption[F, Boolean](Decoder.toBooleanOption)
-
-  given decodeBoolean[F[_]: Applicative, S: StringType]: Decoder[F, Cursor[S], DecodingFailure, Boolean] =
-    Decoder.stringDecoder[F, S, Boolean]
 
   given stringDecodeChar[F[_]: Applicative]: Decoder[F, String, DecodingFailure, Char] =
     Decoder.instance[F, String, DecodingFailure, Char](t =>
@@ -34,54 +37,6 @@ trait DecoderStringInstances:
 
   given decodeChar[F[_]: Applicative, S: StringType]: Decoder[F, Cursor[S], DecodingFailure, Char] =
     Decoder.stringDecoder[F, S, Char]
-
-  given stringDecodeFloat[F[_]: Applicative]: Decoder[F, String, DecodingFailure, Float] =
-    Decoder.decodeNumber[F, Float](_.toFloat)
-
-  given decodeFloat[F[_]: Applicative, S: StringType]: Decoder[F, Cursor[S], DecodingFailure, Float] =
-    Decoder.stringDecoder[F, S, Float]
-
-  given stringDecodeDouble[F[_]: Applicative]: Decoder[F, String, DecodingFailure, Double] =
-    Decoder.decodeNumber[F, Double](_.toDouble)
-
-  given decodeDouble[F[_]: Applicative, S: StringType]: Decoder[F, Cursor[S], DecodingFailure, Double] =
-    Decoder.stringDecoder[F, S, Double]
-
-  given stringDecodeByte[F[_]: Applicative]: Decoder[F, String, DecodingFailure, Byte] =
-    Decoder.decodeNumber[F, Byte](_.toByte)
-
-  given decodeByte[F[_]: Applicative, S: StringType]: Decoder[F, Cursor[S], DecodingFailure, Byte] =
-    Decoder.stringDecoder[F, S, Byte]
-
-  given stringDecodeShort[F[_]: Applicative]: Decoder[F, String, DecodingFailure, Short] =
-    Decoder.decodeNumber[F, Short](_.toShort)
-
-  given decodeShort[F[_]: Applicative, S: StringType]: Decoder[F, Cursor[S], DecodingFailure, Short] =
-    Decoder.stringDecoder[F, S, Short]
-
-  given stringDecodeInt[F[_]: Applicative]: Decoder[F, String, DecodingFailure, Int] =
-    Decoder.decodeNumber[F, Int](_.toInt)
-
-  given decodeInt[F[_]: Applicative, S: StringType]: Decoder[F, Cursor[S], DecodingFailure, Int] =
-    Decoder.stringDecoder[F, S, Int]
-
-  given stringDecodeLong[F[_]: Applicative]: Decoder[F, String, DecodingFailure, Long] =
-    Decoder.decodeNumber[F, Long](_.toLong)
-
-  given decodeLong[F[_]: Applicative, S: StringType]: Decoder[F, Cursor[S], DecodingFailure, Long] =
-    Decoder.stringDecoder[F, S, Long]
-
-  given stringDecodeBigInt[F[_]: Applicative]: Decoder[F, String, DecodingFailure, BigInt] =
-    Decoder.decodeNumber[F, BigInt](_.toBigInt)
-
-  given decodeBigInt[F[_]: Applicative, S: StringType]: Decoder[F, Cursor[S], DecodingFailure, BigInt] =
-    Decoder.stringDecoder[F, S, BigInt]
-
-  given stringDecodeBigDecimal[F[_]: Applicative]: Decoder[F, String, DecodingFailure, BigDecimal] =
-    Decoder.decodeNumber[F, BigDecimal](identity)
-
-  given decodeBigDecimal[F[_]: Applicative, S: StringType]: Decoder[F, Cursor[S], DecodingFailure, BigDecimal] =
-    Decoder.stringDecoder[F, S, BigDecimal]
 
   given stringDecodeUUID[F[_]: Applicative]: HighPriority[Decoder[F, String, DecodingFailure, UUID]] =
     HighPriority(Decoder.decodeWithTry[F, UUID](UUID.fromString))
@@ -196,4 +151,4 @@ trait DecoderStringInstances:
   given decodeCurrency[F[_]: Applicative, S: StringType]
   : HighPriority[Decoder[F, Cursor[S], DecodingFailure, Currency]] =
     HighPriority(Decoder.stringDecoder[F, S, Currency])
-end DecoderStringInstances
+end DecoderValueInstances
