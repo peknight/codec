@@ -289,8 +289,8 @@ object Decoder extends DecoderCursorInstances
   def toBooleanOption(t: String): Option[Boolean] =
     if "true".equalsIgnoreCase(t) then Some(true)
     else if "false".equalsIgnoreCase(t) then Some(false)
-    else if List("1", "t", "yes", "y").exists(t.equalsIgnoreCase) then Some(true)
-    else if List("0", "f", "no", "n").exists(t.equalsIgnoreCase) then Some(false)
+    else if List("1", "t", "yes", "y", "on").exists(t.equalsIgnoreCase) then Some(true)
+    else if List("0", "f", "no", "n", "off").exists(t.equalsIgnoreCase) then Some(false)
     else None
 
   def decodeWithOption[F[_]: Applicative, A: ClassTag](f: String => Option[A]): Decoder[F, String, DecodingFailure, A] =
@@ -315,7 +315,7 @@ object Decoder extends DecoderCursorInstances
     instance[F, String, DecodingFailure, A] { t =>
       BiggerDecimal.parseBiggerDecimal(t)
         .left.map(DecodingFailure.apply)
-        .flatMap(_.toRight(WrongClassTag[A].value(t)))
+        .flatMap(_.toRight(NotNumber.value(t)))
         .map(biggerDecimal => Number.fromBiggerDecimal(biggerDecimal, t))
         .flatMap(number => f(number).toRight(WrongClassTag[A].value(t)))
         .pure[F]

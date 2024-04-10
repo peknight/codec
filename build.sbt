@@ -27,6 +27,8 @@ lazy val codec = (project in file("."))
     codecHttp4s.js,
     codecCiris.jvm,
     codecCiris.js,
+    codecIp4s.jvm,
+    codecIp4s.js,
   )
   .settings(commonSettings)
   .settings(

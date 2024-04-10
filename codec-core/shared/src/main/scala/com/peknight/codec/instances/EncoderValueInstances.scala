@@ -40,36 +40,36 @@ trait EncoderValueInstances extends EncoderValueInstances1:
 
   given encodeNumberDouble[F[_]: Applicative, S: NumberType]: Encoder[F, S, Double] = Encoder.numberEncoder[F, S, Double]
 
-  given numberEncodeByte[F[_] : Applicative]: Encoder[F, Number, Byte] =
+  given numberEncodeByte[F[_]: Applicative]: Encoder[F, Number, Byte] =
     Encoder.instance[F, Number, Byte](Number.fromByte(_).pure[F])
 
-  given encodeNumberByte[F[_] : Applicative, S: NumberType]: Encoder[F, S, Byte] = Encoder.numberEncoder[F, S, Byte]
+  given encodeNumberByte[F[_]: Applicative, S: NumberType]: Encoder[F, S, Byte] = Encoder.numberEncoder[F, S, Byte]
 
-  given numberEncodeShort[F[_] : Applicative]: Encoder[F, Number, Short] =
+  given numberEncodeShort[F[_]: Applicative]: Encoder[F, Number, Short] =
     Encoder.instance[F, Number, Short](Number.fromShort(_).pure[F])
 
-  given encodeNumberShort[F[_] : Applicative, S: NumberType]: Encoder[F, S, Short] = Encoder.numberEncoder[F, S, Short]
+  given encodeNumberShort[F[_]: Applicative, S: NumberType]: Encoder[F, S, Short] = Encoder.numberEncoder[F, S, Short]
 
-  given numberEncodeInt[F[_] : Applicative]: Encoder[F, Number, Int] =
+  given numberEncodeInt[F[_]: Applicative]: Encoder[F, Number, Int] =
     Encoder.instance[F, Number, Int](Number.fromInt(_).pure[F])
 
-  given encodeNumberInt[F[_] : Applicative, S: NumberType]: Encoder[F, S, Int] = Encoder.numberEncoder[F, S, Int]
+  given encodeNumberInt[F[_]: Applicative, S: NumberType]: Encoder[F, S, Int] = Encoder.numberEncoder[F, S, Int]
 
-  given numberEncodeLong[F[_] : Applicative]: Encoder[F, Number, Long] =
+  given numberEncodeLong[F[_]: Applicative]: Encoder[F, Number, Long] =
     Encoder.instance[F, Number, Long](Number.fromLong(_).pure[F])
 
-  given encodeNumberLong[F[_] : Applicative, S: NumberType]: Encoder[F, S, Long] = Encoder.numberEncoder[F, S, Long]
+  given encodeNumberLong[F[_]: Applicative, S: NumberType]: Encoder[F, S, Long] = Encoder.numberEncoder[F, S, Long]
 
-  given numberEncodeBigInt[F[_] : Applicative]: Encoder[F, Number, BigInt] =
+  given numberEncodeBigInt[F[_]: Applicative]: Encoder[F, Number, BigInt] =
     Encoder.instance[F, Number, BigInt](Number.fromBigInt(_).pure[F])
 
-  given encodeNumberBigInt[F[_] : Applicative, S: NumberType]: Encoder[F, S, BigInt] =
+  given encodeNumberBigInt[F[_]: Applicative, S: NumberType]: Encoder[F, S, BigInt] =
     Encoder.numberEncoder[F, S, BigInt]
 
-  given numberEncodeBigDecimal[F[_] : Applicative]: Encoder[F, Number, BigDecimal] =
+  given numberEncodeBigDecimal[F[_]: Applicative]: Encoder[F, Number, BigDecimal] =
     Encoder.instance[F, Number, BigDecimal](Number.fromBigDecimal(_).pure[F])
 
-  given encodeNumberBigDecimal[F[_] : Applicative, S: NumberType]: Encoder[F, S, BigDecimal] =
+  given encodeNumberBigDecimal[F[_]: Applicative, S: NumberType]: Encoder[F, S, BigDecimal] =
     Encoder.numberEncoder[F, S, BigDecimal]
 
   given stringEncodeUUID[F[_]: Applicative]: Encoder[F, String, UUID] = Encoder.toStringEncoder[F, UUID]
