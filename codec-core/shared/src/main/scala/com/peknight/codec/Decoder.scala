@@ -18,7 +18,9 @@ import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.cursor.Cursor.{FailedCursor, SuccessCursor}
 import com.peknight.codec.error.*
 import com.peknight.codec.instances.*
-import com.peknight.codec.sum.{ArrayType, NullType, ObjectType, StringType}
+import com.peknight.codec.number.{BiggerDecimal, Number}
+import com.peknight.codec.obj.Object
+import com.peknight.codec.sum.*
 import com.peknight.generic.migration.Migration
 import com.peknight.generic.priority.PriorityInstancesF3
 
@@ -305,8 +307,26 @@ object Decoder extends DecoderCursorInstances
         case Failure(e) => ParsingTypeError[A](e).asLeft.pure
     }
 
-  def decodeNumber[F[_]: Applicative, A: ClassTag](f: BigDecimal => A): Decoder[F, String, DecodingFailure, A] =
-    decodeWithTry[F, A](t => f(BigDecimal(t)))
+  def stringDecodeNumber[F[_]: Applicative, A: ClassTag](f: Number => A): Decoder[F, String, DecodingFailure, A] =
+    stringDecodeNumberOption[F, A](number => Some(f(number)))
+
+  def stringDecodeNumberOption[F[_]: Applicative, A: ClassTag](f: Number => Option[A])
+  : Decoder[F, String, DecodingFailure, A] =
+    instance[F, String, DecodingFailure, A] { t =>
+      BiggerDecimal.parseBiggerDecimal(t)
+        .left.map(DecodingFailure.apply)
+        .flatMap(_.toRight(WrongClassTag[A].value(t)))
+        .map(biggerDecimal => Number.fromBiggerDecimal(biggerDecimal, t))
+        .flatMap(number => f(number).toRight(WrongClassTag[A].value(t)))
+        .pure[F]
+    }
+
+  def numberDecodeNumber[F[_]: Applicative, A](f: Number => A): Decoder[F, Number, DecodingFailure, A] =
+    instance[F, Number, DecodingFailure, A](t => f(t).asRight.pure)
+
+  def numberDecodeNumberOption[F[_]: Applicative, A: ClassTag](f: Number => Option[A])
+  : Decoder[F, Number, DecodingFailure, A] =
+    instance[F, Number, DecodingFailure, A](t => f(t).toRight(WrongClassTag[A].value(t)).pure)
 
   def decodeJavaTime[F[_]: Applicative, A: ClassTag](formatter: DateTimeFormatter)(f: (String, DateTimeFormatter) => A)
   : Decoder[F, String, DecodingFailure, A] =
@@ -457,15 +477,64 @@ object Decoder extends DecoderCursorInstances
         case None => WrongClassTag[A].cursor(t).asLeft.pure
     }
 
-  def objectDecoder[F[_], S, A](using decoder: Decoder[F, obj.Object[S], DecodingFailure, A])(
+  def objectDecoder[F[_], S, A](using decoder: Decoder[F, Object[S], DecodingFailure, A])(
     using
     applicative: Applicative[F],
-    objectType: ObjectType.Aux[S, obj.Object[S]]
+    objectType: ObjectType.Aux[S, Object[S]]
   ): Decoder[F, Cursor[S], DecodingFailure, A] =
     cursor[F, S, A] { t =>
       objectType.asObject(t.value) match
         case Some(o) => decoder.decode(o).map(_.left.map(_.cursor(t)))
         case None => NotObject.cursor(t).asLeft.pure
+    }
+
+  def strictBooleanDecoder[F[_], S](using applicative: Applicative[F], booleanType: BooleanType[S])
+  : Decoder[F, Cursor[S], DecodingFailure, Boolean] =
+    cursor[F, S, Boolean] { t =>
+      booleanType.asBoolean(t.value) match
+        case Some(b) => b.asRight.pure[F]
+        case None => WrongClassTag[Boolean].cursor(t).asLeft.pure
+    }
+
+  def booleanDecoder[F[_], S](using applicative: Applicative[F], booleanType: BooleanType[S], stringType: StringType[S])
+  : Decoder[F, Cursor[S], DecodingFailure, Boolean] =
+    cursor[F, S, Boolean] { t =>
+      booleanType.asBoolean(t.value) match
+        case Some(b) => b.asRight.pure[F]
+        case None => stringType.asString(t.value) match
+          case Some(s) => stringDecodeBoolean.decode(s)
+          case None => WrongClassTag[Boolean].cursor(t).asLeft.pure
+    }
+
+  def strictNumberDecoder[F[_], S, A](using decoder: Decoder[F, Number, DecodingFailure, A])(
+    using
+    applicative: Applicative[F],
+    numberType: NumberType[S],
+    classTag: ClassTag[A]
+  ): Decoder[F, Cursor[S], DecodingFailure, A] =
+    cursor[F, S, A] { t =>
+      numberType.asNumber(t.value) match
+        case Some(n) => decoder.decode(n).map(_.left.map(_.cursor(t)))
+        case None => WrongClassTag[A].cursor(t).asLeft.pure
+    }
+
+  def numberDecoder[F[_], S, A](
+    using
+    numberDecoder: Decoder[F, Number, DecodingFailure, A],
+    stringDecoder: Decoder[F, String, DecodingFailure, A]
+  )(
+    using
+    applicative: Applicative[F],
+    numberType: NumberType[S],
+    stringType: StringType[S],
+    classTag: ClassTag[A]
+  ): Decoder[F, Cursor[S], DecodingFailure, A] =
+    cursor[F, S, A] { t =>
+      numberType.asNumber(t.value) match
+        case Some(n) => numberDecoder.decode(n).map(_.left.map(_.cursor(t)))
+        case None => stringType.asString(t.value) match
+          case Some(s) => stringDecoder.decode(s).map(_.left.map(_.cursor(t)))
+          case None => WrongClassTag[A].cursor(t).asLeft.pure
     }
 
   def migrationDecoder[F[_], T, E, A](using migration: Migration[F, T, A])(using functor: Functor[F]): Decoder[F, T, E, A] =

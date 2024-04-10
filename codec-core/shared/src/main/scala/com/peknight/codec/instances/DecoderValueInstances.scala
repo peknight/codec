@@ -7,7 +7,7 @@ import com.peknight.codec.Decoder
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.error.{DecodingFailure, NotNumber, WrongClassTag}
 import com.peknight.codec.number.Number
-import com.peknight.codec.sum.{NumberType, StringType}
+import com.peknight.codec.sum.{BooleanType, NumberType, StringType}
 import com.peknight.generic.priority.HighPriority
 
 import java.net.URI
@@ -30,6 +30,9 @@ trait DecoderValueInstances extends DecoderValueInstances1:
   given decodeString[F[_]: Applicative, S: StringType]: Decoder[F, Cursor[S], DecodingFailure, String] =
     Decoder.stringDecoder[F, S, String]
 
+  given decodeBoolean[F[_] : Applicative, S: BooleanType: StringType]: Decoder[F, Cursor[S], DecodingFailure, Boolean] =
+    Decoder.booleanDecoder[F, S]
+
   given stringDecodeChar[F[_]: Applicative]: Decoder[F, String, DecodingFailure, Char] =
     Decoder.instance[F, String, DecodingFailure, Char](t =>
       if t.length == 1 then t.head.asRight.pure else WrongClassTag[Char].value(t).asLeft.pure
@@ -38,6 +41,30 @@ trait DecoderValueInstances extends DecoderValueInstances1:
   given decodeChar[F[_]: Applicative, S: StringType]: Decoder[F, Cursor[S], DecodingFailure, Char] =
     Decoder.stringDecoder[F, S, Char]
 
+  given decodeFloat[F[_]: Applicative, S: NumberType: StringType]: Decoder[F, Cursor[S], DecodingFailure, Float] =
+    Decoder.numberDecoder[F, S, Float]
+
+  given decodeDouble[F[_]: Applicative, S: NumberType: StringType]: Decoder[F, Cursor[S], DecodingFailure, Double] =
+    Decoder.numberDecoder[F, S, Double]
+    
+  given decodeByte[F[_]: Applicative, S: NumberType: StringType]: Decoder[F, Cursor[S], DecodingFailure, Byte] =
+    Decoder.numberDecoder[F, S, Byte]
+    
+  given decodeShort[F[_]: Applicative, S: NumberType: StringType]: Decoder[F, Cursor[S], DecodingFailure, Short] =
+    Decoder.numberDecoder[F, S, Short]
+
+  given decodeInt[F[_]: Applicative, S: NumberType: StringType]: Decoder[F, Cursor[S], DecodingFailure, Int] =
+    Decoder.numberDecoder[F, S, Int]
+
+  given decodeLong[F[_]: Applicative, S: NumberType: StringType]: Decoder[F, Cursor[S], DecodingFailure, Long] =
+    Decoder.numberDecoder[F, S, Long]
+
+  given decodeBigInt[F[_]: Applicative, S: NumberType: StringType]: Decoder[F, Cursor[S], DecodingFailure, BigInt] =
+    Decoder.numberDecoder[F, S, BigInt]
+
+  given decodeBigDecimal[F[_]: Applicative, S: NumberType: StringType]: Decoder[F, Cursor[S], DecodingFailure, BigDecimal] =
+    Decoder.numberDecoder[F, S, BigDecimal]
+    
   given stringDecodeUUID[F[_]: Applicative]: HighPriority[Decoder[F, String, DecodingFailure, UUID]] =
     HighPriority(Decoder.decodeWithTry[F, UUID](UUID.fromString))
 

@@ -3,9 +3,9 @@ package com.peknight.codec.instances
 import cats.Applicative
 import cats.syntax.applicative.*
 import com.peknight.codec.Encoder
+import com.peknight.codec.number.Number
 import com.peknight.codec.sum.{BooleanType, NumberType, StringType}
 import com.peknight.generic.priority.HighPriority
-import com.peknight.codec.number.Number
 
 import java.net.URI
 import java.time.*
@@ -20,9 +20,9 @@ trait EncoderValueInstances extends EncoderValueInstances1:
 
   given encodeString[F[_]: Applicative, S: StringType]: Encoder[F, S, String] = Encoder.stringEncoder[F, S, String]
 
-  given booleanEncodeBoolean[F[_]: Applicative]: Encoder[F, Boolean, Boolean] with
-    def encode(a: Boolean): F[Boolean] = a.pure[F]
-  end booleanEncodeBoolean
+  given booleanEncodeBoolean[F[_]: Applicative]: Encoder[F, Boolean, Boolean] =
+    Encoder.instance[F, Boolean, Boolean](_.pure[F])
+
   given encodeBooleanBoolean[F[_]: Applicative, S: BooleanType]: Encoder[F, S, Boolean] =
     Encoder.booleanEncoder[F, S]
 
@@ -30,52 +30,44 @@ trait EncoderValueInstances extends EncoderValueInstances1:
 
   given encodeChar[F[_]: Applicative, S: StringType]: Encoder[F, S, Char] = Encoder.stringEncoder[F, S, Char]
 
-  given numberEncodeFloat[F[_]: Applicative]: Encoder[F, Number, Float] with
-    def encode(a: Float): F[Number] = Number.fromFloat(a).pure[F]
-  end numberEncodeFloat
+  given numberEncodeFloat[F[_]: Applicative]: Encoder[F, Number, Float] =
+    Encoder.instance[F, Number, Float](Number.fromFloat(_).pure[F])
 
   given encodeNumberFloat[F[_]: Applicative, S: NumberType]: Encoder[F, S, Float] = Encoder.numberEncoder[F, S, Float]
 
-  given numberEncodeDouble[F[_]: Applicative]: Encoder[F, Number, Double] with
-    def encode(a: Double): F[Number] = Number.fromDouble(a).pure[F]
-  end numberEncodeDouble
+  given numberEncodeDouble[F[_]: Applicative]: Encoder[F, Number, Double] =
+    Encoder.instance[F, Number, Double](Number.fromDouble(_).pure[F])
 
   given encodeNumberDouble[F[_]: Applicative, S: NumberType]: Encoder[F, S, Double] = Encoder.numberEncoder[F, S, Double]
 
-  given numberEncodeByte[F[_] : Applicative]: Encoder[F, Number, Byte] with
-    def encode(a: Byte): F[Number] = Number.fromByte(a).pure[F]
-  end numberEncodeByte
+  given numberEncodeByte[F[_] : Applicative]: Encoder[F, Number, Byte] =
+    Encoder.instance[F, Number, Byte](Number.fromByte(_).pure[F])
 
   given encodeNumberByte[F[_] : Applicative, S: NumberType]: Encoder[F, S, Byte] = Encoder.numberEncoder[F, S, Byte]
 
-  given numberEncodeShort[F[_] : Applicative]: Encoder[F, Number, Short] with
-    def encode(a: Short): F[Number] = Number.fromShort(a).pure[F]
-  end numberEncodeShort
+  given numberEncodeShort[F[_] : Applicative]: Encoder[F, Number, Short] =
+    Encoder.instance[F, Number, Short](Number.fromShort(_).pure[F])
 
   given encodeNumberShort[F[_] : Applicative, S: NumberType]: Encoder[F, S, Short] = Encoder.numberEncoder[F, S, Short]
 
-  given numberEncodeInt[F[_] : Applicative]: Encoder[F, Number, Int] with
-    def encode(a: Int): F[Number] = Number.fromInt(a).pure[F]
-  end numberEncodeInt
+  given numberEncodeInt[F[_] : Applicative]: Encoder[F, Number, Int] =
+    Encoder.instance[F, Number, Int](Number.fromInt(_).pure[F])
 
   given encodeNumberInt[F[_] : Applicative, S: NumberType]: Encoder[F, S, Int] = Encoder.numberEncoder[F, S, Int]
 
-  given numberEncodeLong[F[_] : Applicative]: Encoder[F, Number, Long] with
-    def encode(a: Long): F[Number] = Number.fromLong(a).pure[F]
-  end numberEncodeLong
+  given numberEncodeLong[F[_] : Applicative]: Encoder[F, Number, Long] =
+    Encoder.instance[F, Number, Long](Number.fromLong(_).pure[F])
 
   given encodeNumberLong[F[_] : Applicative, S: NumberType]: Encoder[F, S, Long] = Encoder.numberEncoder[F, S, Long]
 
-  given numberEncodeBigInt[F[_] : Applicative]: Encoder[F, Number, BigInt] with
-    def encode(a: BigInt): F[Number] = Number.fromBigInt(a).pure[F]
-  end numberEncodeBigInt
+  given numberEncodeBigInt[F[_] : Applicative]: Encoder[F, Number, BigInt] =
+    Encoder.instance[F, Number, BigInt](Number.fromBigInt(_).pure[F])
 
   given encodeNumberBigInt[F[_] : Applicative, S: NumberType]: Encoder[F, S, BigInt] =
     Encoder.numberEncoder[F, S, BigInt]
 
-  given numberEncodeBigDecimal[F[_] : Applicative]: Encoder[F, Number, BigDecimal] with
-    def encode(a: BigDecimal): F[Number] = Number.fromBigDecimal(a).pure[F]
-  end numberEncodeBigDecimal
+  given numberEncodeBigDecimal[F[_] : Applicative]: Encoder[F, Number, BigDecimal] =
+    Encoder.instance[F, Number, BigDecimal](Number.fromBigDecimal(_).pure[F])
 
   given encodeNumberBigDecimal[F[_] : Applicative, S: NumberType]: Encoder[F, S, BigDecimal] =
     Encoder.numberEncoder[F, S, BigDecimal]
