@@ -1,7 +1,6 @@
 package com.peknight.codec.circe
 
 import cats.Id
-import com.peknight.codec.number.{BiggerDecimal, Number}
 import cats.data.ValidatedNel
 import com.peknight.codec.cursor.Cursor.{FailedCursor, SuccessCursor}
 import com.peknight.codec.cursor.id.{Codec, Decoder}
@@ -10,6 +9,7 @@ import com.peknight.codec.derivation.{SumDecoder, SumEncoder}
 import com.peknight.codec.error.DecodingFailure
 import com.peknight.codec.error.DecodingFailure.Common
 import com.peknight.codec.id.Encoder
+import com.peknight.codec.number.{BiggerDecimal, Number}
 import com.peknight.error.std.WrongType
 import com.peknight.error.{Error, Lift}
 import com.peknight.generic.migration.id.Isomorphism
@@ -151,16 +151,14 @@ package object iso:
 
   given numberIsomorphism: Isomorphism[Number, JsonNumber] with
     def to(a: Number): Id[JsonNumber] = a match
-      case Number.DecimalNum(input) => JsonNumber.fromDecimalStringUnsafe(input)
-      case Number.BiggerDecimalNum(value, input) =>
-        JsonNumberOps.fromBiggerDecimal(biggerDecimalIsomorphism.to(value), input)
-      case Number.BigDecimalNum(value) => JsonNumberOps.fromBigDecimal(value)
-      case Number.LongNum(value) => JsonNumberOps.fromLong(value)
-      case Number.DoubleNum(value) => JsonNumberOps.fromDouble(value)
-      case Number.FloatNum(value) => JsonNumberOps.fromFloat(value)
+      case Number.BiggerDecimalNumber(value) =>
+        JsonNumberOps.fromBiggerDecimal(biggerDecimalIsomorphism.to(value), value.toString())
+      case Number.BigDecimalNumber(value) => JsonNumberOps.fromBigDecimal(value)
+      case Number.LongNumber(value) => JsonNumberOps.fromLong(value)
+      case Number.DoubleNumber(value) => JsonNumberOps.fromDouble(value)
+      case Number.FloatNumber(value) => JsonNumberOps.fromFloat(value)
 
     def from(b: JsonNumber): Id[Number] = JsonNumberOps.migrate(b)
-
   end numberIsomorphism
 
   def encoder[A](using encoder: Encoder[Json, A]): io.circe.Encoder[A] = encoderIsomorphism.to(encoder)

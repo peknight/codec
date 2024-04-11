@@ -316,7 +316,7 @@ object Decoder extends DecoderCursorInstances
       BiggerDecimal.parseBiggerDecimal(t)
         .left.map(DecodingFailure.apply)
         .flatMap(_.toRight(NotNumber.value(t)))
-        .map(biggerDecimal => Number.fromBiggerDecimal(biggerDecimal, t))
+        .map(biggerDecimal => Number.fromBiggerDecimal(biggerDecimal))
         .flatMap(number => f(number).toRight(WrongClassTag[A].value(t)))
         .pure[F]
     }

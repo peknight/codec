@@ -69,7 +69,6 @@ sealed trait BiggerDecimal extends Serializable derives CanEqual:
    */
   def toLong: Option[Long]
 
-  private[codec] def appendToStringBuilder(builder: StringBuilder): Unit
 end BiggerDecimal
 object BiggerDecimal:
   private[number] val MaxBigIntegerDigits: BigInt = BigInt(1L << 18)
@@ -130,11 +129,6 @@ object BiggerDecimal:
     override def toString: String =
       if scale == ZeroInt then unscaled.toString
       else s"${unscaled}e${scale.underlying().negate()}"
-
-    override private[codec] def appendToStringBuilder(builder: StringBuilder): Unit =
-      builder.append(unscaled)
-      if scale != ZeroInt then builder.append('e').append(scale.underlying().negate()) else ()
-    end appendToStringBuilder
   end SigAndExp
 
   private[codec] sealed trait Zero extends BiggerDecimal:
@@ -143,33 +137,33 @@ object BiggerDecimal:
     final val toBigDecimal: Option[BigDecimal] = Some(ZeroDecimal)
     final def toBigIntWithMaxDigits(maxDigits: BigInt): Option[BigInt] = Some(ZeroInt)
     final val toLong: Option[Long] = Some(0L)
-    private[codec] def appendToStringBuilder(builder: StringBuilder): Unit = builder.append(toString)
   end Zero
 
   private[codec] object UnsignedZero extends Zero:
-    final def isNegativeZero: Boolean = false
-    final def toDouble: Double = 0.0
-    final def toFloat: Float = 0.0f
-    final override def equals(that: Any): Boolean = that match
+    def isNegativeZero: Boolean = false
+    def toDouble: Double = 0.0
+    def toFloat: Float = 0.0f
+    override def equals(that: Any): Boolean = that match
       case other: Zero => !other.isNegativeZero
       case _ => false
-    final override def hashCode: Int = 0.0.hashCode
-    final override def toString: String = "0"
+    override def hashCode: Int = 0.0.hashCode
+    override def toString: String = "0"
   end UnsignedZero
   private[codec] object NegativeZero extends Zero:
-    final def isNegativeZero: Boolean = true
-    final def toDouble: Double = -0.0
-    final def toFloat: Float = -0.0f
-    final override def equals(that: Any): Boolean = that match
+    def isNegativeZero: Boolean = true
+    def toDouble: Double = -0.0
+    def toFloat: Float = -0.0f
+    override def equals(that: Any): Boolean = that match
       case other: Zero => other.isNegativeZero
       case _ => false
-    final override def hashCode: Int = -0.0.hashCode
-    final override def toString: String = "-0"
+    override def hashCode: Int = -0.0.hashCode
+    override def toString: String = "-0"
   end NegativeZero
 
   val unsignedZero: BiggerDecimal = UnsignedZero
   val negativeZero: BiggerDecimal = NegativeZero
-  def apply(unscaled: BigInt, scaled: BigInt): BiggerDecimal = SigAndExp(unscaled, scaled)
+  def apply(unscaled: BigInt, scaled: BigInt): BiggerDecimal =
+    if unscaled == ZeroInt then UnsignedZero else SigAndExp(unscaled, scaled)
 
   private[this] def fromUnscaledAndScale(unscaled: BigInt, scale: Long): BiggerDecimal =
     @tailrec def go(current: BigInteger, depth: Long, divAndRem: Array[BigInteger])

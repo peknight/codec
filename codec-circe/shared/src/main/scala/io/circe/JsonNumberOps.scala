@@ -13,8 +13,8 @@ object JsonNumberOps:
 
   def migrate(jsonNumber: JsonNumber): Number =
     jsonNumber match
-      case JsonDecimal(input) => Number.fromDecimalStringUnsafe(input)
-      case JsonBiggerDecimal(value, input) => Number.fromBiggerDecimal(biggerDecimalIsomorphism.from(value), input)
+      case JsonDecimal(input) => Number.fromStringUnsafe(input)
+      case JsonBiggerDecimal(value, input) => Number.fromBiggerDecimal(biggerDecimalIsomorphism.from(value))
       case JsonBigDecimal(value) => Number.fromBigDecimal(BigDecimal(value))
       case JsonLong(value) => Number.fromLong(value)
       case JsonDouble(value) => Number.fromDouble(value)
