@@ -212,12 +212,18 @@ object BiggerDecimal:
     if input.isEmpty then none[BiggerDecimal].asRight[ParsingFailure]
     else
       val negativeParser = (Parser.char('-').as(true) | Parser.char('+').as(false)).?.map(_.getOrElse(false))
+      val percentScaleParser = Parser.charIn("%‰‱").map {
+        case '%' => 2
+        case '‰' => 3
+        case '‱' => 4
+      }.?.map(_.getOrElse(0))
       val parser =
         for
           negativeFlag <- negativeParser
           integral <- digits0
           fractional <- (Parser.char('.') *> digits0).?.map(_.filter(_.nonEmpty))
           exponent <- (Parser.charIn("eE") *> (negativeParser ~ digits0)).?
+          percentScale <- percentScaleParser
         yield
           val negativeStr = if negativeFlag then "-" else ""
           val integralStr = if integral.nonEmpty then integral else "0"
@@ -238,7 +244,7 @@ object BiggerDecimal:
             if unscaled == ZeroInt then
               if negativeFlag then NegativeZero else UnsignedZero
             else
-              val rescale = BigInt(fractionalStr.length - zeros)
+              val rescale = BigInt(fractionalStr.length - zeros + percentScale)
               val scale =
                 exponent match
                   case Some((expNeg, exp)) => rescale - (if expNeg then BigInt(s"-$exp") else BigInt(exp))
