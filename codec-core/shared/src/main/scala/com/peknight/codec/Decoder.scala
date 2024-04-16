@@ -186,6 +186,7 @@ object Decoder extends DecoderCursorInstances
   with DecoderObjectInstances
   with DecoderNullInstances
   with DecoderDerivationInstances
+  with DecoderIdentityInstances
   with PriorityInstancesF3[Decoder]:
 
   def apply[F[_], T, E, A](using decoder: Decoder[F, T, E, A]): Decoder[F, T, E, A] = decoder

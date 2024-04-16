@@ -28,6 +28,7 @@ object Encoder extends EncoderValueInstances
   with EncoderArrayInstances
   with EncoderObjectInstances
   with EncoderNullInstances
+  with EncoderIdentityInstances
   with EncoderDerivationInstances
   with PriorityInstancesF2[Encoder]:
 
