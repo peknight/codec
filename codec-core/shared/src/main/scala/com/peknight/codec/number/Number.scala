@@ -114,7 +114,7 @@ object Number:
     def toDouble: Double = value.toDouble
     def toFloat: Float = value.toFloat
     def toLong: Option[Long] = Some(value)
-    override def toString: String = s"$value"
+    override def toString: String = value.toString
   end LongNumber
 
   /**
@@ -133,7 +133,7 @@ object Number:
       val asBigDecimal = toScalaBigDecimal
       if bigDecimalIsValidLong(asBigDecimal) then Some(asBigDecimal.longValue) else None
 
-    override def toString: String = s"$value"
+    override def toString: String = value.toString
   end DoubleNumber
 
   /**
@@ -153,7 +153,7 @@ object Number:
     def toLong: Option[Long] =
       val asBigDecimal = toScalaBigDecimal
       if bigDecimalIsValidLong(asBigDecimal) then Some(asBigDecimal.longValue) else None
-    override def toString: String = s"$value"
+    override def toString: String = value.toString
   end FloatNumber
 
   def fromString(value: String): Option[Number] =

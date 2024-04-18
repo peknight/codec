@@ -188,13 +188,12 @@ sealed trait Cursor[S]:
   /**
    * Attempt to decode the focus as an A.
    */
-  def as[F[_], A](using d: Decoder[F, Cursor[S], DecodingFailure, A]): F[Either[DecodingFailure, A]] =
-    d.decode(this)
+  def as[F[_], A](using d: Decoder[F, Cursor[S], A]): F[Either[DecodingFailure, A]] = d.decode(this)
 
   /**
    * Attempt to decode the value at the given key in a S object as an A
    */
-  def get[F[_], A](k: String)(using Decoder[F, Cursor[S], DecodingFailure, A], ObjectType[S])
+  def get[F[_], A](k: String)(using Decoder[F, Cursor[S], A], ObjectType[S])
   : F[Either[DecodingFailure, A]] =
     downField(k).as[F, A]
 
@@ -203,7 +202,7 @@ sealed trait Cursor[S]:
    * then use the fallback instead.
    */
   def getOrElse[F[_]: Functor, A](k: String)(fallback: => A)
-                                 (using Decoder[F, Cursor[S], DecodingFailure, Option[A]], ObjectType[S])
+                                 (using Decoder[F, Cursor[S], Option[A]], ObjectType[S])
   : F[Either[DecodingFailure, A]] =
     get[F, Option[A]](k).map {
       case Right(Some(a)) => a.asRight[DecodingFailure]

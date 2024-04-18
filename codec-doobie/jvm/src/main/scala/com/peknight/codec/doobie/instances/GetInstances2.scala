@@ -1,18 +1,19 @@
 package com.peknight.codec.doobie.instances
 
-import com.peknight.codec.id.Encoder
+import cats.Id
+import com.peknight.codec.Encoder
 import com.peknight.codec.syntax.decoder.decodeTo
 import doobie.{Get, Meta}
 
 trait GetInstances2:
-  given byteEncoderGet[A](using Encoder[A, Byte]): Get[A] = Meta[Byte].get.decodeTo[A]
-  given shortEncoderGet[A](using Encoder[A, Short]): Get[A] = Meta[Short].get.decodeTo[A]
-  given intEncoderGet[A](using Encoder[A, Int]): Get[A] = Meta[Int].get.decodeTo[A]
-  given longEncoderGet[A](using Encoder[A, Long]): Get[A] = Meta[Long].get.decodeTo[A]
-  given floatEncoderGet[A](using Encoder[A, Float]): Get[A] = Meta[Float].get.decodeTo[A]
-  given doubleEncoderGet[A](using Encoder[A, Double]): Get[A] = Meta[Double].get.decodeTo[A]
-  given bigDecimalEncoderGet[A](using Encoder[A, BigDecimal]): Get[A] = Meta[BigDecimal].get.decodeTo[A]
-  given booleanEncoderGet[A](using Encoder[A, Boolean]): Get[A] = Meta[Boolean].get.decodeTo[A]
-  given stringEncoderGet[A](using Encoder[A, String]): Get[A] = Meta[String].get.decodeTo[A]
-  given byteArrayEncoderGet[A](using Encoder[A, Array[Byte]]): Get[A] = Meta[Array[Byte]].get.decodeTo[A]
+  given encodeByteAsGet[A](using Encoder[Id, A, Byte]): Get[A] = Meta[Byte].get.decodeTo[A]
+  given encodeShortAsGet[A](using Encoder[Id, A, Short]): Get[A] = Meta[Short].get.decodeTo[A]
+  given encodeIntAsGet[A](using Encoder[Id, A, Int]): Get[A] = Meta[Int].get.decodeTo[A]
+  given encodeLongAsGet[A](using Encoder[Id, A, Long]): Get[A] = Meta[Long].get.decodeTo[A]
+  given encodeFloatAsGet[A](using Encoder[Id, A, Float]): Get[A] = Meta[Float].get.decodeTo[A]
+  given encodeDoubleAsGet[A](using Encoder[Id, A, Double]): Get[A] = Meta[Double].get.decodeTo[A]
+  given encodeBigDecimalAsGet[A](using Encoder[Id, A, BigDecimal]): Get[A] = Meta[BigDecimal].get.decodeTo[A]
+  given encodeBooleanAsGet[A](using Encoder[Id, A, Boolean]): Get[A] = Meta[Boolean].get.decodeTo[A]
+  given encodeStringAsGet[A](using Encoder[Id, A, String]): Get[A] = Meta[String].get.decodeTo[A]
+  given encodeByteArrayAsGet[A](using Encoder[Id, A, Array[Byte]]): Get[A] = Meta[Array[Byte]].get.decodeTo[A]
 end GetInstances2

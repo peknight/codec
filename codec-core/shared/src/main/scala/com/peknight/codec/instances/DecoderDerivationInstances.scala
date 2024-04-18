@@ -5,7 +5,6 @@ import com.peknight.codec.Decoder
 import com.peknight.codec.configuration.DecoderConfiguration
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.derivation.DecoderDerivation
-import com.peknight.codec.error.DecodingFailure
 import com.peknight.codec.sum.{NullType, ObjectType}
 import com.peknight.generic.Generic
 import com.peknight.generic.priority.LowPriority
@@ -16,10 +15,10 @@ trait DecoderDerivationInstances extends DecoderDerivation:
     monad: Monad[F],
     objectType: ObjectType[S],
     nullType: NullType[S],
-    stringDecoder: Decoder[F, Cursor[S], DecodingFailure, String],
-    stringOptionDecoder: Decoder[F, Cursor[S], DecodingFailure, Option[String]],
-    instances: => Generic.Instances[[X] =>> Decoder[F, Cursor[S], DecodingFailure, X], A]
-  ): LowPriority[Decoder[F, Cursor[S], DecodingFailure, A]] =
+    stringDecoder: Decoder[F, Cursor[S], String],
+    stringOptionDecoder: Decoder[F, Cursor[S], Option[String]],
+    instances: => Generic.Instances[[X] =>> Decoder[F, Cursor[S], X], A]
+  ): LowPriority[Decoder[F, Cursor[S], A]] =
     LowPriority(derived[F, S, A])
 end DecoderDerivationInstances
 object DecoderDerivationInstances extends DecoderDerivationInstances

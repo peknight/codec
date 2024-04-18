@@ -5,7 +5,7 @@ import cats.syntax.applicative.*
 import cats.syntax.either.*
 import com.peknight.codec.Decoder
 import com.peknight.codec.cursor.Cursor
-import com.peknight.codec.error.{DecodingFailure, NotNumber, WrongClassTag}
+import com.peknight.codec.error.{NotNumber, WrongClassTag}
 import com.peknight.codec.number.Number
 import com.peknight.codec.sum.{BooleanType, NumberType, StringType}
 import com.peknight.generic.priority.HighPriority
@@ -16,166 +16,157 @@ import java.util.{Currency, UUID}
 import scala.reflect.ClassTag
 
 trait DecoderValueInstances extends DecoderValueInstances1:
-  given decodeNumber[F[_], S](using applicative: Applicative[F], numberType: NumberType[S])
-  : Decoder[F, Cursor[S], DecodingFailure, Number] =
-    Decoder.cursor[F, S, Number] { t =>
-      numberType.asNumber(t.value) match
-        case Some(n) => n.asRight.pure
-        case None => NotNumber.cursor(t).asLeft.pure
+
+  given decodeNumberN[F[_], S](using applicative: Applicative[F], numberType: NumberType[S])
+  : Decoder[F, Cursor[S], Number] =
+    Decoder.cursorValueApplicative[F, S, Number] { t =>
+      numberType.asNumber(t) match
+        case Some(n) => n.asRight
+        case None => NotNumber.asLeft
     }
 
-  given stringDecodeString[F[_]: Applicative]: Decoder[F, String, DecodingFailure, String] =
-    Decoder.instance[F, String, DecodingFailure, String](_.asRight.pure)
+  given stringDecodeString[F[_]: Applicative]: Decoder[F, String, String] =
+    Decoder.identity[F, String]
 
-  given decodeString[F[_]: Applicative, S: StringType]: Decoder[F, Cursor[S], DecodingFailure, String] =
-    Decoder.stringDecoder[F, S, String]
+  given decodeStringS[F[_]: Applicative, S: StringType]: Decoder[F, Cursor[S], String] =
+    Decoder.decodeS[F, S, String]
 
-  given decodeBoolean[F[_] : Applicative, S: BooleanType: StringType]: Decoder[F, Cursor[S], DecodingFailure, Boolean] =
-    Decoder.booleanDecoder[F, S]
+  given decodeBooleanBS[F[_] : Applicative, S: BooleanType: StringType]: Decoder[F, Cursor[S], Boolean] =
+    Decoder.decodeBS[F, S]
 
-  given stringDecodeChar[F[_]: Applicative]: Decoder[F, String, DecodingFailure, Char] =
-    Decoder.instance[F, String, DecodingFailure, Char](t =>
-      if t.length == 1 then t.head.asRight.pure else WrongClassTag[Char].value(t).asLeft.pure
+  given stringDecodeChar[F[_]: Applicative]: Decoder[F, String, Char] =
+    Decoder.applicative[F, String, Char](t =>
+      if t.length == 1 then t.head.asRight else WrongClassTag[Char].value(t).asLeft
     )
 
-  given decodeChar[F[_]: Applicative, S: StringType]: Decoder[F, Cursor[S], DecodingFailure, Char] =
-    Decoder.stringDecoder[F, S, Char]
+  given decodeCharS[F[_]: Applicative, S: StringType]: Decoder[F, Cursor[S], Char] =
+    Decoder.decodeS[F, S, Char]
 
-  given decodeFloat[F[_]: Applicative, S: NumberType: StringType]: Decoder[F, Cursor[S], DecodingFailure, Float] =
-    Decoder.numberDecoder[F, S, Float]
+  given decodeFloatNS[F[_]: Applicative, S: NumberType: StringType]: Decoder[F, Cursor[S], Float] =
+    Decoder.decodeNS[F, S, Float]
 
-  given decodeDouble[F[_]: Applicative, S: NumberType: StringType]: Decoder[F, Cursor[S], DecodingFailure, Double] =
-    Decoder.numberDecoder[F, S, Double]
+  given decodeDoubleNS[F[_]: Applicative, S: NumberType: StringType]: Decoder[F, Cursor[S], Double] =
+    Decoder.decodeNS[F, S, Double]
     
-  given decodeByte[F[_]: Applicative, S: NumberType: StringType]: Decoder[F, Cursor[S], DecodingFailure, Byte] =
-    Decoder.numberDecoder[F, S, Byte]
+  given decodeByteNS[F[_]: Applicative, S: NumberType: StringType]: Decoder[F, Cursor[S], Byte] =
+    Decoder.decodeNS[F, S, Byte]
     
-  given decodeShort[F[_]: Applicative, S: NumberType: StringType]: Decoder[F, Cursor[S], DecodingFailure, Short] =
-    Decoder.numberDecoder[F, S, Short]
+  given decodeShortNS[F[_]: Applicative, S: NumberType: StringType]: Decoder[F, Cursor[S], Short] =
+    Decoder.decodeNS[F, S, Short]
 
-  given decodeInt[F[_]: Applicative, S: NumberType: StringType]: Decoder[F, Cursor[S], DecodingFailure, Int] =
-    Decoder.numberDecoder[F, S, Int]
+  given decodeIntNS[F[_]: Applicative, S: NumberType: StringType]: Decoder[F, Cursor[S], Int] =
+    Decoder.decodeNS[F, S, Int]
 
-  given decodeLong[F[_]: Applicative, S: NumberType: StringType]: Decoder[F, Cursor[S], DecodingFailure, Long] =
-    Decoder.numberDecoder[F, S, Long]
+  given decodeLongNS[F[_]: Applicative, S: NumberType: StringType]: Decoder[F, Cursor[S], Long] =
+    Decoder.decodeNS[F, S, Long]
 
-  given decodeBigInt[F[_]: Applicative, S: NumberType: StringType]: Decoder[F, Cursor[S], DecodingFailure, BigInt] =
-    Decoder.numberDecoder[F, S, BigInt]
+  given decodeBigIntNS[F[_]: Applicative, S: NumberType: StringType]: Decoder[F, Cursor[S], BigInt] =
+    Decoder.decodeNS[F, S, BigInt]
 
-  given decodeBigDecimal[F[_]: Applicative, S: NumberType: StringType]: Decoder[F, Cursor[S], DecodingFailure, BigDecimal] =
-    Decoder.numberDecoder[F, S, BigDecimal]
+  given decodeBigDecimalNS[F[_]: Applicative, S: NumberType: StringType]: Decoder[F, Cursor[S], BigDecimal] =
+    Decoder.decodeNS[F, S, BigDecimal]
     
-  given stringDecodeUUID[F[_]: Applicative]: HighPriority[Decoder[F, String, DecodingFailure, UUID]] =
-    HighPriority(Decoder.decodeWithTry[F, UUID](UUID.fromString))
+  given stringDecodeUUID[F[_]: Applicative]: HighPriority[Decoder[F, String, UUID]] =
+    HighPriority(Decoder.parse[F, String, UUID](UUID.fromString))
 
-  given decodeUUID[F[_]: Applicative, S: StringType]: HighPriority[Decoder[F, Cursor[S], DecodingFailure, UUID]] =
-    HighPriority(Decoder.stringDecoder[F, S, UUID])
+  given decodeUUIDS[F[_]: Applicative, S: StringType]: HighPriority[Decoder[F, Cursor[S], UUID]] =
+    HighPriority(Decoder.decodeS[F, S, UUID])
 
-  given stringDecodeURI[F[_]: Applicative]: HighPriority[Decoder[F, String, DecodingFailure, URI]] =
-    HighPriority(Decoder.decodeWithTry[F, URI](t => new URI(t)))
+  given stringDecodeURI[F[_]: Applicative]: HighPriority[Decoder[F, String, URI]] =
+    HighPriority(Decoder.parse[F, String, URI](URI(_)))
 
-  given decodeURI[F[_]: Applicative, S: StringType]: HighPriority[Decoder[F, Cursor[S], DecodingFailure, URI]] =
-    HighPriority(Decoder.stringDecoder[F, S, URI])
+  given decodeURIS[F[_]: Applicative, S: StringType]: HighPriority[Decoder[F, Cursor[S], URI]] =
+    HighPriority(Decoder.decodeS[F, S, URI])
 
-  given stringDecodeDuration[F[_]: Applicative]: HighPriority[Decoder[F, String, DecodingFailure, Duration]] =
-    HighPriority(Decoder.decodeWithTry[F, Duration](Duration.parse))
+  given stringDecodeDuration[F[_]: Applicative]: HighPriority[Decoder[F, String, Duration]] =
+    HighPriority(Decoder.parse[F, String, Duration](Duration.parse))
 
-  given decodeDuration[F[_]: Applicative, S: StringType]
-  : HighPriority[Decoder[F, Cursor[S], DecodingFailure, Duration]] =
-    HighPriority(Decoder.stringDecoder[F, S, Duration])
+  given decodeDurationS[F[_]: Applicative, S: StringType]
+  : HighPriority[Decoder[F, Cursor[S], Duration]] =
+    HighPriority(Decoder.decodeS[F, S, Duration])
 
-  given stringDecodeInstant[F[_]: Applicative]: HighPriority[Decoder[F, String, DecodingFailure, Instant]] =
-    HighPriority(Decoder.decodeWithTry[F, Instant](Instant.parse))
+  given stringDecodeInstant[F[_]: Applicative]: HighPriority[Decoder[F, String, Instant]] =
+    HighPriority(Decoder.parse[F, String, Instant](Instant.parse))
 
-  given decodeInstant[F[_]: Applicative, S: StringType]: HighPriority[Decoder[F, Cursor[S], DecodingFailure, Instant]] =
-    HighPriority(Decoder.stringDecoder[F, S, Instant])
+  given decodeInstantS[F[_]: Applicative, S: StringType]: HighPriority[Decoder[F, Cursor[S], Instant]] =
+    HighPriority(Decoder.decodeS[F, S, Instant])
 
-  given stringDecodePeriod[F[_]: Applicative]: HighPriority[Decoder[F, String, DecodingFailure, Period]] =
-    HighPriority(Decoder.decodeWithTry[F, Period](Period.parse))
+  given stringDecodePeriod[F[_]: Applicative]: HighPriority[Decoder[F, String, Period]] =
+    HighPriority(Decoder.parse[F, String, Period](Period.parse))
 
-  given decodePeriod[F[_]: Applicative, S: StringType]: HighPriority[Decoder[F, Cursor[S], DecodingFailure, Period]] =
-    HighPriority(Decoder.stringDecoder[F, S, Period])
+  given decodePeriodS[F[_]: Applicative, S: StringType]: HighPriority[Decoder[F, Cursor[S], Period]] =
+    HighPriority(Decoder.decodeS[F, S, Period])
 
-  given stringDecodeZoneId[F[_]: Applicative]: HighPriority[Decoder[F, String, DecodingFailure, ZoneId]] =
-    HighPriority(Decoder.decodeWithTry[F, ZoneId](ZoneId.of))
+  given stringDecodeZoneId[F[_]: Applicative]: HighPriority[Decoder[F, String, ZoneId]] =
+    HighPriority(Decoder.parse[F, String, ZoneId](ZoneId.of))
 
-  given decodeZoneId[F[_]: Applicative, S: StringType]: HighPriority[Decoder[F, Cursor[S], DecodingFailure, ZoneId]] =
-    HighPriority(Decoder.stringDecoder[F, S, ZoneId])
+  given decodeZoneIdS[F[_]: Applicative, S: StringType]: HighPriority[Decoder[F, Cursor[S], ZoneId]] =
+    HighPriority(Decoder.decodeS[F, S, ZoneId])
 
-  given stringDecodeLocalDate[F[_]: Applicative]: HighPriority[Decoder[F, String, DecodingFailure, LocalDate]] =
-    HighPriority(Decoder.decodeWithTry[F, LocalDate](LocalDate.parse))
+  given stringDecodeLocalDate[F[_]: Applicative]: HighPriority[Decoder[F, String, LocalDate]] =
+    HighPriority(Decoder.parse[F, String, LocalDate](LocalDate.parse))
 
-  given decodeLocalDate[F[_]: Applicative, S: StringType]
-  : HighPriority[Decoder[F, Cursor[S], DecodingFailure, LocalDate]] =
-    HighPriority(Decoder.stringDecoder[F, S, LocalDate])
+  given decodeLocalDateS[F[_]: Applicative, S: StringType]: HighPriority[Decoder[F, Cursor[S], LocalDate]] =
+    HighPriority(Decoder.decodeS[F, S, LocalDate])
 
-  given stringDecodeLocalTime[F[_]: Applicative]: HighPriority[Decoder[F, String, DecodingFailure, LocalTime]] =
-    HighPriority(Decoder.decodeWithTry[F, LocalTime](LocalTime.parse))
+  given stringDecodeLocalTime[F[_]: Applicative]: HighPriority[Decoder[F, String, LocalTime]] =
+    HighPriority(Decoder.parse[F, String, LocalTime](LocalTime.parse))
 
-  given decodeLocalTime[F[_]: Applicative, S: StringType]
-  : HighPriority[Decoder[F, Cursor[S], DecodingFailure, LocalTime]] =
-    HighPriority(Decoder.stringDecoder[F, S, LocalTime])
+  given decodeLocalTimeS[F[_]: Applicative, S: StringType]: HighPriority[Decoder[F, Cursor[S], LocalTime]] =
+    HighPriority(Decoder.decodeS[F, S, LocalTime])
 
-  given stringDecodeLocalDateTime[F[_]: Applicative]: HighPriority[Decoder[F, String, DecodingFailure, LocalDateTime]] =
-    HighPriority(Decoder.decodeWithTry[F, LocalDateTime](LocalDateTime.parse))
+  given stringDecodeLocalDateTime[F[_]: Applicative]: HighPriority[Decoder[F, String, LocalDateTime]] =
+    HighPriority(Decoder.parse[F, String, LocalDateTime](LocalDateTime.parse))
 
-  given decodeLocalDateTime[F[_]: Applicative, S: StringType]
-  : HighPriority[Decoder[F, Cursor[S], DecodingFailure, LocalDateTime]] =
-    HighPriority(Decoder.stringDecoder[F, S, LocalDateTime])
+  given decodeLocalDateTimeS[F[_]: Applicative, S: StringType]: HighPriority[Decoder[F, Cursor[S], LocalDateTime]] =
+    HighPriority(Decoder.decodeS[F, S, LocalDateTime])
 
-  given stringDecodeMonthDay[F[_]: Applicative]: HighPriority[Decoder[F, String, DecodingFailure, MonthDay]] =
-    HighPriority(Decoder.decodeWithTry[F, MonthDay](MonthDay.parse))
+  given stringDecodeMonthDay[F[_]: Applicative]: HighPriority[Decoder[F, String, MonthDay]] =
+    HighPriority(Decoder.parse[F, String, MonthDay](MonthDay.parse))
 
-  given decodeMonthDay[F[_]: Applicative, S: StringType]
-  : HighPriority[Decoder[F, Cursor[S], DecodingFailure, MonthDay]] =
-    HighPriority(Decoder.stringDecoder[F, S, MonthDay])
+  given decodeMonthDayS[F[_]: Applicative, S: StringType]: HighPriority[Decoder[F, Cursor[S], MonthDay]] =
+    HighPriority(Decoder.decodeS[F, S, MonthDay])
 
-  given stringDecodeOffsetTime[F[_]: Applicative]: HighPriority[Decoder[F, String, DecodingFailure, OffsetTime]] =
-    HighPriority(Decoder.decodeWithTry[F, OffsetTime](OffsetTime.parse))
+  given stringDecodeOffsetTime[F[_]: Applicative]: HighPriority[Decoder[F, String, OffsetTime]] =
+    HighPriority(Decoder.parse[F, String, OffsetTime](OffsetTime.parse))
 
-  given decodeOffsetTime[F[_]: Applicative, S: StringType]
-  : HighPriority[Decoder[F, Cursor[S], DecodingFailure, OffsetTime]] =
-    HighPriority(Decoder.stringDecoder[F, S, OffsetTime])
+  given decodeOffsetTimeS[F[_]: Applicative, S: StringType]: HighPriority[Decoder[F, Cursor[S], OffsetTime]] =
+    HighPriority(Decoder.decodeS[F, S, OffsetTime])
 
-  given stringDecodeOffsetDateTime[F[_]: Applicative]
-  : HighPriority[Decoder[F, String, DecodingFailure, OffsetDateTime]] =
-    HighPriority(Decoder.decodeWithTry[F, OffsetDateTime](OffsetDateTime.parse))
+  given stringDecodeOffsetDateTime[F[_]: Applicative]: HighPriority[Decoder[F, String, OffsetDateTime]] =
+    HighPriority(Decoder.parse[F, String, OffsetDateTime](OffsetDateTime.parse))
 
-  given decodeOffsetDateTime[F[_]: Applicative, S: StringType]
-  : HighPriority[Decoder[F, Cursor[S], DecodingFailure, OffsetDateTime]] =
-    HighPriority(Decoder.stringDecoder[F, S, OffsetDateTime])
+  given decodeOffsetDateTimeS[F[_]: Applicative, S: StringType]: HighPriority[Decoder[F, Cursor[S], OffsetDateTime]] =
+    HighPriority(Decoder.decodeS[F, S, OffsetDateTime])
 
-  given stringDecodeYear[F[_]: Applicative]: HighPriority[Decoder[F, String, DecodingFailure, Year]] =
-    HighPriority(Decoder.decodeWithTry[F, Year](Year.parse))
+  given stringDecodeYear[F[_]: Applicative]: HighPriority[Decoder[F, String, Year]] =
+    HighPriority(Decoder.parse[F, String, Year](Year.parse))
 
-  given decodeYear[F[_]: Applicative, S: StringType]: HighPriority[Decoder[F, Cursor[S], DecodingFailure, Year]] =
-    HighPriority(Decoder.stringDecoder[F, S, Year])
+  given decodeYearS[F[_]: Applicative, S: StringType]: HighPriority[Decoder[F, Cursor[S], Year]] =
+    HighPriority(Decoder.decodeS[F, S, Year])
 
-  given stringDecodeYearMonth[F[_]: Applicative]: HighPriority[Decoder[F, String, DecodingFailure, YearMonth]] =
-    HighPriority(Decoder.decodeWithTry[F, YearMonth](YearMonth.parse))
+  given stringDecodeYearMonth[F[_]: Applicative]: HighPriority[Decoder[F, String, YearMonth]] =
+    HighPriority(Decoder.parse[F, String, YearMonth](YearMonth.parse))
 
-  given decodeYearMonth[F[_]: Applicative, S: StringType]
-  : HighPriority[Decoder[F, Cursor[S], DecodingFailure, YearMonth]] =
-    HighPriority(Decoder.stringDecoder[F, S, YearMonth])
+  given decodeYearMonthS[F[_]: Applicative, S: StringType]: HighPriority[Decoder[F, Cursor[S], YearMonth]] =
+    HighPriority(Decoder.decodeS[F, S, YearMonth])
 
-  given stringDecodeZonedDateTime[F[_]: Applicative]: HighPriority[Decoder[F, String, DecodingFailure, ZonedDateTime]] =
-    HighPriority(Decoder.decodeWithTry[F, ZonedDateTime](ZonedDateTime.parse))
+  given stringDecodeZonedDateTime[F[_]: Applicative]: HighPriority[Decoder[F, String, ZonedDateTime]] =
+    HighPriority(Decoder.parse[F, String, ZonedDateTime](ZonedDateTime.parse))
 
-  given decodeZonedDateTime[F[_]: Applicative, S: StringType]
-  : HighPriority[Decoder[F, Cursor[S], DecodingFailure, ZonedDateTime]] =
-    HighPriority(Decoder.stringDecoder[F, S, ZonedDateTime])
+  given decodeZonedDateTimeS[F[_]: Applicative, S: StringType]: HighPriority[Decoder[F, Cursor[S], ZonedDateTime]] =
+    HighPriority(Decoder.decodeS[F, S, ZonedDateTime])
 
-  given stringDecodeZoneOffset[F[_]: Applicative]: HighPriority[Decoder[F, String, DecodingFailure, ZoneOffset]] =
-    HighPriority(Decoder.decodeWithTry[F, ZoneOffset](ZoneOffset.of))
+  given stringDecodeZoneOffset[F[_]: Applicative]: HighPriority[Decoder[F, String, ZoneOffset]] =
+    HighPriority(Decoder.parse[F, String, ZoneOffset](ZoneOffset.of))
 
-  given decodeZoneOffset[F[_]: Applicative, S: StringType]
-  : HighPriority[Decoder[F, Cursor[S], DecodingFailure, ZoneOffset]] =
-    HighPriority(Decoder.stringDecoder[F, S, ZoneOffset])
+  given decodeZoneOffsetS[F[_]: Applicative, S: StringType]: HighPriority[Decoder[F, Cursor[S], ZoneOffset]] =
+    HighPriority(Decoder.decodeS[F, S, ZoneOffset])
 
-  given stringDecodeCurrency[F[_] : Applicative]: HighPriority[Decoder[F, String, DecodingFailure, Currency]] =
-    HighPriority(Decoder.decodeWithTry[F, Currency](Currency.getInstance))
+  given stringDecodeCurrency[F[_] : Applicative]: HighPriority[Decoder[F, String, Currency]] =
+    HighPriority(Decoder.parse[F, String, Currency](Currency.getInstance))
 
-  given decodeCurrency[F[_]: Applicative, S: StringType]
-  : HighPriority[Decoder[F, Cursor[S], DecodingFailure, Currency]] =
-    HighPriority(Decoder.stringDecoder[F, S, Currency])
+  given decodeCurrencyS[F[_]: Applicative, S: StringType]: HighPriority[Decoder[F, Cursor[S], Currency]] =
+    HighPriority(Decoder.decodeS[F, S, Currency])
+
 end DecoderValueInstances

@@ -1,7 +1,6 @@
 package com.peknight.codec.instances
 
 import cats.Applicative
-import cats.syntax.applicative.*
 import com.peknight.codec.Encoder
 import com.peknight.codec.number.Number
 import com.peknight.codec.sum.{BooleanType, NumberType, StringType}
@@ -15,126 +14,121 @@ import java.util.{Currency, UUID}
 import scala.concurrent.duration.Duration
 
 trait EncoderValueInstances extends EncoderValueInstances1:
-  given stringEncodeString[F[_]: Applicative]: Encoder[F, String, String] =
-    Encoder.instance[F, String, String](_.pure[F])
+  given stringEncodeString[F[_]: Applicative]: Encoder[F, String, String] = Encoder.identity[F, String]
 
-  given encodeString[F[_]: Applicative, S: StringType]: Encoder[F, S, String] = Encoder.stringEncoder[F, S, String]
+  given encodeStringS[F[_]: Applicative, S: StringType]: Encoder[F, S, String] = Encoder.encodeS[F, S, String]
 
-  given booleanEncodeBoolean[F[_]: Applicative]: Encoder[F, Boolean, Boolean] =
-    Encoder.instance[F, Boolean, Boolean](_.pure[F])
+  given booleanEncodeBoolean[F[_]: Applicative]: Encoder[F, Boolean, Boolean] = Encoder.identity[F, Boolean]
 
-  given encodeBooleanBoolean[F[_]: Applicative, S: BooleanType]: Encoder[F, S, Boolean] =
-    Encoder.booleanEncoder[F, S]
+  given encodeBooleanB[F[_]: Applicative, S: BooleanType]: Encoder[F, S, Boolean] = Encoder.encodeB[F, S]
 
-  given stringEncodeChar[F[_]: Applicative]: Encoder[F, String, Char] = Encoder.toStringEncoder[F, Char]
+  given stringEncodeChar[F[_]: Applicative]: Encoder[F, String, Char] = Encoder.encodeWithToString[F, Char]
 
-  given encodeChar[F[_]: Applicative, S: StringType]: Encoder[F, S, Char] = Encoder.stringEncoder[F, S, Char]
+  given encodeCharS[F[_]: Applicative, S: StringType]: Encoder[F, S, Char] = Encoder.encodeS[F, S, Char]
 
   given numberEncodeFloat[F[_]: Applicative]: Encoder[F, Number, Float] =
-    Encoder.instance[F, Number, Float](Number.fromFloat(_).pure[F])
+    Encoder.map[F, Number, Float](Number.fromFloat)
 
-  given encodeNumberFloat[F[_]: Applicative, S: NumberType]: Encoder[F, S, Float] = Encoder.numberEncoder[F, S, Float]
+  given encodeFloatN[F[_]: Applicative, S: NumberType]: Encoder[F, S, Float] = Encoder.encodeN[F, S, Float]
 
   given numberEncodeDouble[F[_]: Applicative]: Encoder[F, Number, Double] =
-    Encoder.instance[F, Number, Double](Number.fromDouble(_).pure[F])
+    Encoder.map[F, Number, Double](Number.fromDouble)
 
-  given encodeNumberDouble[F[_]: Applicative, S: NumberType]: Encoder[F, S, Double] = Encoder.numberEncoder[F, S, Double]
+  given encodeDoubleN[F[_]: Applicative, S: NumberType]: Encoder[F, S, Double] =
+    Encoder.encodeN[F, S, Double]
 
   given numberEncodeByte[F[_]: Applicative]: Encoder[F, Number, Byte] =
-    Encoder.instance[F, Number, Byte](Number.fromByte(_).pure[F])
+    Encoder.map[F, Number, Byte](Number.fromByte)
 
-  given encodeNumberByte[F[_]: Applicative, S: NumberType]: Encoder[F, S, Byte] = Encoder.numberEncoder[F, S, Byte]
+  given encodeByteN[F[_]: Applicative, S: NumberType]: Encoder[F, S, Byte] = Encoder.encodeN[F, S, Byte]
 
   given numberEncodeShort[F[_]: Applicative]: Encoder[F, Number, Short] =
-    Encoder.instance[F, Number, Short](Number.fromShort(_).pure[F])
+    Encoder.map[F, Number, Short](Number.fromShort)
 
-  given encodeNumberShort[F[_]: Applicative, S: NumberType]: Encoder[F, S, Short] = Encoder.numberEncoder[F, S, Short]
+  given encodeShortN[F[_]: Applicative, S: NumberType]: Encoder[F, S, Short] = Encoder.encodeN[F, S, Short]
 
   given numberEncodeInt[F[_]: Applicative]: Encoder[F, Number, Int] =
-    Encoder.instance[F, Number, Int](Number.fromInt(_).pure[F])
+    Encoder.map[F, Number, Int](Number.fromInt)
 
-  given encodeNumberInt[F[_]: Applicative, S: NumberType]: Encoder[F, S, Int] = Encoder.numberEncoder[F, S, Int]
+  given encodeIntN[F[_]: Applicative, S: NumberType]: Encoder[F, S, Int] = Encoder.encodeN[F, S, Int]
 
   given numberEncodeLong[F[_]: Applicative]: Encoder[F, Number, Long] =
-    Encoder.instance[F, Number, Long](Number.fromLong(_).pure[F])
+    Encoder.map[F, Number, Long](Number.fromLong)
 
-  given encodeNumberLong[F[_]: Applicative, S: NumberType]: Encoder[F, S, Long] = Encoder.numberEncoder[F, S, Long]
+  given encodeLongN[F[_]: Applicative, S: NumberType]: Encoder[F, S, Long] = Encoder.encodeN[F, S, Long]
 
   given numberEncodeBigInt[F[_]: Applicative]: Encoder[F, Number, BigInt] =
-    Encoder.instance[F, Number, BigInt](Number.fromBigInt(_).pure[F])
+    Encoder.map[F, Number, BigInt](Number.fromBigInt)
 
-  given encodeNumberBigInt[F[_]: Applicative, S: NumberType]: Encoder[F, S, BigInt] =
-    Encoder.numberEncoder[F, S, BigInt]
+  given encodeBigIntN[F[_]: Applicative, S: NumberType]: Encoder[F, S, BigInt] =
+    Encoder.encodeN[F, S, BigInt]
 
   given numberEncodeBigDecimal[F[_]: Applicative]: Encoder[F, Number, BigDecimal] =
-    Encoder.instance[F, Number, BigDecimal](Number.fromBigDecimal(_).pure[F])
+    Encoder.map[F, Number, BigDecimal](Number.fromBigDecimal)
 
-  given encodeNumberBigDecimal[F[_]: Applicative, S: NumberType]: Encoder[F, S, BigDecimal] =
-    Encoder.numberEncoder[F, S, BigDecimal]
+  given encodeBigDecimalN[F[_]: Applicative, S: NumberType]: Encoder[F, S, BigDecimal] =
+    Encoder.encodeN[F, S, BigDecimal]
 
-  given stringEncodeUUID[F[_]: Applicative]: Encoder[F, String, UUID] = Encoder.toStringEncoder[F, UUID]
+  given stringEncodeUUID[F[_]: Applicative]: Encoder[F, String, UUID] = Encoder.encodeWithToString[F, UUID]
 
-  given encodeUUID[F[_]: Applicative, S: StringType]: Encoder[F, S, UUID] = Encoder.stringEncoder[F, S, UUID]
+  given encodeUUIDS[F[_]: Applicative, S: StringType]: Encoder[F, S, UUID] = Encoder.encodeS[F, S, UUID]
 
-  given stringEncodeURI[F[_]: Applicative]: Encoder[F, String, URI] = Encoder.toStringEncoder[F, URI]
+  given stringEncodeURI[F[_]: Applicative]: Encoder[F, String, URI] = Encoder.encodeWithToString[F, URI]
 
-  given encodeURI[F[_]: Applicative, S: StringType]: Encoder[F, S, URI] = Encoder.stringEncoder[F, S, URI]
+  given encodeURIS[F[_]: Applicative, S: StringType]: Encoder[F, S, URI] = Encoder.encodeS[F, S, URI]
 
-  given stringEncodeDuration[F[_]: Applicative]: Encoder[F, String, Duration] = Encoder.toStringEncoder[F, Duration]
+  given stringEncodeDuration[F[_]: Applicative]: Encoder[F, String, Duration] = Encoder.encodeWithToString[F, Duration]
 
-  given encodeDuration[F[_]: Applicative, S: StringType]: Encoder[F, S, Duration] = 
-    Encoder.stringEncoder[F, S, Duration]
+  given encodeDurationS[F[_]: Applicative, S: StringType]: Encoder[F, S, Duration] = 
+    Encoder.encodeS[F, S, Duration]
 
-  given stringEncodeInstant[F[_]: Applicative]: Encoder[F, String, Instant] = Encoder.toStringEncoder[F, Instant]
+  given stringEncodeInstant[F[_]: Applicative]: Encoder[F, String, Instant] = Encoder.encodeWithToString[F, Instant]
 
-  given encodeInstant[F[_]: Applicative, S: StringType]: Encoder[F, S, Instant] = Encoder.stringEncoder[F, S, Instant]
+  given encodeInstantS[F[_]: Applicative, S: StringType]: Encoder[F, S, Instant] = Encoder.encodeS[F, S, Instant]
 
-  given stringEncodePeriod[F[_]: Applicative]: Encoder[F, String, Period] = Encoder.toStringEncoder[F, Period]
+  given stringEncodePeriod[F[_]: Applicative]: Encoder[F, String, Period] = Encoder.encodeWithToString[F, Period]
 
-  given encodePeriod[F[_]: Applicative, S: StringType]: Encoder[F, S, Period] = Encoder.stringEncoder[F, S, Period]
+  given encodePeriodS[F[_]: Applicative, S: StringType]: Encoder[F, S, Period] = Encoder.encodeS[F, S, Period]
 
-  given stringEncodeZoneId[F[_]: Applicative]: Encoder[F, String, ZoneId] with
+  given stringEncodeZoneId[F[_]: Applicative]: Encoder[F, String, ZoneId] = Encoder.map(_.getId)
 
-    def encode(a: ZoneId): F[String] = a.getId.pure[F]
-  end stringEncodeZoneId
-
-  given encodeZoneId[F[_]: Applicative, S: StringType]: Encoder[F, S, ZoneId] = Encoder.stringEncoder[F, S, ZoneId]
+  given encodeZoneIdS[F[_]: Applicative, S: StringType]: Encoder[F, S, ZoneId] = Encoder.encodeS[F, S, ZoneId]
 
   given stringEncodeLocalDate[F[_]: Applicative]: HighPriority[Encoder[F, String, LocalDate]] =
-    HighPriority(Encoder.toStringEncoder[F, LocalDate])
+    HighPriority(Encoder.encodeWithToString[F, LocalDate])
 
-  given encodeLocalDate[F[_]: Applicative, S: StringType]: HighPriority[Encoder[F, S, LocalDate]] =
-    HighPriority(Encoder.stringEncoder[F, S, LocalDate])
+  given encodeLocalDateS[F[_]: Applicative, S: StringType]: HighPriority[Encoder[F, S, LocalDate]] =
+    HighPriority(Encoder.encodeS[F, S, LocalDate])
 
   given stringEncodeLocalTime[F[_]: Applicative]: HighPriority[Encoder[F, String, LocalTime]] =
     HighPriority(Encoder.stringEncodeJavaTime[F, LocalTime](DateTimeFormatter.ISO_LOCAL_TIME))
 
-  given encodeLocalTime[F[_]: Applicative, S: StringType]: HighPriority[Encoder[F, S, LocalTime]] =
-    HighPriority(Encoder.stringEncoder[F, S, LocalTime])
+  given encodeLocalTimeS[F[_]: Applicative, S: StringType]: HighPriority[Encoder[F, S, LocalTime]] =
+    HighPriority(Encoder.encodeS[F, S, LocalTime])
 
   given stringEncodeLocalDateTime[F[_]: Applicative]: HighPriority[Encoder[F, String, LocalDateTime]] =
     HighPriority(Encoder.stringEncodeJavaTime[F, LocalDateTime](DateTimeFormatter.ISO_LOCAL_DATE_TIME))
 
-  given encodeLocalDateTime[F[_]: Applicative, S: StringType]: HighPriority[Encoder[F, S, LocalDateTime]] =
-    HighPriority(Encoder.stringEncoder[F, S, LocalDateTime])
+  given encodeLocalDateTimeS[F[_]: Applicative, S: StringType]: HighPriority[Encoder[F, S, LocalDateTime]] =
+    HighPriority(Encoder.encodeS[F, S, LocalDateTime])
 
   given stringEncodeMonthDay[F[_]: Applicative]: HighPriority[Encoder[F, String, MonthDay]] =
-    HighPriority(Encoder.toStringEncoder[F, MonthDay])
+    HighPriority(Encoder.encodeWithToString[F, MonthDay])
 
-  given encodeMonthDay[F[_]: Applicative, S: StringType]: HighPriority[Encoder[F, S, MonthDay]] =
-    HighPriority(Encoder.stringEncoder[F, S, MonthDay])
+  given encodeMonthDayS[F[_]: Applicative, S: StringType]: HighPriority[Encoder[F, S, MonthDay]] =
+    HighPriority(Encoder.encodeS[F, S, MonthDay])
 
   given stringEncodeOffsetTime[F[_]: Applicative]: HighPriority[Encoder[F, String, OffsetTime]] =
     HighPriority(Encoder.stringEncodeJavaTime[F, OffsetTime](DateTimeFormatter.ISO_OFFSET_TIME))
 
-  given encodeOffsetTime[F[_]: Applicative, S: StringType]: HighPriority[Encoder[F, S, OffsetTime]] =
-    HighPriority(Encoder.stringEncoder[F, S, OffsetTime])
+  given encodeOffsetTimeS[F[_]: Applicative, S: StringType]: HighPriority[Encoder[F, S, OffsetTime]] =
+    HighPriority(Encoder.encodeS[F, S, OffsetTime])
 
   given stringEncodeOffsetDateTime[F[_]: Applicative]: HighPriority[Encoder[F, String, OffsetDateTime]] =
     HighPriority(Encoder.stringEncodeJavaTime[F, OffsetDateTime](DateTimeFormatter.ISO_OFFSET_DATE_TIME))
 
-  given encodeOffsetDateTime[F[_]: Applicative, S: StringType]: HighPriority[Encoder[F, S, OffsetDateTime]] =
-    HighPriority(Encoder.stringEncoder[F, S, OffsetDateTime])
+  given encodeOffsetDateTimeS[F[_]: Applicative, S: StringType]: HighPriority[Encoder[F, S, OffsetDateTime]] =
+    HighPriority(Encoder.encodeS[F, S, OffsetDateTime])
 
   given stringEncodeYear[F[_]: Applicative]: HighPriority[Encoder[F, String, Year]] =
     HighPriority(Encoder.stringEncodeJavaTime[F, Year](DateTimeFormatterBuilder()
@@ -142,8 +136,8 @@ trait EncoderValueInstances extends EncoderValueInstances1:
       .toFormatter()
     ))
 
-  given encodeYear[F[_]: Applicative, S: StringType]: HighPriority[Encoder[F, S, Year]] =
-    HighPriority(Encoder.stringEncoder[F, S, Year])
+  given encodeYearS[F[_]: Applicative, S: StringType]: HighPriority[Encoder[F, S, Year]] =
+    HighPriority(Encoder.encodeS[F, S, Year])
 
   given stringEncodeYearMonth[F[_]: Applicative]: HighPriority[Encoder[F, String, YearMonth]] =
     HighPriority(Encoder.stringEncodeJavaTime[F, YearMonth](DateTimeFormatterBuilder()
@@ -153,24 +147,24 @@ trait EncoderValueInstances extends EncoderValueInstances1:
       .toFormatter()
     ))
 
-  given encodeYearMonth[F[_]: Applicative, S: StringType]: HighPriority[Encoder[F, S, YearMonth]] =
-    HighPriority(Encoder.stringEncoder[F, S, YearMonth])
+  given encodeYearMonthS[F[_]: Applicative, S: StringType]: HighPriority[Encoder[F, S, YearMonth]] =
+    HighPriority(Encoder.encodeS[F, S, YearMonth])
 
   given stringEncodeZonedDateTime[F[_]: Applicative]: HighPriority[Encoder[F, String, ZonedDateTime]] =
     HighPriority(Encoder.stringEncodeJavaTime[F, ZonedDateTime](DateTimeFormatter.ISO_ZONED_DATE_TIME))
 
-  given encodeZonedDateTime[F[_]: Applicative, S: StringType]: HighPriority[Encoder[F, S, ZonedDateTime]] =
-    HighPriority(Encoder.stringEncoder[F, S, ZonedDateTime])
+  given encodeZonedDateTimeS[F[_]: Applicative, S: StringType]: HighPriority[Encoder[F, S, ZonedDateTime]] =
+    HighPriority(Encoder.encodeS[F, S, ZonedDateTime])
 
   given stringEncodeZoneOffset[F[_]: Applicative]: HighPriority[Encoder[F, String, ZoneOffset]] =
-    HighPriority(Encoder.toStringEncoder[F, ZoneOffset])
+    HighPriority(Encoder.encodeWithToString[F, ZoneOffset])
 
-  given encodeZoneOffset[F[_]: Applicative, S: StringType]: HighPriority[Encoder[F, S, ZoneOffset]] =
-    HighPriority(Encoder.stringEncoder[F, S, ZoneOffset])
+  given encodeZoneOffsetS[F[_]: Applicative, S: StringType]: HighPriority[Encoder[F, S, ZoneOffset]] =
+    HighPriority(Encoder.encodeS[F, S, ZoneOffset])
 
   given stringEncodeCurrency[F[_]: Applicative]: HighPriority[Encoder[F, String, Currency]] =
-    HighPriority(_.getCurrencyCode.pure[F])
+    HighPriority(Encoder.map(_.getCurrencyCode))
 
-  given encodeCurrency[F[_]: Applicative, S: StringType]: HighPriority[Encoder[F, S, Currency]] =
-    HighPriority(Encoder.stringEncoder[F, S, Currency])
+  given encodeCurrencyS[F[_]: Applicative, S: StringType]: HighPriority[Encoder[F, S, Currency]] =
+    HighPriority(Encoder.encodeS[F, S, Currency])
 end EncoderValueInstances

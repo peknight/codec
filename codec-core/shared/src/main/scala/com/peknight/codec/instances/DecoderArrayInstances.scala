@@ -3,8 +3,8 @@ package com.peknight.codec.instances
 import cats.data.*
 import cats.syntax.applicative.*
 import cats.syntax.either.*
-import cats.syntax.validated.*
-import cats.{Applicative, Monad, Order}
+import cats.syntax.functor.*
+import cats.{Applicative, Order}
 import com.peknight.cats.ext.data.ChainBuilder
 import com.peknight.cats.ext.instances.applicative.given
 import com.peknight.codec.Decoder
@@ -17,74 +17,60 @@ import com.peknight.generic.Generic
 import scala.collection.immutable.SortedSet
 
 trait DecoderArrayInstances extends DecoderArrayInstances1:
-  given decodeSet[F[_], S, A](using Monad[F], Decoder[F, Cursor[S], DecodingFailure, A], ArrayType[S])
-  : Decoder[F, Cursor[S], DecodingFailure, Set[A]] =
+  given decodeSetA[F[_], S, A](using Applicative[F], Decoder[F, Cursor[S], A], ArrayType[S])
+  : Decoder[F, Cursor[S], Set[A]] =
     Decoder.decodeSeq[F, S, A, Set](Set.newBuilder[A])
 
-  given decodeList[F[_], S, A](using Monad[F], Decoder[F, Cursor[S], DecodingFailure, A], ArrayType[S])
-  : Decoder[F, Cursor[S], DecodingFailure, List[A]] =
+  given decodeListA[F[_], S, A](using Applicative[F], Decoder[F, Cursor[S], A], ArrayType[S])
+  : Decoder[F, Cursor[S], List[A]] =
     Decoder.decodeSeq[F, S, A, List](List.newBuilder[A])
 
-  given decodeVector[F[_], S, A](using Monad[F], Decoder[F, Cursor[S], DecodingFailure, A], ArrayType[S])
-  : Decoder[F, Cursor[S], DecodingFailure, Vector[A]] =
+  given decodeVectorA[F[_], S, A](using Applicative[F], Decoder[F, Cursor[S], A], ArrayType[S])
+  : Decoder[F, Cursor[S], Vector[A]] =
     Decoder.decodeSeq[F, S, A, Vector](Vector.newBuilder[A])
 
-  given decodeChain[F[_], S, A](using Monad[F], Decoder[F, Cursor[S], DecodingFailure, A], ArrayType[S])
-  : Decoder[F, Cursor[S], DecodingFailure, Chain[A]] =
+  given decodeChainA[F[_], S, A](using Applicative[F], Decoder[F, Cursor[S], A], ArrayType[S])
+  : Decoder[F, Cursor[S], Chain[A]] =
     Decoder.decodeSeq[F, S, A, Chain](new ChainBuilder[A])
 
-  given decodeNonEmptyList[F[_], S, A](using Monad[F], Decoder[F, Cursor[S], DecodingFailure, A], ArrayType[S])
-  : Decoder[F, Cursor[S], DecodingFailure, NonEmptyList[A]] =
+  given decodeNonEmptyListA[F[_], S, A](using Applicative[F], Decoder[F, Cursor[S], A], ArrayType[S])
+  : Decoder[F, Cursor[S], NonEmptyList[A]] =
     Decoder.decodeNonEmptySeq[F, S, A, List, NonEmptyList[A]](List.newBuilder[A])(NonEmptyList.apply)
 
-  given decodeNonEmptyVector[F[_], S, A](using Monad[F], Decoder[F, Cursor[S], DecodingFailure, A], ArrayType[S])
-  : Decoder[F, Cursor[S], DecodingFailure, NonEmptyVector[A]] =
+  given decodeNonEmptyVectorA[F[_], S, A](using Applicative[F], Decoder[F, Cursor[S], A], ArrayType[S])
+  : Decoder[F, Cursor[S], NonEmptyVector[A]] =
     Decoder.decodeNonEmptySeq[F, S, A, Vector, NonEmptyVector[A]](Vector.newBuilder[A])(NonEmptyVector.apply)
 
-  given decodeNonEmptySet[F[_], S, A](using monad: Monad[F], decoder: Decoder[F, Cursor[S], DecodingFailure, A],
-                                      arrayType: ArrayType[S], order: Order[A])
-  : Decoder[F, Cursor[S], DecodingFailure, NonEmptySet[A]] =
+  given decodeNonEmptySetA[F[_], S, A](using applicative: Applicative[F], decoder: Decoder[F, Cursor[S], A],
+                                       arrayType: ArrayType[S], order: Order[A])
+  : Decoder[F, Cursor[S], NonEmptySet[A]] =
     Decoder.decodeNonEmptySeq[F, S, A, SortedSet, NonEmptySet[A]](
       SortedSet.newBuilder[A](Order.catsKernelOrderingForOrder(order))
     )(NonEmptySet.apply)
 
-  given decodeNonEmptyChain[F[_], S, A](using monad: Monad[F], decoder: Decoder[F, Cursor[S], DecodingFailure, A],
-                                        arrayType: ArrayType[S], order: Order[A])
-  : Decoder[F, Cursor[S], DecodingFailure, NonEmptyChain[A]] =
+  given decodeNonEmptyChainA[F[_], S, A](using applicative: Applicative[F], decoder: Decoder[F, Cursor[S], A],
+                                         arrayType: ArrayType[S], order: Order[A])
+  : Decoder[F, Cursor[S], NonEmptyChain[A]] =
     Decoder.decodeNonEmptySeq[F, S, A, Chain, NonEmptyChain[A]](new ChainBuilder[A])(NonEmptyChain.fromChainPrepend)
 
-  given decodeSeq[F[_], S, A](using Monad[F], Decoder[F, Cursor[S], DecodingFailure, A], ArrayType[S])
-  : Decoder[F, Cursor[S], DecodingFailure, Seq[A]] =
+  given decodeSeqA[F[_], S, A](using Applicative[F], Decoder[F, Cursor[S], A], ArrayType[S])
+  : Decoder[F, Cursor[S], Seq[A]] =
     Decoder.decodeSeq[F, S, A, Seq](Seq.newBuilder[A])
 
-  given decodeTuple[F[_], S, T <: Tuple](
+  given decodeTupleA[F[_], S, T <: Tuple](
     using
     applicative: Applicative[F],
     arrayType: ArrayType[S],
-    instances: => Generic.Product.Instances[[X] =>> Decoder[F, Cursor[S], DecodingFailure, X], T]
-  ): Decoder[F, Cursor[S], DecodingFailure, T] =
-    new Decoder[F, Cursor[S], DecodingFailure, T]:
-      def decode(t: Cursor[S]): F[Either[DecodingFailure, T]] =
-        t match
-          case cursor: SuccessCursor[S] => arrayType.asArray(cursor.value) match
-            case Some(vector) if vector.size == instances.size =>
-              instances.constructWithIndex[[X] =>> F[Either[DecodingFailure, X]]] {
-                [X] => (ft: Decoder[F, Cursor[S], DecodingFailure, X], index: Int) => ft.decode(cursor.downN(index))
-              }
-            case Some(vector) => TupleSizeNotMatch(instances.size, vector.size).asLeft.pure[F]
-            case None => NotArray.cursor(cursor).asLeft.pure[F]
-          case cursor: FailedCursor[S] => cursor.toDecodingFailure.asLeft.pure[F]
-      def decodeAccumulating(t: Cursor[S]): F[ValidatedNel[DecodingFailure, T]] =
-        t match
-          case cursor: SuccessCursor[S] => arrayType.asArray(cursor.value) match
-            case Some(vector) if vector.size == instances.size =>
-              instances.constructWithIndex[[X] =>> F[ValidatedNel[DecodingFailure, X]]] {
-                [X] => (ft: Decoder[F, Cursor[S], DecodingFailure, X], index: Int) =>
-                  ft.decodeAccumulating(cursor.downN(index))
-              }
-            case Some(vector) => TupleSizeNotMatch(instances.size, vector.size).invalidNel.pure[F]
-            case None => NotArray.cursor(cursor).invalidNel.pure[F]
-          case cursor: FailedCursor[S] => cursor.toDecodingFailure.invalidNel.pure[F]
-  end decodeTuple
+    instances: => Generic.Product.Instances[[X] =>> Decoder[F, Cursor[S], X], T]
+  ): Decoder[F, Cursor[S], T] =
+    case cursor: SuccessCursor[S] => arrayType.asArray(cursor.value) match
+      case Some(vector) if vector.size == instances.size =>
+        instances.constructWithIndex[[X] =>> F[Validated[DecodingFailure, X]]] {
+          [X] => (ft: Decoder[F, Cursor[S], X], index: Int) => ft.decode(cursor.downN(index)).map(_.toValidated)
+        }.map(_.toEither)
+      case Some(vector) => TupleSizeNotMatch(instances.size, vector.size).asLeft.pure[F]
+      case None => NotArray.cursor(cursor).asLeft.pure[F]
+    case cursor: FailedCursor[S] => cursor.toDecodingFailure.asLeft.pure[F]
+  end decodeTupleA
 
 end DecoderArrayInstances

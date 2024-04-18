@@ -1,10 +1,10 @@
 package com.peknight.codec.circe.sum
 
-import cats.Foldable
+import cats.{Foldable, Id}
 import com.peknight.codec.circe.iso.numberIsomorphism
 import com.peknight.codec.number.Number
 import com.peknight.codec.obj.Object
-import com.peknight.codec.sum.{ArrayType, BooleanType, NullType, NumberType, ObjectType, StringType}
+import com.peknight.codec.sum.*
 import io.circe.{Json, JsonObject}
 
 trait JsonType extends StringType[Json] with ArrayType[Json] with ObjectType[Json] with NullType[Json]
@@ -39,8 +39,8 @@ trait JsonType extends StringType[Json] with ArrayType[Json] with ObjectType[Jso
   def asNull(s: Json): Option[Unit] = s.asNull
   override def isNull(s: Json): Boolean = s.isNull
 
-  def to(n: Number): Json = Json.fromJsonNumber(numberIsomorphism.to(n))
-  def asNumber(s: Json): Option[Number] = s.asNumber.map(numberIsomorphism.from)
+  def to(n: Number): Json = Json.fromJsonNumber(numberIsomorphism[Id].to(n))
+  def asNumber(s: Json): Option[Number] = s.asNumber.map(numberIsomorphism[Id].from)
   override def isNumber(s: Json): Boolean = s.isNumber
 
   def to(b: Boolean): Json = Json.fromBoolean(b)

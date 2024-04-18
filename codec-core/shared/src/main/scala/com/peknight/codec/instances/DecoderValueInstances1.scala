@@ -10,113 +10,111 @@ import com.peknight.codec.number.Number
 import com.peknight.codec.sum.{BooleanType, NumberType, StringType}
 
 trait DecoderValueInstances1:
+  given booleanDecodeBoolean[F[_]: Applicative]: Decoder[F, Boolean, Boolean] =
+    Decoder.identity[F, Boolean]
 
-  given booleanDecodeBoolean[F[_]: Applicative]: Decoder[F, Boolean, DecodingFailure, Boolean] =
-    Decoder.instance[F, Boolean, DecodingFailure, Boolean](_.asRight.pure)
+  given decodeBooleanB[F[_]: Applicative, S: BooleanType]: Decoder[F, Cursor[S], Boolean] =
+    Decoder.decodeB[F, S]
 
-  given decodeStrictBoolean[F[_]: Applicative, S: BooleanType]: Decoder[F, Cursor[S], DecodingFailure, Boolean] =
-    Decoder.strictBooleanDecoder[F, S]
+  given stringDecodeBoolean[F[_]: Applicative]: Decoder[F, String, Boolean] =
+    Decoder.mapOption[F, String, Boolean](Decoder.toBooleanOption)
 
-  given stringDecodeBoolean[F[_]: Applicative]: Decoder[F, String, DecodingFailure, Boolean] =
-    Decoder.decodeWithOption[F, Boolean](Decoder.toBooleanOption)
+  given decodeBooleanS[F[_]: Applicative, S: StringType]: Decoder[F, Cursor[S], Boolean] =
+    Decoder.decodeS[F, S, Boolean]
 
-  given decodeStringBoolean[F[_]: Applicative, S: StringType]: Decoder[F, Cursor[S], DecodingFailure, Boolean] =
-    Decoder.stringDecoder[F, S, Boolean]
-
-  given numberDecodeFloat[F[_]: Applicative]: Decoder[F, Number, DecodingFailure, Float] =
+  given numberDecodeFloat[F[_]: Applicative]: Decoder[F, Number, Float] =
     Decoder.numberDecodeNumber[F, Float](_.toFloat)
 
-  given decodeStrictFloat[F[_]: Applicative, S: NumberType]: Decoder[F, Cursor[S], DecodingFailure, Float] =
-    Decoder.strictNumberDecoder[F, S, Float]
+  given decodeFloatN[F[_]: Applicative, S: NumberType]: Decoder[F, Cursor[S], Float] =
+    Decoder.decodeN[F, S, Float]
 
-  given stringDecodeFloat[F[_]: Applicative]: Decoder[F, String, DecodingFailure, Float] =
-    Decoder.stringDecodeNumber[F, Float](_.toFloat)
+  given stringDecodeFloat[F[_]: Applicative]: Decoder[F, String, Float] =
+    Decoder.stringDecodeWithNumberDecoder[F, Float]
 
-  given decodeStringFloat[F[_]: Applicative, S: StringType]: Decoder[F, Cursor[S], DecodingFailure, Float] =
-    Decoder.stringDecoder[F, S, Float]
+  given decodeFloatS[F[_]: Applicative, S: StringType]: Decoder[F, Cursor[S], Float] =
+    Decoder.decodeS[F, S, Float]
 
-  given numberDecodeDouble[F[_]: Applicative]: Decoder[F, Number, DecodingFailure, Double] =
+  given numberDecodeDouble[F[_]: Applicative]: Decoder[F, Number, Double] =
     Decoder.numberDecodeNumber[F, Double](_.toDouble)
 
-  given decodeStrictDouble[F[_]: Applicative, S: NumberType]: Decoder[F, Cursor[S], DecodingFailure, Double] =
-    Decoder.strictNumberDecoder[F, S, Double]
+  given decodeDoubleN[F[_]: Applicative, S: NumberType]: Decoder[F, Cursor[S], Double] =
+    Decoder.decodeN[F, S, Double]
 
-  given stringDecodeDouble[F[_]: Applicative]: Decoder[F, String, DecodingFailure, Double] =
-    Decoder.stringDecodeNumber[F, Double](_.toDouble)
+  given stringDecodeDouble[F[_]: Applicative]: Decoder[F, String, Double] =
+    Decoder.stringDecodeWithNumberDecoder[F, Double]
 
-  given decodeStringDouble[F[_]: Applicative, S: StringType]: Decoder[F, Cursor[S], DecodingFailure, Double] =
-    Decoder.stringDecoder[F, S, Double]
+  given decodeDoubleS[F[_]: Applicative, S: StringType]: Decoder[F, Cursor[S], Double] =
+    Decoder.decodeS[F, S, Double]
 
-  given numberDecodeByte[F[_]: Applicative]: Decoder[F, Number, DecodingFailure, Byte] =
+  given numberDecodeByte[F[_]: Applicative]: Decoder[F, Number, Byte] =
     Decoder.numberDecodeNumberOption[F, Byte](_.toByte)
 
-  given decodeStrictByte[F[_]: Applicative, S: NumberType]: Decoder[F, Cursor[S], DecodingFailure, Byte] =
-    Decoder.strictNumberDecoder[F, S, Byte]
+  given decodeByteN[F[_]: Applicative, S: NumberType]: Decoder[F, Cursor[S], Byte] =
+    Decoder.decodeN[F, S, Byte]
 
-  given stringDecodeByte[F[_]: Applicative]: Decoder[F, String, DecodingFailure, Byte] =
-    Decoder.stringDecodeNumberOption[F, Byte](_.toByte)
+  given stringDecodeByte[F[_]: Applicative]: Decoder[F, String, Byte] =
+    Decoder.stringDecodeWithNumberDecoder[F, Byte]
 
-  given decodeStringByte[F[_]: Applicative, S: StringType]: Decoder[F, Cursor[S], DecodingFailure, Byte] =
-    Decoder.stringDecoder[F, S, Byte]
+  given decodeByteS[F[_]: Applicative, S: StringType]: Decoder[F, Cursor[S], Byte] =
+    Decoder.decodeS[F, S, Byte]
 
-  given numberDecodeShort[F[_]: Applicative]: Decoder[F, Number, DecodingFailure, Short] =
+  given numberDecodeShort[F[_]: Applicative]: Decoder[F, Number, Short] =
     Decoder.numberDecodeNumberOption[F, Short](_.toShort)
 
-  given decodeStrictShort[F[_]: Applicative, S: NumberType]: Decoder[F, Cursor[S], DecodingFailure, Short] =
-    Decoder.strictNumberDecoder[F, S, Short]
+  given decodeShortN[F[_]: Applicative, S: NumberType]: Decoder[F, Cursor[S], Short] =
+    Decoder.decodeN[F, S, Short]
 
-  given stringDecodeShort[F[_]: Applicative]: Decoder[F, String, DecodingFailure, Short] =
-    Decoder.stringDecodeNumberOption[F, Short](_.toShort)
+  given stringDecodeShort[F[_]: Applicative]: Decoder[F, String, Short] =
+    Decoder.stringDecodeWithNumberDecoder[F, Short]
 
-  given decodeStringShort[F[_]: Applicative, S: StringType]: Decoder[F, Cursor[S], DecodingFailure, Short] =
-    Decoder.stringDecoder[F, S, Short]
+  given decodeShortS[F[_]: Applicative, S: StringType]: Decoder[F, Cursor[S], Short] =
+    Decoder.decodeS[F, S, Short]
 
-  given numberDecodeInt[F[_]: Applicative]: Decoder[F, Number, DecodingFailure, Int] =
+  given numberDecodeInt[F[_]: Applicative]: Decoder[F, Number, Int] =
     Decoder.numberDecodeNumberOption[F, Int](_.toInt)
 
-  given decodeStrictInt[F[_]: Applicative, S: NumberType]: Decoder[F, Cursor[S], DecodingFailure, Int] =
-    Decoder.strictNumberDecoder[F, S, Int]
+  given decodeIntN[F[_]: Applicative, S: NumberType]: Decoder[F, Cursor[S], Int] =
+    Decoder.decodeN[F, S, Int]
 
-  given stringDecodeInt[F[_]: Applicative]: Decoder[F, String, DecodingFailure, Int] =
-    Decoder.stringDecodeNumberOption[F, Int](_.toInt)
+  given stringDecodeInt[F[_]: Applicative]: Decoder[F, String, Int] =
+    Decoder.stringDecodeWithNumberDecoder[F, Int]
 
-  given decodeStringInt[F[_]: Applicative, S: StringType]: Decoder[F, Cursor[S], DecodingFailure, Int] =
-    Decoder.stringDecoder[F, S, Int]
+  given decodeIntS[F[_]: Applicative, S: StringType]: Decoder[F, Cursor[S], Int] =
+    Decoder.decodeS[F, S, Int]
 
-  given numberDecodeLong[F[_]: Applicative]: Decoder[F, Number, DecodingFailure, Long] =
+  given numberDecodeLong[F[_]: Applicative]: Decoder[F, Number, Long] =
     Decoder.numberDecodeNumberOption[F, Long](_.toLong)
 
-  given decodeStrictLong[F[_]: Applicative, S: NumberType]: Decoder[F, Cursor[S], DecodingFailure, Long] =
-    Decoder.strictNumberDecoder[F, S, Long]
+  given decodeLongN[F[_]: Applicative, S: NumberType]: Decoder[F, Cursor[S], Long] =
+    Decoder.decodeN[F, S, Long]
 
-  given stringDecodeLong[F[_]: Applicative]: Decoder[F, String, DecodingFailure, Long] =
-    Decoder.stringDecodeNumberOption[F, Long](_.toLong)
+  given stringDecodeLong[F[_]: Applicative]: Decoder[F, String, Long] =
+    Decoder.stringDecodeWithNumberDecoder[F, Long]
 
-  given decodeStringLong[F[_]: Applicative, S: StringType]: Decoder[F, Cursor[S], DecodingFailure, Long] =
-    Decoder.stringDecoder[F, S, Long]
+  given decodeLongS[F[_]: Applicative, S: StringType]: Decoder[F, Cursor[S], Long] =
+    Decoder.decodeS[F, S, Long]
 
-  given numberDecodeBigInt[F[_]: Applicative]: Decoder[F, Number, DecodingFailure, BigInt] =
+  given numberDecodeBigInt[F[_]: Applicative]: Decoder[F, Number, BigInt] =
     Decoder.numberDecodeNumberOption[F, BigInt](_.toBigInt)
 
-  given decodeStrictBigInt[F[_]: Applicative, S: NumberType]: Decoder[F, Cursor[S], DecodingFailure, BigInt] =
-    Decoder.strictNumberDecoder[F, S, BigInt]
+  given decodeBigIntN[F[_]: Applicative, S: NumberType]: Decoder[F, Cursor[S], BigInt] =
+    Decoder.decodeN[F, S, BigInt]
 
-  given stringDecodeBigInt[F[_]: Applicative]: Decoder[F, String, DecodingFailure, BigInt] =
-    Decoder.stringDecodeNumberOption[F, BigInt](_.toBigInt)
+  given stringDecodeBigInt[F[_]: Applicative]: Decoder[F, String, BigInt] =
+    Decoder.stringDecodeWithNumberDecoder[F, BigInt]
 
-  given decodeStringBigInt[F[_]: Applicative, S: StringType]: Decoder[F, Cursor[S], DecodingFailure, BigInt] =
-    Decoder.stringDecoder[F, S, BigInt]
+  given decodeBigIntS[F[_]: Applicative, S: StringType]: Decoder[F, Cursor[S], BigInt] =
+    Decoder.decodeS[F, S, BigInt]
 
-  given numberDecodeBigDecimal[F[_]: Applicative]: Decoder[F, Number, DecodingFailure, BigDecimal] =
+  given numberDecodeBigDecimal[F[_]: Applicative]: Decoder[F, Number, BigDecimal] =
     Decoder.numberDecodeNumberOption[F, BigDecimal](_.toBigDecimal)
 
-  given decodeStrictBigDecimal[F[_]: Applicative, S: NumberType]: Decoder[F, Cursor[S], DecodingFailure, BigDecimal] =
-    Decoder.strictNumberDecoder[F, S, BigDecimal]
+  given decodeBigDecimalN[F[_]: Applicative, S: NumberType]: Decoder[F, Cursor[S], BigDecimal] =
+    Decoder.decodeN[F, S, BigDecimal]
 
-  given stringDecodeBigDecimal[F[_]: Applicative]: Decoder[F, String, DecodingFailure, BigDecimal] =
-    Decoder.stringDecodeNumberOption[F, BigDecimal](_.toBigDecimal)
+  given stringDecodeBigDecimal[F[_]: Applicative]: Decoder[F, String, BigDecimal] =
+    Decoder.stringDecodeWithNumberDecoder[F, BigDecimal]
 
-  given decodeStringBigDecimal[F[_]: Applicative, S: StringType]: Decoder[F, Cursor[S], DecodingFailure, BigDecimal] =
-    Decoder.stringDecoder[F, S, BigDecimal]
-
+  given decodeBigDecimalS[F[_]: Applicative, S: StringType]: Decoder[F, Cursor[S], BigDecimal] =
+    Decoder.decodeS[F, S, BigDecimal]
 end DecoderValueInstances1

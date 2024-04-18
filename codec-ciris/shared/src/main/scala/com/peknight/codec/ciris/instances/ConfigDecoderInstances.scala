@@ -1,12 +1,12 @@
 package com.peknight.codec.ciris.instances
 
+import cats.Id
 import ciris.ConfigDecoder
+import com.peknight.codec.Decoder
 import com.peknight.codec.ciris.iso.decoderIsomorphism
-import com.peknight.codec.error.DecodingFailure
-import com.peknight.codec.id.Decoder
 
 trait ConfigDecoderInstances:
-  given stringKeyEitherDecoder[A](using decoder: Decoder[String, DecodingFailure, A]): ConfigDecoder[String, A] =
-    decoderIsomorphism.to(decoder)
+  given stringDecoderAsConfigDecoder[A](using decoder: Decoder[Id, String, A]): ConfigDecoder[String, A] =
+    decoderIsomorphism[Id, String, A].to(decoder)
 end ConfigDecoderInstances
 object ConfigDecoderInstances extends ConfigDecoderInstances

@@ -1,5 +1,6 @@
 package io.circe
 
+import cats.Id
 import com.peknight.codec.circe.iso.biggerDecimalIsomorphism
 import com.peknight.codec.number.Number
 import io.circe.numbers.BiggerDecimal
@@ -14,7 +15,7 @@ object JsonNumberOps:
   def migrate(jsonNumber: JsonNumber): Number =
     jsonNumber match
       case JsonDecimal(input) => Number.fromStringUnsafe(input)
-      case JsonBiggerDecimal(value, input) => Number.fromBiggerDecimal(biggerDecimalIsomorphism.from(value))
+      case JsonBiggerDecimal(value, input) => Number.fromBiggerDecimal(biggerDecimalIsomorphism[Id].from(value))
       case JsonBigDecimal(value) => Number.fromBigDecimal(BigDecimal(value))
       case JsonLong(value) => Number.fromLong(value)
       case JsonDouble(value) => Number.fromDouble(value)

@@ -6,7 +6,7 @@ import com.peknight.codec.sum.StringType
 import com.peknight.generic.priority.MidPriority
 
 trait EncoderValueInstances1:
-  given stringEncoder[F[_], S, A](using functor: Functor[F], stringType: StringType[S], encoder: Encoder[F, String, A])
+  given encodeSM[F[_], S, A](using functor: Functor[F], stringType: StringType[S], encoder: Encoder[F, String, A])
   : MidPriority[Encoder[F, S, A]] =
-    MidPriority(Encoder.stringEncoder[F, S, A])
+    MidPriority(Encoder.encodeS[F, S, A])
 end EncoderValueInstances1

@@ -1,26 +1,102 @@
 package com.peknight.codec
 
-import cats.Functor
-import cats.syntax.functor.*
-import cats.data.ValidatedNel
+import cats.Applicative
+import cats.syntax.applicative.*
 import cats.syntax.either.*
+import cats.syntax.functor.*
+import com.peknight.codec.cursor.Cursor
+import com.peknight.codec.cursor.Cursor.{FailedCursor, SuccessCursor}
 import com.peknight.codec.derivation.CodecDerivation
+import com.peknight.codec.error.{DecodingFailure, ParsingTypeError, WrongClassTag}
+import com.peknight.codec.number.Number
+import com.peknight.codec.sum.{NumberType, StringType}
 
-trait Codec[F[_], S, T, E, A] extends Encoder[F, S, A] with Decoder[F, T, E, A]
+import scala.reflect.ClassTag
+import scala.util.Try
+
+trait Codec[F[_], S, T, A] extends Encoder[F, S, A] with Decoder[F, T, A]
 object Codec extends CodecDerivation:
-  def apply[F[_], S, T, E, A](using codec: Codec[F, S, T, E, A]): Codec[F, S, T, E, A] = codec
-  def apply[F[_], S, T, E, A](
-    encode0: A => F[S], decode0: T => F[Either[E, A]], decodeAccumulating0: T => F[ValidatedNel[E, A]]
-  ): Codec[F, S, T, E, A] =
-    new Codec[F, S, T, E, A]:
+  def apply[F[_], S, T, A](using encoder: Encoder[F, S, A], decoder: Decoder[F, T, A]): Codec[F, S, T, A] =
+    instance(encoder.encode)(decoder.decode)
+
+  def instance[F[_], S, T, A](encode0: A => F[S])(decode0: T => F[Either[DecodingFailure, A]]): Codec[F, S, T, A] =
+    new Codec[F, S, T, A]:
       def encode(a: A): F[S] = encode0(a)
-      def decode(t: T): F[Either[E, A]] = decode0(t)
-      def decodeAccumulating(t: T): F[ValidatedNel[E, A]] = decodeAccumulating0(t)
-  end apply
+      def decode(t: T): F[Either[DecodingFailure, A]] = decode0(t)
 
-  def apply[F[_]: Functor, S, T, E, A](encode: A => F[S], decode: T => F[Either[E, A]]): Codec[F, S, T, E, A] =
-    apply(encode, decode, decode.andThen(_.map(_.toValidatedNel)))
+  def applicative[F[_]: Applicative, S, T, A](encode: A => S)(decode: T => Either[DecodingFailure, A])
+  : Codec[F, S, T, A] =
+    instance[F, S, T, A](a => encode(a).pure[F])(t => decode(t).pure[F])
 
-  def apply[F[_], S, T, E, A](encoder: Encoder[F, S, A], decoder: Decoder[F, T, E, A]): Codec[F, S, T, E, A] =
-    apply(encoder.encode, decoder.decode, decoder.decodeAccumulating)
+  def map[F[_]: Applicative, S, T, A](encode: A => S)(decode: T => A): Codec[F, S, T, A] =
+    applicative[F, S, T, A](encode)(t => decode(t).asRight[DecodingFailure])
+
+  def mapOption[F[_]: Applicative, S, T, A: ClassTag](encode: A => S)(decode: T => Option[A]): Codec[F, S, T, A] =
+    applicative[F, S, T, A](encode)(t => decode(t).toRight(WrongClassTag[A].value(t)))
+
+  def mapTry[F[_]: Applicative, S, T, A: ClassTag](encode: A => S)(decode: T => Try[A]): Codec[F, S, T, A] =
+    applicative[F, S, T, A](encode)(t => decode(t).toEither.left.map(e => ParsingTypeError[A](e).value(t)))
+
+  def parse[F[_]: Applicative, S, T, A: ClassTag](encode: A => S)(decode: T => A): Codec[F, S, T, A] =
+    mapTry(encode)(t => Try(decode(t)))
+
+  def identity[F[_]: Applicative, A]: Codec[F, A, A, A] =
+    map[F, A, A, A](Predef.identity)(Predef.identity)
+
+  def const[F[_]: Applicative, S, T, A](encode: S)(decode: A): Codec[F, S, T, A] =
+    map[F, S, T, A](_ => encode)(_ => decode)
+
+  def cursor[F[_]: Applicative, S, A](encode0: A => F[S])(decode0: SuccessCursor[S] => F[Either[DecodingFailure, A]])
+  : Codec[F, S, Cursor[S], A] =
+    new Codec[F, S, Cursor[S], A]:
+      def encode(a: A): F[S] = encode0(a)
+      def decode(t: Cursor[S]): F[Either[DecodingFailure, A]] = t match
+        case cursor: SuccessCursor[S] => decode0(cursor)
+        case cursor: FailedCursor[S] => cursor.toDecodingFailure.asLeft[A].pure[F]
+  end cursor
+
+  def cursorApplicative[F[_]: Applicative, S, A](encode: A => S)(decode: SuccessCursor[S] => Either[DecodingFailure, A])
+  : Codec[F, S, Cursor[S], A] =
+    cursor[F, S, A](a => encode(a).pure[F])(t => decode(t).pure[F])
+
+  def cursorMap[F[_]: Applicative, S, A](encode: A => S)(decode: SuccessCursor[S] => A)
+  : Codec[F, S, Cursor[S], A] =
+    cursorApplicative[F, S, A](encode)(t => decode(t).asRight[DecodingFailure])
+
+  def cursorIdentity[F[_]: Applicative, S]: Codec[F, S ,Cursor[S], S] =
+    cursorMap[F, S, S](Predef.identity)(_.value)
+
+  def cursorConst[F[_]: Applicative, S, A](encode: S)(decode: A): Codec[F, S, Cursor[S], A] =
+    cursorMap[F, S, A](_ => encode)(_ => decode)
+
+  def cursorValue[F[_]: Applicative, S, A](encode: A => F[S])(decode: S => F[Either[DecodingFailure, A]])
+  : Codec[F, S, Cursor[S], A] =
+    cursor[F, S, A](encode)(t => decode(t.value).map(_.left.map(_.cursor(t))))
+
+  def cursorValueApplicative[F[_]: Applicative, S, A](encode: A => S)(decode: S => Either[DecodingFailure, A])
+  : Codec[F, S, Cursor[S], A] =
+    cursorApplicative(encode)(t => decode(t.value).left.map(_.cursor(t)))
+
+  def cursorValueMap[F[_]: Applicative, S, A](encode: A => S)(decode: S => A): Codec[F, S, Cursor[S], A] =
+    cursorMap[F, S, A](encode)(t => decode(t.value))
+
+  def codecN[F[_], S, A](using Encoder[F, Number, A], Decoder[F, Number, A])
+                        (using Applicative[F], NumberType[S], ClassTag[A]): Codec[F, S, Cursor[S], A] =
+    Codec[F, S, Cursor[S], A](using Encoder.encodeN[F, S, A], Decoder.decodeN[F, S, A])
+
+  def codecNS[F[_], S, A](using Encoder[F, Number, A], Decoder[F, Number, A])
+                         (using Applicative[F], NumberType[S], StringType[S], ClassTag[A]): Codec[F, S, Cursor[S], A] =
+    Codec[F, S, Cursor[S], A](using Encoder.encodeN[F, S, A], Decoder.decodeNS[F, S, A])
+
+  def codecS[F[_], S, A](using Encoder[F, String, A], Decoder[F, String, A])
+                        (using Applicative[F], StringType[S], ClassTag[A]): Codec[F, S, Cursor[S], A] =
+    Codec[F, S, Cursor[S], A](using Encoder.encodeS[F, S, A], Decoder.decodeS[F, S, A])
+
+  def stringCodecWithNumberDecoder[F[_], A](using Decoder[F, Number, A])(using Applicative[F])
+  : Codec[F, String, String, A] =
+    Codec[F, String, String, A](using Encoder.encodeWithToString[F, A], Decoder.stringDecodeWithNumberDecoder[F, A])
+
+  def stringCodecWithNumberCodec[F[_], A](using Encoder[F, Number, A], Decoder[F, Number, A])(using Applicative[F])
+  : Codec[F, String, String, A] =
+    Codec[F, String, String, A](using Encoder.stringEncodeWithNumberEncoder[F, A], Decoder.stringDecodeWithNumberDecoder[F, A])
 end Codec

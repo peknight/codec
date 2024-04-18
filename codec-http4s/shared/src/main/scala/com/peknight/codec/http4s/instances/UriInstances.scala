@@ -1,21 +1,17 @@
 package com.peknight.codec.http4s.instances
 
-import cats.Applicative
-import cats.syntax.applicative.*
+import cats.{Applicative, Id}
+import com.peknight.codec.Codec
 import com.peknight.codec.cursor.Cursor
-import com.peknight.codec.error.DecodingFailure
+import com.peknight.codec.http4s.iso.decodingFailureIsomorphism
 import com.peknight.codec.sum.StringType
-import com.peknight.codec.{Decoder, Encoder}
 import org.http4s.Uri
 
 trait UriInstances:
-  given stringEncodeUri[F[_]: Applicative]: Encoder[F, String, Uri] = Encoder.toStringEncoder[F, Uri]
-  given encodeUri[F[_]: Applicative, S: StringType]: Encoder[F, S, Uri] = Encoder.stringEncoder[F, S, Uri]
+  given stringCodecUri[F[_]: Applicative]: Codec[F, String, String, Uri] =
+    Codec.applicative[F, String, String, Uri](_.toString)(
+      t => Uri.fromString(t).left.map(decodingFailureIsomorphism[Id](None).from)
+    )
 
-  given stringDecodeUri[F[_]: Applicative]: Decoder[F, String, DecodingFailure, Uri] =
-    Decoder.instance[F, String, DecodingFailure, Uri] { t =>
-      Uri.fromString(t).left.map(DecodingFailure.apply).pure[F]
-    }
-  given decodeUri[F[_]: Applicative, S: StringType]: Decoder[F, Cursor[S], DecodingFailure, Uri] =
-    Decoder.stringDecoder[F, S, Uri]
+  given codecUriS[F[_]: Applicative, S: StringType]: Codec[F, S, Cursor[S], Uri] = Codec.codecS[F, S, Uri]
 end UriInstances

@@ -6,9 +6,9 @@ import com.peknight.generic.migration.Migration
 import com.peknight.generic.priority.MidPriority
 
 trait DecoderMigrationInstances:
-  given migrationDecoder[F[_], T, E, A] (using functor: Functor[F], migration: Migration[F, T, A])
-  : MidPriority[Decoder[F, T, E, A]] =
-    MidPriority(Decoder.migrationDecoder[F, T, E, A])
-  end migrationDecoder
+  given decodeWithMigrationM[F[_], T, A](using functor: Functor[F], migration: Migration[F, T, A])
+  : MidPriority[Decoder[F, T, A]] =
+    MidPriority(Decoder.decodeWithMigration[F, T, A])
+  end decodeWithMigrationM
 end DecoderMigrationInstances
 object DecoderMigrationInstances extends DecoderMigrationInstances

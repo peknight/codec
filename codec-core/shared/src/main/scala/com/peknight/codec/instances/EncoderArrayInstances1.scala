@@ -13,12 +13,12 @@ trait EncoderArrayInstances1:
   ): Encoder[F, Vector[S], G[A]] =
     Encoder.vectorEncoder[F, S, A].contramap(a => ev(a).toVector)
 
-  given encodeIterable[F[_], S, A, G[_]](
+  given encodeIterableA[F[_], S, A, G[_]](
     using
     applicative: Applicative[F],
     encoder: Encoder[F, S, A],
     ev: G[A] => Iterable[A],
     arrayType: ArrayType[S]
   ): Encoder[F, S, G[A]] =
-    Encoder.arrayEncoder[F, S, G[A]]
+    Encoder.encodeA[F, S, G[A]]
 end EncoderArrayInstances1

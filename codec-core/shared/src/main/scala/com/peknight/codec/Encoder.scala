@@ -9,6 +9,7 @@ import cats.syntax.traverse.*
 import cats.{Applicative, Contravariant, FlatMap, Foldable, Functor, Traverse}
 import com.peknight.codec.instances.*
 import com.peknight.codec.number.Number
+import com.peknight.codec.obj.Object
 import com.peknight.codec.sum.*
 import com.peknight.generic.migration.Migration
 import com.peknight.generic.priority.PriorityInstancesF2
@@ -33,16 +34,26 @@ object Encoder extends EncoderValueInstances
   with PriorityInstancesF2[Encoder]:
 
   def apply[F[_], S, A](using encoder: Encoder[F, S, A]): Encoder[F, S, A] = encoder
+
   def instance[F[_], S, A](f: A => F[S]): Encoder[F, S, A] = f(_)
+
+  def applicative[F[_]: Applicative, S, A](f: A => S): Encoder[F, S, A] = a => f(a).pure[F]
+
+  def map[F[_]: Applicative, S, A](f: A => S): Encoder[F, S, A] = applicative[F, S, A](f)
+
+  def identity[F[_]: Applicative, A]: Encoder[F, A, A] = map(Predef.identity)
+
+  def const[F[_]: Applicative, S, A](s: S): Encoder[F, S, A] = applicative[F, S, A](_ => s)
+
   given encoderContravariant[F[_], S]: Contravariant[[X] =>> Encoder[F, S, X]] with
     def contramap[A, B](fa: Encoder[F, S, A])(f: B => A): Encoder[F, S, B] = fa.contramap(f)
   end encoderContravariant
 
-  def toStringEncoder[F[_]: Applicative, A]: Encoder[F, String, A] = (a: A) => a.toString.pure[F]
+  def encodeWithToString[F[_]: Applicative, A]: Encoder[F, String, A] = map[F, String, A](_.toString)
 
-  def stringEncodeJavaTime[F[_]: Applicative, A <: TemporalAccessor](formatter: DateTimeFormatter)
+  def stringEncodeJavaTime[F[_] : Applicative, A <: TemporalAccessor](formatter: DateTimeFormatter)
   : Encoder[F, String, A] =
-    (a: A) => formatter.format(a).pure[F]
+    map(formatter.format)
 
   def traverseEncoder[F[_], S, A, G[_]](
     using traverse: Traverse[G], applicative: Applicative[F], encoder: Encoder[F, S, A]
@@ -65,39 +76,42 @@ object Encoder extends EncoderValueInstances
   : Encoder[F, Vector[S], G[A]] =
     vectorEncoder[F, S, A].contramap(_.iterator.to(Vector))
 
-  def objectEncodeEither[F[_], S, A, B](leftKey: String, rightKey: String)
+  def objectEncodeEither[F[_], S, A, B](leftKey: String = "Left", rightKey: String = "Right")
                                        (using functor: Functor[F], encodeA: Encoder[F, S, A], encodeB: Encoder[F, S, B])
-  : Encoder[F, obj.Object[S], Either[A, B]] = {
-    case Left(left) => encodeA.encode(left).map(l => obj.Object.singleton(leftKey, l))
-    case Right(right) => encodeB.encode(right).map(r => obj.Object.singleton(rightKey, r))
+  : Encoder[F, Object[S], Either[A, B]] = {
+    case Left(left) => encodeA.encode(left).map(l => Object.singleton(leftKey, l))
+    case Right(right) => encodeB.encode(right).map(r => Object.singleton(rightKey, r))
   }
 
-  def objectEncodeValidated[F[_], S, E, A](failureKey: String, successKey: String)(
+  def objectEncodeValidated[F[_], S, E, A](failureKey: String = "Invalid", successKey: String = "Valid")(
     using functor: Functor[F], encodeE: Encoder[F, S, E], encodeA: Encoder[F, S, A]
-  ): Encoder[F, obj.Object[S], Validated[E, A]] = {
-    case Validated.Invalid(invalid) => encodeE.encode(invalid).map(l => obj.Object.singleton(failureKey, l))
-    case Validated.Valid(valid) => encodeA.encode(valid).map(r => obj.Object.singleton(successKey, r))
+  ): Encoder[F, Object[S], Validated[E, A]] = {
+    case Validated.Invalid(invalid) => encodeE.encode(invalid).map(l => Object.singleton(failureKey, l))
+    case Validated.Valid(valid) => encodeA.encode(valid).map(r => Object.singleton(successKey, r))
   }
   
-  def migrationEncoder[F[_], S, A](using migration: Migration[F, A, S]): Encoder[F, S, A] = migration.migrate(_)
-
-  def stringEncoder[F[_], S, A](using encoder: Encoder[F, String, A])(using functor: Functor[F], stringType: StringType[S])
-  : Encoder[F, S, A] =
-    encoder.encode(_).map(str => stringType.to(str))
-
-  def arrayEncoder[F[_], S, A](using encoder: Encoder[F, Vector[S], A])(using functor: Functor[F], arrayType: ArrayType[S])
+  def encodeA[F[_], S, A](using encoder: Encoder[F, Vector[S], A])(using functor: Functor[F], arrayType: ArrayType[S])
   : Encoder[F, S, A] =
     encoder.encode(_).map(arrayType.to)
 
-  def objectEncoder[F[_], S, A](using encoder: Encoder[F, obj.Object[S], A])(using functor: Functor[F], objectType: ObjectType[S])
-  : Encoder[F, S, A] =
-    encoder.encode(_).map(obj => objectType.to(objectType.fromObject(obj)))
+  def encodeB[F[_], S](using applicative: Applicative[F], booleanType: BooleanType[S]): Encoder[F, S, Boolean] =
+    booleanType.to(_).pure[F]
 
-  def numberEncoder[F[_], S, A](using encoder: Encoder[F, Number, A])(using functor: Functor[F], numberType: NumberType[S])
+  def encodeN[F[_], S, A](using encoder: Encoder[F, Number, A])(using functor: Functor[F], numberType: NumberType[S])
   : Encoder[F, S, A] =
     encoder.encode(_).map(numberType.to)
 
-  def booleanEncoder[F[_], S](using applicative: Applicative[F], booleanType: BooleanType[S]): Encoder[F, S, Boolean] =
-    booleanType.to(_).pure[F]
+  def encodeO[F[_], S, A](using encoder: Encoder[F, Object[S], A])(using functor: Functor[F], objectType: ObjectType[S])
+  : Encoder[F, S, A] =
+    encoder.encode(_).map(obj => objectType.to(objectType.fromObject(obj)))
 
+  def encodeS[F[_], S, A](using encoder: Encoder[F, String, A])(using functor: Functor[F], stringType: StringType[S])
+  : Encoder[F, S, A] =
+    encoder.encode(_).map(str => stringType.to(str))
+
+  def stringEncodeWithNumberEncoder[F[_], A](using encoder: Encoder[F, Number, A])(using functor: Functor[F])
+  : Encoder[F, String, A] =
+    encoder.encode(_).map(_.toString)
+
+  def encodeWithMigration[F[_], S, A](using migration: Migration[F, A, S]): Encoder[F, S, A] = migration.migrate(_)
 end Encoder

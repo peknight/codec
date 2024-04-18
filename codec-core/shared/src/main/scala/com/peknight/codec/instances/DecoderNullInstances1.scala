@@ -8,80 +8,80 @@ import cats.syntax.option.*
 import com.peknight.codec.Decoder
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.cursor.Cursor.{FailedCursor, SuccessCursor}
-import com.peknight.codec.error.{DecodingFailure, MissingField, NotNull}
+import com.peknight.codec.error.{MissingField, NotNull}
 import com.peknight.codec.sum.{ArrayType, NullType, ObjectType}
 
 trait DecoderNullInstances1 extends DecoderNullInstances2:
-  given decodeOptionOA[F[_], S, A](
+  given decodeOptionAO[F[_], S, A](
     using
     applicative: Applicative[F],
-    decoder: Decoder[F, Cursor[S], DecodingFailure, A],
+    decoder: Decoder[F, Cursor[S], A],
     objectType: ObjectType[S],
     arrayType: ArrayType[S]
-  ): Decoder[F, Cursor[S], DecodingFailure, Option[A]] =
-    Decoder.instance[F, Cursor[S], DecodingFailure, Option[A]] {
+  ): Decoder[F, Cursor[S], Option[A]] =
+    Decoder.instance[F, Cursor[S], Option[A]] {
       case cursor: SuccessCursor[S] => decoder.decode(cursor).map(_.map(_.some))
       case cursor: FailedCursor[S] if !cursor.incorrectFocus => none.asRight.pure
       case cursor: FailedCursor[S] => MissingField.cursor(cursor).asLeft.pure
     }
-  end decodeOptionOA
+  end decodeOptionAO
 
-  given decodeOptionON[F[_], S, A](
+  given decodeOptionOU[F[_], S, A](
     using
     applicative: Applicative[F],
-    decoder: Decoder[F, Cursor[S], DecodingFailure, A],
+    decoder: Decoder[F, Cursor[S], A],
     objectType: ObjectType[S],
     nullType: NullType[S]
-  ): Decoder[F, Cursor[S], DecodingFailure, Option[A]] =
-    Decoder.instance[F, Cursor[S], DecodingFailure, Option[A]] {
+  ): Decoder[F, Cursor[S], Option[A]] =
+    Decoder.instance[F, Cursor[S], Option[A]] {
       case cursor: SuccessCursor[S] if nullType.isNull(cursor.value) => none.asRight.pure
       case cursor: SuccessCursor[S] => decoder.decode(cursor).map(_.map(_.some))
       case cursor: FailedCursor[S] if !cursor.incorrectFocusO => none.asRight.pure
       case cursor: FailedCursor[S] => MissingField.cursor(cursor).asLeft.pure
     }
-  end decodeOptionON
+  end decodeOptionOU
 
-  given decodeOptionAN[F[_], S, A](
+  given decodeOptionAU[F[_], S, A](
     using
     applicative: Applicative[F],
-    decoder: Decoder[F, Cursor[S], DecodingFailure, A],
+    decoder: Decoder[F, Cursor[S], A],
     arrayType: ArrayType[S],
     nullType: NullType[S]
-  ): Decoder[F, Cursor[S], DecodingFailure, Option[A]] =
-    Decoder.instance[F, Cursor[S], DecodingFailure, Option[A]] {
+  ): Decoder[F, Cursor[S], Option[A]] =
+    Decoder.instance[F, Cursor[S], Option[A]] {
       case cursor: SuccessCursor[S] if nullType.isNull(cursor.value) => none.asRight.pure
       case cursor: SuccessCursor[S] => decoder.decode(cursor).map(_.map(_.some))
       case cursor: FailedCursor[S] if !cursor.incorrectFocusA => none.asRight.pure
       case cursor: FailedCursor[S] => MissingField.cursor(cursor).asLeft.pure
     }
-  end decodeOptionAN
+  end decodeOptionAU
 
-  given decodeNoneOA[F[_], S](using applicative: Applicative[F], objectType: ObjectType[S], arrayType: ArrayType[S])
-  : Decoder[F, Cursor[S], DecodingFailure, None.type] =
-    Decoder.instance[F, Cursor[S], DecodingFailure, None.type] {
-      case cursor: SuccessCursor[S] => NotNull.cursor(cursor).asLeft.pure
-      case cursor: FailedCursor[S] if !cursor.incorrectFocus => None.asRight.pure
-      case cursor: FailedCursor[S] => MissingField.cursor(cursor).asLeft.pure
+  given decodeNoneAO[F[_], S](using applicative: Applicative[F], objectType: ObjectType[S], arrayType: ArrayType[S])
+  : Decoder[F, Cursor[S], None.type] =
+    Decoder.applicative[F, Cursor[S], None.type] {
+      case cursor: SuccessCursor[S] => NotNull.cursor(cursor).asLeft
+      case cursor: FailedCursor[S] if !cursor.incorrectFocus => None.asRight
+      case cursor: FailedCursor[S] => MissingField.cursor(cursor).asLeft
     }
-  end decodeNoneOA
+  end decodeNoneAO
 
-  given decodeNoneON[F[_], S](using applicative: Applicative[F], objectType: ObjectType[S], nullType: NullType[S])
-  : Decoder[F, Cursor[S], DecodingFailure, None.type] =
-    Decoder.instance[F, Cursor[S], DecodingFailure, None.type] {
-      case cursor: SuccessCursor[S] if nullType.isNull(cursor.value) => None.asRight.pure
-      case cursor: SuccessCursor[S] => NotNull.cursor(cursor).asLeft.pure
-      case cursor: FailedCursor[S] if !cursor.incorrectFocusO => None.asRight.pure
-      case cursor: FailedCursor[S] => MissingField.cursor(cursor).asLeft.pure
+  given decodeNoneOU[F[_], S](using applicative: Applicative[F], objectType: ObjectType[S], nullType: NullType[S])
+  : Decoder[F, Cursor[S], None.type] =
+    Decoder.applicative[F, Cursor[S], None.type] {
+      case cursor: SuccessCursor[S] if nullType.isNull(cursor.value) => None.asRight
+      case cursor: SuccessCursor[S] => NotNull.cursor(cursor).asLeft
+      case cursor: FailedCursor[S] if !cursor.incorrectFocusO => None.asRight
+      case cursor: FailedCursor[S] => MissingField.cursor(cursor).asLeft
     }
-  end decodeNoneON
+  end decodeNoneOU
 
-  given decodeNoneAN[F[_], S](using applicative: Applicative[F], arrayType: ArrayType[S], nullType: NullType[S])
-  : Decoder[F, Cursor[S], DecodingFailure, None.type] =
-    Decoder.instance[F, Cursor[S], DecodingFailure, None.type] {
-      case cursor: SuccessCursor[S] if nullType.isNull(cursor.value) => None.asRight.pure
-      case cursor: SuccessCursor[S] => NotNull.cursor(cursor).asLeft.pure
-      case cursor: FailedCursor[S] if !cursor.incorrectFocusA => None.asRight.pure
-      case cursor: FailedCursor[S] => MissingField.cursor(cursor).asLeft.pure
+  given decodeNoneAU[F[_], S](using applicative: Applicative[F], arrayType: ArrayType[S], nullType: NullType[S])
+  : Decoder[F, Cursor[S], None.type] =
+    Decoder.applicative[F, Cursor[S], None.type] {
+      case cursor: SuccessCursor[S] if nullType.isNull(cursor.value) => None.asRight
+      case cursor: SuccessCursor[S] => NotNull.cursor(cursor).asLeft
+      case cursor: FailedCursor[S] if !cursor.incorrectFocusA => None.asRight
+      case cursor: FailedCursor[S] => MissingField.cursor(cursor).asLeft
     }
-  end decodeNoneAN
+  end decodeNoneAU
 end DecoderNullInstances1

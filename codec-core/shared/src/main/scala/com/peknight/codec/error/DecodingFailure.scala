@@ -86,8 +86,6 @@ object DecodingFailure extends DecodingFailure:
       labelOpt.fold(pathOpt)(lab => pathOpt.fold(lab.some)(path => s"$lab.$path".some))
   end Common
 
-  def success: DecodingFailure = Success
-
   @tailrec def pure[E](error: E): DecodingFailure =
     error match
       case e: (com.peknight.error.Pure[?] & DecodingFailure) => pure(e.error)
@@ -95,11 +93,15 @@ object DecodingFailure extends DecodingFailure:
       case e: DecodingFailure => e
       case _ => Pure(error)
 
-  def apply: DecodingFailure = success
+  def apply: DecodingFailure = Success
 
   def apply[E](error: E): DecodingFailure =
+    given [A]: CanEqual[List[A], E] = CanEqual.derived
     error match
       case NonEmptyList(head, tail) => apply(head, tail)
+      case Nil => Success
+      case head :: Nil => pure(head)
+      case head :: tail => apply(head, tail)
       case _ => pure(error)
 
   def apply[E](head: E, tail: E*): DecodingFailure = apply(head, tail.toList)
