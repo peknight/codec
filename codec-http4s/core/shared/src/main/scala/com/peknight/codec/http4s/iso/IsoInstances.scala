@@ -12,45 +12,45 @@ import org.http4s.{ParseFailure, QueryParamDecoder, QueryParameterValue}
 
 trait IsoInstances:
 
-  given queryParamDecoderLowPriorityIsomorphism[F[_]: Applicative, A]
+  given queryParamDecoderIsomorphism[F[_]: Applicative, A]
   : Isomorphism[F, Decoder[Id, String, A], QueryParamDecoder[A]] =
-    queryParamDecoderIsomorphism[F, A](None)
+    queryParamDecoderIsomorphism0[F, A](None)
 
-  given decodingFailureLowPriorityIsomorphism[F[_]: Applicative]: Isomorphism[F, DecodingFailure, ParseFailure] =
-    decodingFailureIsomorphism[F](None)
+  given decodingFailureIsomorphism[F[_]: Applicative]: Isomorphism[F, DecodingFailure, ParseFailure] =
+    decodingFailureIsomorphism0[F](None)
 
-  given decodingFailuresLowPriorityIsomorphism[F[_]: Applicative]
+  given decodingFailuresIsomorphismL[F[_]: Applicative]
   : Isomorphism[F, DecodingFailure, NonEmptyList[ParseFailure]] =
-    decodingFailuresIsomorphism[F](None)
+    decodingFailuresIsomorphism0[F](None)
 
-  def decodingFailureIsomorphism[F[_]: Applicative](labelOption: Option[String])
+  private[http4s] def decodingFailureIsomorphism0[F[_]: Applicative](labelOption: Option[String])
   : Isomorphism[F, DecodingFailure, ParseFailure] =
     new Isomorphism[F, DecodingFailure, ParseFailure]:
       def to(a: DecodingFailure): F[ParseFailure] =
         ParseFailure(s"Query decoding ${labelOption.fold("")(label => s"$label ")}failed", a.message).pure
       def from(b: ParseFailure): F[DecodingFailure] = DecodingFailure(b).pure
-  end decodingFailureIsomorphism
+  end decodingFailureIsomorphism0
 
-  def decodingFailuresIsomorphism[F[_]: Applicative](labelOption: Option[String])
+  private[iso] def decodingFailuresIsomorphism0[F[_]: Applicative](labelOption: Option[String])
   : Isomorphism[F, DecodingFailure, NonEmptyList[ParseFailure]] =
     new Isomorphism[F, DecodingFailure, NonEmptyList[ParseFailure]]:
       def to(a: DecodingFailure): F[NonEmptyList[ParseFailure]] =
         a match
-          case Errors(errors) => errors.map(decodingFailureIsomorphism[Id](labelOption).to).pure
-          case e => NonEmptyList.one(decodingFailureIsomorphism[Id](labelOption).to(e)).pure
+          case Errors(errors) => errors.map(decodingFailureIsomorphism0[Id](labelOption).to).pure
+          case e => NonEmptyList.one(decodingFailureIsomorphism0[Id](labelOption).to(e)).pure
       def from(b: NonEmptyList[ParseFailure]): F[DecodingFailure] = DecodingFailure(b).pure
-  end decodingFailuresIsomorphism
+  end decodingFailuresIsomorphism0
 
-  def queryParamDecoderIsomorphism[F[_]: Applicative, A](labelOption: Option[String])
+  private[iso] def queryParamDecoderIsomorphism0[F[_]: Applicative, A](labelOption: Option[String])
   : Isomorphism[F, Decoder[Id, String, A], QueryParamDecoder[A]] =
     new Isomorphism[F, Decoder[Id, String, A], QueryParamDecoder[A]]:
       def to(a: Decoder[Id, String, A]): F[QueryParamDecoder[A]] =
         val decoder: QueryParamDecoder[A] =
-          value => a.decode(value.value).left.map(decodingFailuresIsomorphism[Id](labelOption).to).toValidated
+          value => a.decode(value.value).left.map(decodingFailuresIsomorphism0[Id](labelOption).to).toValidated
         decoder.pure
       def from(b: QueryParamDecoder[A]): F[Decoder[Id, String, A]] =
         Decoder.applicative[Id, String, A] { t =>
-          b.decode(QueryParameterValue(t)).leftMap(decodingFailuresIsomorphism[Id](labelOption).from).toEither
+          b.decode(QueryParameterValue(t)).leftMap(decodingFailuresIsomorphism0[Id](labelOption).from).toEither
         }.pure
-  end queryParamDecoderIsomorphism
+  end queryParamDecoderIsomorphism0
 end IsoInstances

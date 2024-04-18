@@ -13,9 +13,9 @@ import org.http4s.{ParseFailure, QueryParamDecoder, QueryParamEncoder, QueryPara
 import scala.reflect.ClassTag
 
 package object iso extends IsoInstances:
-  given queryParamDecoderClassTagIsomorphism[F[_]: Applicative, A: ClassTag]
+  given queryParamDecoderIsomorphismWithClassTag[F[_]: Applicative, A: ClassTag]
   : Isomorphism[F, Decoder[Id, String, A], QueryParamDecoder[A]] =
-    queryParamDecoderIsomorphism(Some(Error.errorClassTag[A]))
+    queryParamDecoderIsomorphism0(Some(Error.errorClassTag[A]))
 
   given queryParamEncoderIsomorphism[F[_]: Applicative, A]: Isomorphism[F, Encoder[Id, String, A], QueryParamEncoder[A]] with
     def to(a: Encoder[Id, String, A]): F[QueryParamEncoder[A]] =
