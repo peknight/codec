@@ -23,6 +23,18 @@ trait EnumDecoderDerivation:
         decodeEnum[F, T, A, generic.Repr](t, configuration, stringDecoder, generic, singletons)
   end derived
 
+  def unsafeDerived[F[_], T, A](using configuration: Configuration)(using
+    functor: Functor[F],
+    stringDecoder: Decoder[F, T, String],
+    generic: Generic.Sum[A]
+  ): EnumDecoder[F, T, A] =
+    new EnumDecoder[F, T, A]:
+      def decoders: Map[String, Decoder[F, T, _]] =
+        enumDecodersDict[F, T, A](this, configuration, generic)
+      def decode(t: T): F[Either[DecodingFailure, A]] =
+        unsafeDecodeEnum[F, T, A, generic.Repr](t, configuration, stringDecoder, generic)
+  end unsafeDerived
+
   private[derivation] def decodeEnum[F[_]: Functor, T, A, Repr <: Tuple](
     t: T,
     configuration: Configuration,
@@ -35,6 +47,21 @@ trait EnumDecoderDerivation:
         generic.labels.zip(singletons).toList.asInstanceOf[List[(String, A)]]
           .find(tuple => configuration.transformConstructorNames(tuple._1) == caseName)
           .map(_._2)
+          .fold(NoSuchEnum(caseName).label(generic.label).value(t).asLeft[A])(_.asRight[DecodingFailure])
+      case Left(e) => e.asLeft[A]
+    }
+
+  private[derivation] def unsafeDecodeEnum[F[_]: Functor, T, A, Repr <: Tuple](
+    t: T,
+    configuration: Configuration,
+    stringDecoder: Decoder[F, T, String],
+    generic: Generic.Sum[A],
+  ): F[Either[DecodingFailure, A]] =
+    stringDecoder.decode(t).map {
+      case Right(caseName) =>
+        generic.labels.zip(generic.singletons).toList.asInstanceOf[List[(String, Option[A])]]
+          .find(tuple => configuration.transformConstructorNames(tuple._1) == caseName)
+          .flatMap(_._2)
           .fold(NoSuchEnum(caseName).label(generic.label).value(t).asLeft[A])(_.asRight[DecodingFailure])
       case Left(e) => e.asLeft[A]
     }

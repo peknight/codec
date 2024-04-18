@@ -14,6 +14,10 @@ trait EnumEncoderDerivation:
     summonAllSingletons[generic.Repr](generic.label)
     (a: A) => encodeEnum(a, configuration, stringEncoder, generic)
 
+  def unsafeDerived[F[_], S, A](using configuration: Configuration)
+                               (using stringEncoder: Encoder[F, S, String], generic: Generic.Sum[A]) =
+    (a: A) => encodeEnum(a, configuration, stringEncoder, generic)
+
   private[derivation] def encodeEnum[F[_], S, A](
     a: A,
     configuration: Configuration,

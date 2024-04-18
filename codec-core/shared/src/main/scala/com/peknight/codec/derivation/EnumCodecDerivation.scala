@@ -22,5 +22,18 @@ trait EnumCodecDerivation:
       def decode(t: T): F[Either[DecodingFailure, A]] =
         EnumDecoderDerivation.decodeEnum[F, T, A, generic.Repr](t, configuration, stringDecoder, generic, singletons)
   end derived
+  def unsafeDerived[F[_], S, T, A](using configuration: Configuration)(using
+    functor: Functor[F],
+    stringEncoder: Encoder[F, S, String],
+    stringDecoder: Decoder[F, T, String],
+    generic: Generic.Sum[A]
+  ): Codec[F, S, T, A] =
+    new Codec[F, S, T, A] with EnumDecoder[F, T, A]:
+      def decoders: Map[String, Decoder[F, T, _]] =
+        EnumDecoderDerivation.enumDecodersDict[F, T, A](this, configuration, generic)
+      def encode(a: A): F[S] = EnumEncoderDerivation.encodeEnum(a, configuration, stringEncoder, generic)
+      def decode(t: T): F[Either[DecodingFailure, A]] =
+        EnumDecoderDerivation.unsafeDecodeEnum[F, T, A, generic.Repr](t, configuration, stringDecoder, generic)
+  end unsafeDerived
 end EnumCodecDerivation
 object EnumCodecDerivation extends EnumCodecDerivation
