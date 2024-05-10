@@ -1,6 +1,6 @@
 package com.peknight.codec.circe
 
-import cats.data.{NonEmptyList, ValidatedNel}
+import cats.data.NonEmptyList
 import cats.syntax.applicative.*
 import cats.{Applicative, Id}
 import com.peknight.codec.cursor.Cursor.{FailedCursor, SuccessCursor}
@@ -16,8 +16,8 @@ import com.peknight.generic.migration.Isomorphism
 import io.circe.DecodingFailure.Reason.WrongTypeExpectation
 import io.circe.cursor.CursorOps
 import io.circe.derivation.{ConfiguredCodec, ConfiguredDecoder, ConfiguredEncoder, SumOrProductOps}
-import io.circe.numbers.BiggerDecimalOps
-import io.circe.{ACursor, HCursor, Json, JsonNumber, JsonNumberOps, JsonObject, numbers}
+import io.circe.numbers.{BiggerDecimalCodecOps, BiggerDecimalOps}
+import io.circe.{ACursor, HCursor, Json, JsonNumber, JsonNumberCodecOps, JsonNumberOps, JsonObject, numbers}
 
 package object iso:
 
@@ -155,7 +155,7 @@ package object iso:
       case BiggerDecimal.UnsignedZero => io.circe.numbers.BiggerDecimal.fromLong(0L).pure
       case BiggerDecimal.NegativeZero => io.circe.numbers.BiggerDecimal.NegativeZero.pure
 
-    def from(b: io.circe.numbers.BiggerDecimal): F[BiggerDecimal] = BiggerDecimalOps.migrate(b).pure
+    def from(b: io.circe.numbers.BiggerDecimal): F[BiggerDecimal] = BiggerDecimalCodecOps.migrate(b).pure
   end biggerDecimalIsomorphism
 
   given numberIsomorphism[F[_]: Applicative]: Isomorphism[F, Number, JsonNumber] with
@@ -167,7 +167,7 @@ package object iso:
       case Number.DoubleNumber(value) => JsonNumberOps.fromDouble(value).pure
       case Number.FloatNumber(value) => JsonNumberOps.fromFloat(value).pure
 
-    def from(b: JsonNumber): F[Number] = JsonNumberOps.migrate(b).pure
+    def from(b: JsonNumber): F[Number] = JsonNumberCodecOps.migrate(b).pure
   end numberIsomorphism
 
   def encoder[A](using encoder: Encoder[Id, Json, A]): io.circe.Encoder[A] = encoderIsomorphism[Id, A].to(encoder)

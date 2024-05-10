@@ -1,8 +1,6 @@
 package io.circe.numbers
 
-object BiggerDecimalOps:
-  def sigAndExp(unscaled: BigInt, scale: BigInt): BiggerDecimal = SigAndExp(unscaled.underlying(), scale.underlying())
-
+object BiggerDecimalCodecOps:
   //noinspection TypeCheckCanBeMatch
   def migrate(biggerDecimal: BiggerDecimal): com.peknight.codec.number.BiggerDecimal =
     given CanEqual[BiggerDecimal, BiggerDecimal] = CanEqual.derived
@@ -14,5 +12,4 @@ object BiggerDecimalOps:
         val exp = biggerDecimal.asInstanceOf[SigAndExp]
         com.peknight.codec.number.BiggerDecimal(BigInt(exp.unscaled), BigInt(exp.scale))
       else com.peknight.codec.number.BiggerDecimal.parseBiggerDecimalUnsafe(str)
-
-end BiggerDecimalOps
+end BiggerDecimalCodecOps
