@@ -29,9 +29,9 @@ trait BaseAlphabetPlatform[A <: Alphabet, B <: Base : ClassTag] extends BasePlat
 
   def baseParser: Parser0[B] = baseParserWithAlphabet(alphabet)
 
-  def stringCodecBase[F[_]: Applicative]: Codec[F, String, String, B] =
+  given stringCodecBase[F[_]: Applicative]: Codec[F, String, String, B] =
     stringCodecBaseWithAlphabet[F](alphabet)
 
-  def codecBaseS[F[_]: Applicative, S: StringType]: Codec[F, S, Cursor[S], B] =
+  given codecBaseS[F[_]: Applicative, S: StringType]: Codec[F, S, Cursor[S], B] =
     codecBaseSWithAlphabet[F, S](alphabet)
 end BaseAlphabetPlatform
