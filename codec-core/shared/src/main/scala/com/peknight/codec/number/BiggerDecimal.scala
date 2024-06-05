@@ -77,8 +77,8 @@ object BiggerDecimal:
   private[number] val MinInt: BigInt = BigInt(Int.MinValue)
   private[number] val MaxLong: BigDecimal = BigDecimal(Long.MaxValue)
   private[number] val MinLong: BigDecimal = BigDecimal(Long.MinValue)
-  private[this] val MaxLongString = "9223372036854775807"
-  private[this] val MinLongString = "-9223372036854775808"
+  private val MaxLongString = "9223372036854775807"
+  private val MinLongString = "-9223372036854775808"
   private[number] val ZeroInt: BigInt = BigInt(0)
   private[number] val ZeroDecimal: BigDecimal = BigDecimal(0)
 
@@ -165,7 +165,7 @@ object BiggerDecimal:
   def apply(unscaled: BigInt, scaled: BigInt): BiggerDecimal =
     if unscaled == ZeroInt then UnsignedZero else SigAndExp(unscaled, scaled)
 
-  private[this] def fromUnscaledAndScale(unscaled: BigInt, scale: Long): BiggerDecimal =
+  private def fromUnscaledAndScale(unscaled: BigInt, scale: Long): BiggerDecimal =
     @tailrec def go(current: BigInteger, depth: Long, divAndRem: Array[BigInteger])
     : (BigInteger, Long, Array[BigInteger]) =
       if divAndRem(1) == BigInteger.ZERO then

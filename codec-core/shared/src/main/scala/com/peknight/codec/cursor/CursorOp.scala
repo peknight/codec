@@ -49,10 +49,10 @@ object CursorOp:
 
   val eqCursorOpList: Eq[List[CursorOp]] = catsKernelStdEqForList[CursorOp]
 
-  private[this] sealed trait Selection
-  private[this] case class SelectField(field: String) extends Selection
-  private[this] case class SelectIndex(index: Int) extends Selection
-  private[this] case class Op(op: CursorOp) extends Selection
+  private sealed trait Selection
+  private case class SelectField(field: String) extends Selection
+  private case class SelectIndex(index: Int) extends Selection
+  private case class Op(op: CursorOp) extends Selection
   def opsToPath(history: List[CursorOp]): String =
     val selections = history.foldRight(List.empty[Selection]) {
       case (DownField(k), acc) => SelectField(k) :: acc

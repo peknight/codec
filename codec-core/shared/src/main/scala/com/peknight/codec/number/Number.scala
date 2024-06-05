@@ -122,7 +122,7 @@ object Number:
    */
   private[codec] final case class DoubleNumber(value: Double) extends Number:
     private[codec] def toBiggerDecimal: BiggerDecimal = BiggerDecimal.fromDoubleUnsafe(value)
-    private[this] def toScalaBigDecimal: BigDecimal = BigDecimal(value)
+    private def toScalaBigDecimal: BigDecimal = BigDecimal(value)
     def toBigDecimal: Option[BigDecimal] = Some(toScalaBigDecimal)
     def toBigInt: Option[BigInt] =
       val asBigDecimal = toScalaBigDecimal
@@ -141,7 +141,7 @@ object Number:
    */
   private[codec] final case class FloatNumber(value: Float) extends Number:
     private[codec] def toBiggerDecimal: BiggerDecimal = BiggerDecimal.fromFloat(value)
-    private[this] def toScalaBigDecimal: BigDecimal = BigDecimal(s"$value")
+    private def toScalaBigDecimal: BigDecimal = BigDecimal(s"$value")
     def toBigDecimal: Option[BigDecimal] = Some(toScalaBigDecimal)
     def toBigInt: Option[BigInt] =
       val asBigDecimal = toScalaBigDecimal
@@ -164,8 +164,8 @@ object Number:
   def fromStringUnsafe(value: String): Number =
     BiggerDecimalNumber(BiggerDecimal.parseBiggerDecimalUnsafe(value))
 
-  private[this] val bigDecimalMinLong: BigDecimal = BigDecimal(Long.MinValue)
-  private[this] val bigDecimalMaxLong: BigDecimal = BigDecimal(Long.MaxValue)
+  private val bigDecimalMinLong: BigDecimal = BigDecimal(Long.MinValue)
+  private val bigDecimalMaxLong: BigDecimal = BigDecimal(Long.MaxValue)
 
   def fromBiggerDecimal(value: BiggerDecimal): Number = BiggerDecimalNumber(value)
   def fromBigDecimal(value: BigDecimal): Number = BigDecimalNumber(value)

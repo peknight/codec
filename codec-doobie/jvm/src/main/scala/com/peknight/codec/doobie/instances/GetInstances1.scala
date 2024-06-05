@@ -7,7 +7,7 @@ import org.tpolecat.typename.TypeName
 
 trait GetInstances1 extends GetInstances2:
   extension [T] (meta: Meta[T])
-    private[this] def decodeTo[A](using encoder: Encoder[Id, A, T], typeName: TypeName[A]): Get[A] =
+    private def decodeTo[A](using encoder: Encoder[Id, A, T], typeName: TypeName[A]): Get[A] =
       meta.get.tmap(encoder.encode)(using typeName)
   end extension
   given encodeByteWithTypeNameAsGet[A](using Encoder[Id, A, Byte], TypeName[A]): Get[A] = Meta[Byte].decodeTo[A]

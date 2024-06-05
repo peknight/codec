@@ -31,7 +31,7 @@ trait DecoderDerivation:
         stringOptionDecoder, inst)
     )
 
-  private[this] def derivedProduct[F[_]: Applicative, S, A](
+  private def derivedProduct[F[_]: Applicative, S, A](
     configuration: DecoderConfiguration,
     objectType: ObjectType[S],
     nullType: NullType[S],
@@ -40,7 +40,7 @@ trait DecoderDerivation:
     decodeProduct(_, configuration, objectType, nullType, instances)
   end derivedProduct
 
-  private[this] def derivedSum[F[_]: Monad, S, A](
+  private def derivedSum[F[_]: Monad, S, A](
     configuration: DecoderConfiguration,
     objectType: ObjectType[S],
     stringDecoder: Decoder[F, Cursor[S], String],
@@ -50,7 +50,7 @@ trait DecoderDerivation:
     instances.singletons.sequence match
       case Some(singletons) =>
         new EnumDecoder[F, Cursor[S], A]:
-          def decoders: Map[String, Decoder[F, Cursor[S], _]] =
+          def decoders: Map[String, Decoder[F, Cursor[S], ?]] =
             EnumDecoderDerivation.enumDecodersDict[F, Cursor[S], A](this, configuration,
               instances.generic)
           def decode(cursor: Cursor[S]): F[Either[DecodingFailure, A]] =
@@ -58,7 +58,7 @@ trait DecoderDerivation:
               singletons)
       case _ =>
         new SumDecoder[F, Cursor[S], A]:
-          def decoders: Map[String, Decoder[F, Cursor[S], _]] =
+          def decoders: Map[String, Decoder[F, Cursor[S], ?]] =
             decodersDict[F, Cursor[S], A](configuration, instances)
           def decode(cursor: Cursor[S]): F[Either[DecodingFailure, A]] =
             decodeSum(cursor, configuration, objectType, stringOptionDecoder, instances)
@@ -85,7 +85,7 @@ trait DecoderDerivation:
         handleDecodeProduct(cursor, configuration, objectType, nullType, instances)
     else NotObject.cursor(cursor).asLeft[A].pure[F]
 
-  private[this] def handleDecodeProduct[F[_]: Applicative, S, A](
+  private def handleDecodeProduct[F[_]: Applicative, S, A](
     cursor: Cursor[S],
     configuration: DecoderConfiguration,
     objectType: ObjectType[S],
@@ -146,9 +146,9 @@ trait DecoderDerivation:
   private[derivation] def decodersDict[F[_], T, A](
     configuration: DecoderConfiguration,
     instances: => Generic.Sum.Instances[[X] =>> Decoder[F, T, X], A]
-  ): Map[String, Decoder[F, T, _]] =
-    instances.foldRightWithLabel(Map.empty[String, Decoder[F, T, _]]) {
-      [X] => (decoder: Decoder[F, T, X], label: String, map: Map[String, Decoder[F, T, _]]) =>
+  ): Map[String, Decoder[F, T, ?]] =
+    instances.foldRightWithLabel(Map.empty[String, Decoder[F, T, ?]]) {
+      [X] => (decoder: Decoder[F, T, X], label: String, map: Map[String, Decoder[F, T, ?]]) =>
         decoder match
           case d: SumDecoder[F, T, X] => map ++ d.decoders
           case d => map + (configuration.transformConstructorNames(label) -> d)

@@ -58,17 +58,17 @@ object PathToRoot:
   sealed trait PathToRootError(msg: String) extends Error:
     override def lowPriorityMessage: Option[String] = Some(msg)
   end PathToRootError
-  private[this] object MoveUpAboveRoot extends PathToRootError("Attempt to move up above the root of the document.")
-  private[this] object MoveBeyondBeginning extends PathToRootError(
+  private object MoveUpAboveRoot extends PathToRootError("Attempt to move up above the root of the document.")
+  private object MoveBeyondBeginning extends PathToRootError(
     "Attempt to move beyond beginning of array in cursor history."
   )
-  private[this] object MoveOutIntMaxValue extends PathToRootError(
+  private object MoveOutIntMaxValue extends PathToRootError(
     "Attempt to move to index > Int.MaxValue in array in cursor history."
   )
-  private[this] case class MoveSiblingNonObject(name: String) extends PathToRootError(
+  private case class MoveSiblingNonObject(name: String) extends PathToRootError(
     s"Attempt to move to sibling field($name), but cursor history didn't indicate we were in an object."
   )
-  private[this] case class InvalidHistoryState(invalid: CursorOp) extends PathToRootError(
+  private case class InvalidHistoryState(invalid: CursorOp) extends PathToRootError(
     s"Invalid cursor history state: $invalid"
   )
 end PathToRoot

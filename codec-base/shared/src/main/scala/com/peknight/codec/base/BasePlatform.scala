@@ -29,7 +29,7 @@ trait BasePlatform[A <: Alphabet, B <: Base : ClassTag]:
     given Codec[F, String, String, ByteVector] = stringCodecBaseStringWithAlphabet[F](alphabet)
     Codec.codecS[F, S, ByteVector]
 
-  private[this] def paddingParserWithAlphabet(alphabet: A): Parser0[String] =
+  private def paddingParserWithAlphabet(alphabet: A): Parser0[String] =
     alphabet match
       case a: PaddedAlphabet if a.pad != 0.toChar => Parser.char(a.pad).rep0(0, maxPadLength).string
       case _ => Parser.unit.string

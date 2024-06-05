@@ -16,7 +16,7 @@ trait EnumCodecDerivation:
   ): Codec[F, S, T, A] =
     val singletons = summonAllSingletons[generic.Repr](generic.label)
     new Codec[F, S, T, A] with EnumDecoder[F, T, A]:
-      def decoders: Map[String, Decoder[F, T, _]] =
+      def decoders: Map[String, Decoder[F, T, ?]] =
         EnumDecoderDerivation.enumDecodersDict[F, T, A](this, configuration, generic)
       def encode(a: A): F[S] = EnumEncoderDerivation.encodeEnum(a, configuration, stringEncoder, generic)
       def decode(t: T): F[Either[DecodingFailure, A]] =
@@ -29,7 +29,7 @@ trait EnumCodecDerivation:
     generic: Generic.Sum[A]
   ): Codec[F, S, T, A] =
     new Codec[F, S, T, A] with EnumDecoder[F, T, A]:
-      def decoders: Map[String, Decoder[F, T, _]] =
+      def decoders: Map[String, Decoder[F, T, ?]] =
         EnumDecoderDerivation.enumDecodersDict[F, T, A](this, configuration, generic)
       def encode(a: A): F[S] = EnumEncoderDerivation.encodeEnum(a, configuration, stringEncoder, generic)
       def decode(t: T): F[Either[DecodingFailure, A]] =

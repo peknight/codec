@@ -22,14 +22,14 @@ trait EncoderDerivation:
       inst ?=> derivedSum[F, S, A](configuration, objectType, stringEncoder, inst)
     )
 
-  private[this] def derivedProduct[F[_]: Applicative, S, A](
+  private def derivedProduct[F[_]: Applicative, S, A](
     configuration: EncoderConfiguration,
     objectType: ObjectType[S],
     instances: => Generic.Product.Instances[[X] =>> Encoder[F, S, X], A]
   ): Encoder[F, S, A] =
     (a: A) => encodeProduct(a, configuration, objectType, instances)
 
-  private[this] def derivedSum[F[_]: Applicative, S, A](
+  private def derivedSum[F[_]: Applicative, S, A](
     configuration: EncoderConfiguration,
     objectType: ObjectType[S],
     stringEncoder: Encoder[F, S, String],

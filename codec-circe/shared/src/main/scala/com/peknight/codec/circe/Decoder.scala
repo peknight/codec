@@ -19,6 +19,6 @@ trait Decoder[A] extends io.circe.Decoder[A]:
     decoder.decode(cursorIsomorphism[Id].from(c)).toValidatedNel.leftMap(_.map(decodingFailureIsomorphism[Id].to))
 end Decoder
 object Decoder:
-  private[this] case class CirceDecoder[A](decoder: com.peknight.codec.Decoder[Id, Cursor[Json], A]) extends Decoder[A]
+  private case class CirceDecoder[A](decoder: com.peknight.codec.Decoder[Id, Cursor[Json], A]) extends Decoder[A]
   def apply[A](decoder: com.peknight.codec.Decoder[Id, Cursor[Json], A]): Decoder[A] = CirceDecoder(decoder)
 end Decoder

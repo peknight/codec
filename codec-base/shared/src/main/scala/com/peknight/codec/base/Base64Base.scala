@@ -10,7 +10,7 @@ trait Base64Base extends Base:
   override def decode[F[_]: Applicative]: F[Either[DecodingFailure, ByteVector]] =
     Base64Base.stringCodecBaseStringWithAlphabet[F](alphabet).decode(value)
 object Base64Base extends Base64Platform[Base64Alphabet, com.peknight.codec.base.Base64Base]:
-  private[this] case class Base64Base(value: String, alphabet: Base64Alphabet)
+  private case class Base64Base(value: String, alphabet: Base64Alphabet)
     extends com.peknight.codec.base.Base64Base
   def apply(value: String, alphabet: Base64Alphabet): com.peknight.codec.base.Base64Base =
     Base64Base(value, alphabet)

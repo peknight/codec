@@ -6,6 +6,6 @@ trait NoSuchType extends DecodingFailure:
     Some(s"type $label has no class/object/case '$typeName'.")
 end NoSuchType
 object NoSuchType:
-  private[this] case class NoSuchType(typeName: String) extends com.peknight.codec.error.NoSuchType
+  private case class NoSuchType(typeName: String) extends com.peknight.codec.error.NoSuchType
   def apply(typeName: String): com.peknight.codec.error.NoSuchType = NoSuchType(typeName)
 end NoSuchType

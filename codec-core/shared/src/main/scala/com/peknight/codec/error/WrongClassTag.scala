@@ -4,7 +4,7 @@ import scala.reflect.ClassTag
 
 trait WrongClassTag[A] extends DecodingFailure with com.peknight.error.std.WrongClassTag[A]
 object WrongClassTag:
-  private[this] case class WrongClassTag[A](expectedClassTag: ClassTag[A])
+  private case class WrongClassTag[A](expectedClassTag: ClassTag[A])
     extends com.peknight.codec.error.WrongClassTag[A]
   def apply[A](using classTag: ClassTag[A]): com.peknight.codec.error.WrongClassTag[A] = WrongClassTag(classTag)
 end WrongClassTag

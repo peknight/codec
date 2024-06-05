@@ -258,7 +258,7 @@ object Cursor:
     def focus: Option[S] = Some(value)
     def values(using ArrayType[S]): Option[Iterable[S]] = ArrayType[S].asArray(value)
     def keys(using objectType: ObjectType[S]): Option[Iterable[String]] = objectType.asObject(value).map(objectType.keys)
-    protected[this] def up[A](changed: Boolean, parent: SuccessCursor[S], s: S): Cursor[S] =
+    protected def up[A](changed: Boolean, parent: SuccessCursor[S], s: S): Cursor[S] =
       if !changed then parent.addOp(this, CursorOp.MoveUp)
       else parent.replace(s, this, Some(CursorOp.MoveUp))
 
@@ -302,7 +302,7 @@ object Cursor:
           ACursor(values, n, this, false, ArrayType[S], Some(this), Some(CursorOp.DownN(n)))
         case _ => fail(CursorOp.DownN(n))
 
-    protected[this] def fail(op: CursorOp): Cursor[S] = FCursor(Some(this), Some(op))
+    protected def fail(op: CursorOp): Cursor[S] = FCursor(Some(this), Some(op))
   end SuccessCursor
 
   type SCursor[S] = SuccessCursor[S]
@@ -327,11 +327,11 @@ object Cursor:
     extends TopCursor[S]
 
   private[codec] sealed trait ObjectCursor[S, O] extends SuccessCursor[S]:
-    protected[this] def obj: O
+    protected def obj: O
     def keyValue: String
     def parent: SuccessCursor[S]
-    protected[this] def changed: Boolean
-    protected[this] def objectType: ObjectType.Aux[S, O]
+    protected def changed: Boolean
+    protected def objectType: ObjectType.Aux[S, O]
     def value: S = objectType.applyUnsafe(obj, keyValue)
     def index: Option[Int] = None
     def key: Option[String] = Some(keyValue)
@@ -360,15 +360,15 @@ object Cursor:
                                           lastOp: Option[CursorOp]) extends ObjectCursor[S, O]
 
   private[codec] sealed trait ArrayCursor[S] extends SuccessCursor[S]:
-    protected[this] def array: Vector[S]
+    protected def array: Vector[S]
     def indexValue: Int
     def parent: SuccessCursor[S]
-    protected[this] def changed: Boolean
-    protected[this] def arrayType: ArrayType[S]
+    protected def changed: Boolean
+    protected def arrayType: ArrayType[S]
     def value: S = array(indexValue)
     def index: Option[Int] = Some(indexValue)
     def key: Option[String] = None
-    private[this] def valuesExcept: Vector[S] = array.take(indexValue) ++ array.drop(indexValue + 1)
+    private def valuesExcept: Vector[S] = array.take(indexValue) ++ array.drop(indexValue + 1)
 
     def replace(newValue: S, cursor: SuccessCursor[S], op: Option[CursorOp]): SuccessCursor[S] =
       ACursor(array.updated(indexValue, newValue), indexValue, parent, true, arrayType, Some(cursor), op)

@@ -7,7 +7,7 @@ import org.tpolecat.typename.TypeName
 
 trait GetInstances extends GetInstances1:
   extension[T] (meta: Meta[T])
-    private[this] def decodeTo[A](
+    private def decodeTo[A](
       using
       decoder: Decoder[Id, T, A],
       s: Show[T],

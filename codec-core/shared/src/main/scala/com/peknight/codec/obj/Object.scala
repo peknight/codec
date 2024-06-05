@@ -50,11 +50,11 @@ object Object:
   def fromIterable[S](fields: Iterable[(String, S)]): Object[S] =
     MapAndVectorObject[S](fields.toMap, fields.map(_._1).toVector)
   def fromMap[S](map: Map[String, S]): Object[S] = fromMapAndVector(map, map.keys.toVector)
-  private[this] def fromMapAndVector[S](map: Map[String, S], keys: Vector[String]): Object[S] =
+  private def fromMapAndVector[S](map: Map[String, S], keys: Vector[String]): Object[S] =
     MapAndVectorObject[S](map, keys)
   def empty[S]: Object[S] = MapAndVectorObject[S](Map.empty, Vector.empty)
   def singleton[S](key: String, value: S): Object[S] = MapAndVectorObject[S](Map((key, value)), Vector(key))
-  private[this] class MapAndVectorObject[S](fields: Map[String, S], orderedKeys: Vector[String]) extends Object[S]:
+  private class MapAndVectorObject[S](fields: Map[String, S], orderedKeys: Vector[String]) extends Object[S]:
     override def applyUnsafe(key: String): S = fields(key)
     def apply(key: String): Option[S] = fields.get(key)
     def contains(key: String): Boolean = fields.contains(key)

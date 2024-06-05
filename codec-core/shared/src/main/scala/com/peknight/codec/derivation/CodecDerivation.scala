@@ -27,7 +27,7 @@ trait CodecDerivation:
       derivedSum[F, S, A](configuration, objectType, stringEncoder, stringDecoder, stringOptionDecoder,
         generic.asInstanceOf, encoders.asInstanceOf, decoders.asInstanceOf)
 
-  private[this] def derivedProduct[F[_]: Applicative, S, A](
+  private def derivedProduct[F[_]: Applicative, S, A](
     configuration: CodecConfiguration,
     objectType: ObjectType[S],
     nullType: NullType[S],
@@ -40,7 +40,7 @@ trait CodecDerivation:
         DecoderDerivation.decodeProduct(cursor, configuration, objectType, nullType, decoders)
   end derivedProduct
 
-  private[this] def derivedSum[F[_]: Monad, S, A](
+  private def derivedSum[F[_]: Monad, S, A](
     configuration: CodecConfiguration,
     objectType: ObjectType[S],
     stringEncoder: Encoder[F, S, String],
@@ -53,7 +53,7 @@ trait CodecDerivation:
     generic.singletons.sequence match
       case Some(singletons) =>
         new Codec[F, S, Cursor[S], A] with EnumDecoder[F, Cursor[S], A]:
-          def decoders: Map[String, Decoder[F, Cursor[S], _]] =
+          def decoders: Map[String, Decoder[F, Cursor[S], ?]] =
             EnumDecoderDerivation.enumDecodersDict[F, Cursor[S], A](this, configuration, generic)
           def encode(a: A): F[S] = EnumEncoderDerivation.encodeEnum(a, configuration, stringEncoder, generic)
           def decode(cursor: Cursor[S]): F[Either[DecodingFailure, A]] =
@@ -61,7 +61,7 @@ trait CodecDerivation:
       case _ =>
         new Codec[F, S, Cursor[S], A] with SumEncoder[F, S, A]
           with SumDecoder[F, Cursor[S], A]:
-          def decoders: Map[String, Decoder[F, Cursor[S], _]] =
+          def decoders: Map[String, Decoder[F, Cursor[S], ?]] =
             DecoderDerivation.decodersDict[F, Cursor[S], A](configuration, decoders0)
           def encode(a: A): F[S] =
             EncoderDerivation.encodeSum(a, configuration, objectType, stringEncoder, encoders)

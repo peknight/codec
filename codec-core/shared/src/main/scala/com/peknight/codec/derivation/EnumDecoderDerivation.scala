@@ -17,7 +17,7 @@ trait EnumDecoderDerivation:
   ): EnumDecoder[F, T, A] =
     val singletons = summonAllSingletons[generic.Repr](generic.label)
     new EnumDecoder[F, T, A]:
-      def decoders: Map[String, Decoder[F, T, _]] =
+      def decoders: Map[String, Decoder[F, T, ?]] =
         enumDecodersDict[F, T, A](this, configuration, generic)
       def decode(t: T): F[Either[DecodingFailure, A]] =
         decodeEnum[F, T, A, generic.Repr](t, configuration, stringDecoder, generic, singletons)
@@ -29,7 +29,7 @@ trait EnumDecoderDerivation:
     generic: Generic.Sum[A]
   ): EnumDecoder[F, T, A] =
     new EnumDecoder[F, T, A]:
-      def decoders: Map[String, Decoder[F, T, _]] =
+      def decoders: Map[String, Decoder[F, T, ?]] =
         enumDecodersDict[F, T, A](this, configuration, generic)
       def decode(t: T): F[Either[DecodingFailure, A]] =
         unsafeDecodeEnum[F, T, A, generic.Repr](t, configuration, stringDecoder, generic)

@@ -104,11 +104,11 @@ package object iso:
       case e => Encoder.instance[Id, Json, A](b.apply).pure
   end encoderIsomorphism
 
-  private[this] def migrateDecoder[T](b: io.circe.Decoder[T]): Decoder[Id, Cursor[Json], T] = b match
+  private def migrateDecoder[T](b: io.circe.Decoder[T]): Decoder[Id, Cursor[Json], T] = b match
     case d: com.peknight.codec.circe.Decoder[T] => d.decoder
     case d: ConfiguredDecoder[T] if SumOrProductOps.isSum(d) =>
       new SumDecoder[Id, Cursor[Json], T]:
-        def decoders: Map[String, Decoder[Id, Cursor[Json], _]] =
+        def decoders: Map[String, Decoder[Id, Cursor[Json], ?]] =
           d.constructorNames.zip(d.elemDecoders).map((key, dd) => (key, migrateDecoder(dd))).toMap
         def decode(cursor: Cursor[Json]): Either[DecodingFailure, T] =
           d.tryDecodeAccumulating(cursorIsomorphism[Id].to(cursor))
@@ -133,7 +133,7 @@ package object iso:
       case c: ConfiguredCodec[A] if SumOrProductOps.isSum(c) =>
         val codec = new Codec[Id, Json, Cursor[Json], A] with SumEncoder[Id, Json, A]
           with SumDecoder[Id, Cursor[Json], A]:
-          def decoders: Map[String, Decoder[Id, Cursor[Json], _]] =
+          def decoders: Map[String, Decoder[Id, Cursor[Json], ?]] =
             c.constructorNames.zip(c.elemDecoders).map((key, dd) => (key, migrateDecoder(dd))).toMap
           def encode(a: A): Json = c(a)
           def decode(cursor: Cursor[Json]): Either[DecodingFailure, A] =

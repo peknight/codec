@@ -5,7 +5,7 @@ trait CodecConfiguration extends EncoderConfiguration with DecoderConfiguration:
 end CodecConfiguration
 
 object CodecConfiguration:
-  private[this] case class Configuration(
+  private case class Configuration(
     transformMemberNames: String => String,
     transformConstructorNames: String => String,
     discriminator: Option[String],
