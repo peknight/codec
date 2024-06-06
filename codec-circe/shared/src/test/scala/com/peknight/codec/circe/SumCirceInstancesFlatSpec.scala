@@ -18,11 +18,13 @@ class SumCirceInstancesFlatSpec extends AnyFlatSpec:
     val f: OuterSum = F("ffffff")
     given CodecConfiguration = CodecConfiguration(discriminator = Some("type"))
     given CanEqual[Result[OuterSum], Result[OuterSum]] = CanEqual.derived
-    assert(Decoder[OuterSum].decodeJson(Encoder[OuterSum].apply(a)) == a.asRight[DecodingFailure])
-    assert(Decoder[OuterSum].decodeJson(Encoder[OuterSum].apply(b)) == b.asRight[DecodingFailure])
-    assert(Decoder[OuterSum].decodeJson(Encoder[OuterSum].apply(c)) == c.asRight[DecodingFailure])
-    assert(Decoder[OuterSum].decodeJson(Encoder[OuterSum].apply(d)) == d.asRight[DecodingFailure])
-    assert(Decoder[OuterSum].decodeJson(Encoder[OuterSum].apply(e)) == e.asRight[DecodingFailure])
-    assert(Decoder[OuterSum].decodeJson(Encoder[OuterSum].apply(f)) == f.asRight[DecodingFailure])
+    val decoder: Decoder[OuterSum] = Decoder[OuterSum]
+    val encoder: Encoder[OuterSum] = Encoder[OuterSum]
+    assert(decoder.decodeJson(encoder(a)) == a.asRight[DecodingFailure])
+    assert(decoder.decodeJson(encoder(b)) == b.asRight[DecodingFailure])
+    assert(decoder.decodeJson(encoder(c)) == c.asRight[DecodingFailure])
+    assert(decoder.decodeJson(encoder(d)) == d.asRight[DecodingFailure])
+    assert(decoder.decodeJson(encoder(e)) == e.asRight[DecodingFailure])
+    assert(decoder.decodeJson(encoder(f)) == f.asRight[DecodingFailure])
   }
 end SumCirceInstancesFlatSpec
