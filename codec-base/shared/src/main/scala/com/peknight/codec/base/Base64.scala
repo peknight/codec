@@ -2,7 +2,7 @@ package com.peknight.codec.base
 
 import scodec.bits.Bases.Base64Alphabet
 
-case class Base64(value: String) extends Base64Base:
+case class Base64 private (value: String) extends Base64Base:
   val alphabet: Base64Alphabet = Base64.alphabet
 end Base64
 object Base64 extends BaseAlphabetPlatform[scodec.bits.Bases.Alphabets.Base64.type, Base64]

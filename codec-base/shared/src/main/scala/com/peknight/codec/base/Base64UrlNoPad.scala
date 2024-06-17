@@ -2,7 +2,7 @@ package com.peknight.codec.base
 
 import scodec.bits.Bases.Base64Alphabet
 
-case class Base64UrlNoPad(value: String) extends Base64Base:
+case class Base64UrlNoPad private (value: String) extends Base64Base:
   val alphabet: Base64Alphabet = Base64UrlNoPad.alphabet
 end Base64UrlNoPad
 object Base64UrlNoPad extends BaseAlphabetPlatform[scodec.bits.Bases.Alphabets.Base64UrlNoPad.type, Base64UrlNoPad]

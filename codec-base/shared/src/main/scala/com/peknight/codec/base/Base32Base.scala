@@ -12,7 +12,5 @@ trait Base32Base extends Base:
 object Base32Base extends Base32Platform[Base32Alphabet, com.peknight.codec.base.Base32Base]:
   private case class Base32Base(value: String, alphabet: Base32Alphabet)
     extends com.peknight.codec.base.Base32Base
-  def apply(value: String, alphabet: Base32Alphabet): com.peknight.codec.base.Base32Base =
-    Base32Base(value, alphabet)
-  protected def toBaseWithAlphabet: (String, Base32Alphabet) => com.peknight.codec.base.Base32Base = apply
+  protected def toBaseWithAlphabet: (String, Base32Alphabet) => com.peknight.codec.base.Base32Base = Base32Base.apply
 end Base32Base

@@ -2,7 +2,7 @@ package com.peknight.codec.base
 
 import scodec.bits.Bases.Base32Alphabet
 
-case class Base32Crockford(value: String) extends Base32Base:
+case class Base32Crockford private (value: String) extends Base32Base:
   val alphabet: Base32Alphabet = Base32Crockford.alphabet
 end Base32Crockford
 object Base32Crockford extends BaseAlphabetPlatform[scodec.bits.Bases.Alphabets.Base32Crockford.type, Base32Crockford]

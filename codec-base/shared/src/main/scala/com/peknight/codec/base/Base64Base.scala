@@ -12,7 +12,5 @@ trait Base64Base extends Base:
 object Base64Base extends Base64Platform[Base64Alphabet, com.peknight.codec.base.Base64Base]:
   private case class Base64Base(value: String, alphabet: Base64Alphabet)
     extends com.peknight.codec.base.Base64Base
-  def apply(value: String, alphabet: Base64Alphabet): com.peknight.codec.base.Base64Base =
-    Base64Base(value, alphabet)
-  protected def toBaseWithAlphabet: (String, Base64Alphabet) => com.peknight.codec.base.Base64Base = apply
+  protected def toBaseWithAlphabet: (String, Base64Alphabet) => com.peknight.codec.base.Base64Base = Base64Base.apply
 end Base64Base

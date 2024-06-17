@@ -5,6 +5,7 @@ import cats.parse.Parser0
 import com.peknight.codec.Codec
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.sum.StringType
+import com.peknight.error.parse.ParsingFailure
 import scodec.bits.Bases.Alphabet
 import scodec.bits.ByteVector
 
@@ -34,4 +35,7 @@ trait BaseAlphabetPlatform[A <: Alphabet, B <: Base : ClassTag] extends BasePlat
 
   given codecBaseS[F[_]: Applicative, S: StringType]: Codec[F, S, Cursor[S], B] =
     codecBaseSWithAlphabet[F, S](alphabet)
+
+  def fromString(value: String): Either[ParsingFailure, B] = fromString(value, alphabet)
+  def unsafeFromString(value: String): B = unsafeFromString(value, alphabet)
 end BaseAlphabetPlatform

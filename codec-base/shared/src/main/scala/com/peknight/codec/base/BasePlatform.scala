@@ -6,6 +6,7 @@ import com.peknight.codec.Codec
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.error.DecodingFailure
 import com.peknight.codec.sum.StringType
+import com.peknight.error.parse.ParsingFailure
 import scodec.bits.Bases.{Alphabet, PaddedAlphabet}
 import scodec.bits.ByteVector
 
@@ -48,4 +49,9 @@ trait BasePlatform[A <: Alphabet, B <: Base : ClassTag]:
   def codecBaseSWithAlphabet[F[_]: Applicative, S: StringType](alphabet: A): Codec[F, S, Cursor[S], B] =
     given Codec[F, String, String, B] = stringCodecBaseWithAlphabet[F](alphabet)
     Codec.codecS[F, S, B]
+
+  def fromString(value: String, alphabet: A): Either[ParsingFailure, B] =
+    baseParserWithAlphabet(alphabet).parseAll(value).left.map(ParsingFailure.apply)
+  def unsafeFromString(value: String, alphabet: A): B =
+    fromString(value, alphabet).fold(throw _, identity)
 end BasePlatform
