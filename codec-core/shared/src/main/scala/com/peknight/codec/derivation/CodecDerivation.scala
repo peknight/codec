@@ -57,7 +57,7 @@ trait CodecDerivation:
             EnumDecoderDerivation.enumDecodersDict[F, Cursor[S], A](this, configuration, generic)
           def encode(a: A): F[S] = EnumEncoderDerivation.encodeEnum(a, configuration, stringEncoder, generic)
           def decode(cursor: Cursor[S]): F[Either[DecodingFailure, A]] =
-            EnumDecoderDerivation.decodeEnum(cursor, configuration, stringDecoder, generic, singletons)
+            EnumDecoderDerivation.decodeEnum(cursor, configuration, stringDecoder, generic)(singletons)
       case _ =>
         new Codec[F, S, Cursor[S], A] with SumEncoder[F, S, A]
           with SumDecoder[F, Cursor[S], A]:

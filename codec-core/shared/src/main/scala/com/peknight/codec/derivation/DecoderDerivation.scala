@@ -47,15 +47,15 @@ trait DecoderDerivation:
     stringOptionDecoder: Decoder[F, Cursor[S], Option[String]],
     instances: => Generic.Sum.Instances[[X] =>> Decoder[F, Cursor[S], X], A]
   ): Decoder[F, Cursor[S], A] =
-    instances.singletons.sequence match
+    val generic: Generic.Sum[A] = instances.generic
+    generic.singletons.sequence match
       case Some(singletons) =>
         new EnumDecoder[F, Cursor[S], A]:
           def decoders: Map[String, Decoder[F, Cursor[S], ?]] =
             EnumDecoderDerivation.enumDecodersDict[F, Cursor[S], A](this, configuration,
               instances.generic)
           def decode(cursor: Cursor[S]): F[Either[DecodingFailure, A]] =
-            EnumDecoderDerivation.decodeEnum(cursor, configuration, stringDecoder, instances.generic,
-              singletons)
+            EnumDecoderDerivation.decodeEnum(cursor, configuration, stringDecoder, generic)(singletons)
       case _ =>
         new SumDecoder[F, Cursor[S], A]:
           def decoders: Map[String, Decoder[F, Cursor[S], ?]] =
