@@ -38,4 +38,6 @@ trait BaseAlphabetPlatform[A <: Alphabet, B <: Base : ClassTag] extends BasePlat
 
   def fromString(value: String): Either[ParsingFailure, B] = fromString(value, alphabet)
   def unsafeFromString(value: String): B = unsafeFromString(value, alphabet)
+  def fromByteVector(bytes: ByteVector): B = fromByteVector(bytes, alphabet)
+  def fromBigInt(value: BigInt): B = fromBigInt(value, alphabet)
 end BaseAlphabetPlatform

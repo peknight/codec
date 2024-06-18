@@ -54,4 +54,8 @@ trait BasePlatform[A <: Alphabet, B <: Base : ClassTag]:
     baseParserWithAlphabet(alphabet).parseAll(value).left.map(ParsingFailure.apply)
   def unsafeFromString(value: String, alphabet: A): B =
     fromString(value, alphabet).fold(throw _, identity)
+  def fromByteVector(bytes: ByteVector, alphabet: A): B =
+    toBaseWithAlphabet(toBaseStringWithAlphabet(bytes, alphabet), alphabet)
+  def fromBigInt(value: BigInt, alphabet: A): B =
+    fromByteVector(ByteVector(value.toByteArray), alphabet)
 end BasePlatform
