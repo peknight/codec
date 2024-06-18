@@ -26,13 +26,13 @@ trait DecoderDerivation:
     instances: => Generic.Instances[[X] =>> Decoder[F, Cursor[S], X], A]
   ): Decoder[F, Cursor[S], A] =
     instances.derive(
-      inst ?=> derivedProduct[F, S, A](configuration, objectType, nullType, inst),
-      inst ?=> derivedSum[F, S, A](configuration, objectType, stringDecoder,
-        stringOptionDecoder, inst)
+      inst ?=> derivedProduct[F, S, A](using configuration)(using monad, objectType, nullType, inst),
+      inst ?=> derivedSum[F, S, A](using configuration)(using monad, objectType, stringDecoder, stringOptionDecoder,
+        inst)
     )
 
-  private def derivedProduct[F[_]: Applicative, S, A](
-    configuration: DecoderConfiguration,
+  def derivedProduct[F[_], S, A](using configuration: DecoderConfiguration)(using
+    applicative: Applicative[F],
     objectType: ObjectType[S],
     nullType: NullType[S],
     instances: => Generic.Product.Instances[[X] =>> Decoder[F, Cursor[S], X], A]
@@ -40,8 +40,8 @@ trait DecoderDerivation:
     decodeProduct(_, configuration, objectType, nullType, instances)
   end derivedProduct
 
-  private def derivedSum[F[_]: Monad, S, A](
-    configuration: DecoderConfiguration,
+  def derivedSum[F[_], S, A](using configuration: DecoderConfiguration)(using
+    monad: Monad[F],
     objectType: ObjectType[S],
     stringDecoder: Decoder[F, Cursor[S], String],
     stringOptionDecoder: Decoder[F, Cursor[S], Option[String]],

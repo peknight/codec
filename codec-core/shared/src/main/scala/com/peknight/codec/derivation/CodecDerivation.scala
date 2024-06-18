@@ -22,13 +22,14 @@ trait CodecDerivation:
     decoders: => Generic.Instances[[X] =>> Decoder[F, Cursor[S], X], A]
   ): Codec[F, S, Cursor[S], A] =
     if generic.isProduct then
-      derivedProduct[F, S, A](configuration, objectType, nullType, encoders.asInstanceOf, decoders.asInstanceOf)
+      derivedProduct[F, S, A](using configuration)(using monad, objectType, nullType, encoders.asInstanceOf,
+        decoders.asInstanceOf)
     else
-      derivedSum[F, S, A](configuration, objectType, stringEncoder, stringDecoder, stringOptionDecoder,
-        generic.asInstanceOf, encoders.asInstanceOf, decoders.asInstanceOf)
+      derivedSum[F, S, A](using configuration)(using monad, objectType, stringEncoder, stringDecoder,
+        stringOptionDecoder, generic.asInstanceOf, encoders.asInstanceOf, decoders.asInstanceOf)
 
-  private def derivedProduct[F[_]: Applicative, S, A](
-    configuration: CodecConfiguration,
+  def derivedProduct[F[_], S, A](using configuration: CodecConfiguration)(using
+    applicative: Applicative[F],
     objectType: ObjectType[S],
     nullType: NullType[S],
     encoders: Generic.Product.Instances[[X] =>> Encoder[F, S, X], A],
@@ -40,8 +41,8 @@ trait CodecDerivation:
         DecoderDerivation.decodeProduct(cursor, configuration, objectType, nullType, decoders)
   end derivedProduct
 
-  private def derivedSum[F[_]: Monad, S, A](
-    configuration: CodecConfiguration,
+  def derivedSum[F[_], S, A](using configuration: CodecConfiguration)(using
+    monad: Monad[F],
     objectType: ObjectType[S],
     stringEncoder: Encoder[F, S, String],
     stringDecoder: Decoder[F, Cursor[S], String],

@@ -18,19 +18,19 @@ trait EncoderDerivation:
     instances: => Generic.Instances[[X] =>> Encoder[F, S, X], A]
   ): Encoder[F, S, A] =
     instances.derive(
-      inst ?=> derivedProduct[F, S, A](configuration, objectType, inst),
-      inst ?=> derivedSum[F, S, A](configuration, objectType, stringEncoder, inst)
+      inst ?=> derivedProduct[F, S, A](using configuration)(using applicative, objectType, inst),
+      inst ?=> derivedSum[F, S, A](using configuration)(using applicative, objectType, stringEncoder, inst)
     )
 
-  private def derivedProduct[F[_]: Applicative, S, A](
-    configuration: EncoderConfiguration,
+  def derivedProduct[F[_], S, A](using configuration: EncoderConfiguration)(using
+    applicative: Applicative[F],
     objectType: ObjectType[S],
     instances: => Generic.Product.Instances[[X] =>> Encoder[F, S, X], A]
   ): Encoder[F, S, A] =
     (a: A) => encodeProduct(a, configuration, objectType, instances)
 
-  private def derivedSum[F[_]: Applicative, S, A](
-    configuration: EncoderConfiguration,
+  def derivedSum[F[_], S, A](using configuration: EncoderConfiguration)(using
+    applicative: Applicative[F],
     objectType: ObjectType[S],
     stringEncoder: Encoder[F, S, String],
     instances: => Generic.Sum.Instances[[X] =>> Encoder[F, S, X], A]
