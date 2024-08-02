@@ -84,6 +84,11 @@ sealed trait Cursor[S]:
   def delete: Cursor[S]
 
   /**
+   * Remove fields from Object
+   */
+  def remove(keys: Seq[String])(using objectType: ObjectType[S]): Cursor[S]
+
+  /**
    * Move the focus to the parent.
    */
   def up: Cursor[S]
@@ -258,6 +263,8 @@ object Cursor:
     def focus: Option[S] = Some(value)
     def values(using ArrayType[S]): Option[Iterable[S]] = ArrayType[S].asArray(value)
     def keys(using objectType: ObjectType[S]): Option[Iterable[String]] = objectType.asObject(value).map(objectType.keys)
+    def remove(keys: Seq[String])(using objectType: ObjectType[S]): Cursor[S] =
+      objectType.asObject(value).fold(this)(obj => replace(objectType.to(objectType.remove(obj, keys)), this, None))
     protected def up[A](changed: Boolean, parent: SuccessCursor[S], s: S): Cursor[S] =
       if !changed then parent.addOp(this, CursorOp.MoveUp)
       else parent.replace(s, this, Some(CursorOp.MoveUp))
@@ -426,6 +433,7 @@ object Cursor:
     def right: Cursor[S] = this
     def last: Cursor[S] = this
     def delete: Cursor[S] = this
+    def remove(keys: Seq[String])(using objectType: ObjectType[S]): Cursor[S] = this
     def field(k: String): Cursor[S] = this
   end FailedCursor
 

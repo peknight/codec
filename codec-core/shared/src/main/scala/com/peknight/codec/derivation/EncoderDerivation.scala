@@ -1,6 +1,7 @@
 package com.peknight.codec.derivation
 
 import cats.Applicative
+import cats.syntax.applicative.*
 import cats.syntax.apply.*
 import cats.syntax.functor.*
 import cats.syntax.traverse.*
@@ -48,10 +49,14 @@ trait EncoderDerivation:
     objectType: ObjectType[S],
     instances: => Generic.Product.Instances[[X] =>> Encoder[F, S, X], A]
   ): F[S] =
-    instances.foldRightWithLabel(a)(List.empty[F[(String, S)]]) {
-      [X] => (encoder: Encoder[F, S, X], x: X, label: String, acc: List[F[(String, S)]]) =>
-        encoder.encode(x).map((configuration.transformMemberNames(label), _)) :: acc
-    }.sequence.map(f => objectType.to(objectType.fromFoldable(f)))
+    instances.foldRightWithLabel(a)(List.empty[(String, S)].pure[F]) {
+      [X] => (encoder: Encoder[F, S, X], x: X, label: String, acc: F[List[(String, S)]]) =>
+        (encoder.encode(x), acc).mapN { (s, acc) =>
+          if configuration.extendedField.contains(label) then
+            objectType.asObject(s).fold(List.empty[(String, S)])(obj => objectType.toList(obj)) ::: acc
+          else (configuration.transformMemberNames(label), s) :: acc
+        }
+    }.map(f => objectType.to(objectType.fromFoldable(f)))
 
   private[derivation] def encodeSum[F[_]: Applicative, S, A](
     a: A,

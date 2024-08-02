@@ -71,22 +71,27 @@ trait DecoderDerivation:
     nullType: NullType[S],
     instances: => Generic.Product.Instances[[X] =>> Decoder[F, Cursor[S], X], A]
   ): F[Either[DecodingFailure, A]] =
+    val labels = instances.labels.toList.asInstanceOf[List[String]]
     if cursor.focus.exists(objectType.isObject) then
       if configuration.strictDecoding then
-        val expectedFields = instances.labels.toList.asInstanceOf[List[String]] ++ configuration.discriminator
-        val expectedFieldsSet = expectedFields.toSet
-        val unexpectedFields = cursor.focus.flatMap(objectType.asObject).map(o => objectType.keys(o).toList)
-          .map(_.filterNot(expectedFieldsSet)).getOrElse(Nil)
-        if unexpectedFields.nonEmpty then
-          UnexpectedFields(unexpectedFields, expectedFields).label(instances.label).cursor(cursor).asLeft[A].pure[F]
+        if configuration.extendedField.exists(labels.contains) then
+          handleDecodeProduct(cursor, labels, configuration, objectType, nullType, instances)
         else
-          handleDecodeProduct(cursor, configuration, objectType, nullType, instances)
+          val expectedFields = labels ++ configuration.discriminator
+          val expectedFieldsSet = expectedFields.toSet
+          val unexpectedFields = cursor.focus.flatMap(objectType.asObject).map(o => objectType.keys(o).toList)
+            .map(_.filterNot(expectedFieldsSet)).getOrElse(Nil)
+          if unexpectedFields.nonEmpty then
+            UnexpectedFields(unexpectedFields, expectedFields).label(instances.label).cursor(cursor).asLeft[A].pure[F]
+          else
+            handleDecodeProduct(cursor, labels, configuration, objectType, nullType, instances)
       else
-        handleDecodeProduct(cursor, configuration, objectType, nullType, instances)
+        handleDecodeProduct(cursor, labels, configuration, objectType, nullType, instances)
     else NotObject.cursor(cursor).asLeft[A].pure[F]
 
   private def handleDecodeProduct[F[_]: Applicative, S, A](
     cursor: Cursor[S],
+    labels: List[String],
     configuration: DecoderConfiguration,
     objectType: ObjectType[S],
     nullType: NullType[S],
@@ -94,13 +99,22 @@ trait DecoderDerivation:
   ): F[Either[DecodingFailure, A]] =
     instances.constructWithLabelDefault[[X] =>> F[Validated[DecodingFailure, X]]] {
       [X] => (decoder: Decoder[F, Cursor[S], X], label: String, defaultOpt: Option[X]) =>
+        val extendedField = configuration.extendedField.contains(label)
         val key = configuration.transformMemberNames(label)
-        val current = cursor.downField(key)(using objectType)
+        val current =
+          if extendedField then cursor.remove(labels)(using objectType)
+          else cursor.downField(key)(using objectType)
         decoder.decode(current).map(result => defaultOpt
-          .filter(_ => configuration.useDefaults &&
-            (!cursor.focus.exists(s => objectType.asObject(s).exists(o => objectType.contains(o, key))) ||
-              (!result.isRight && current.focus.exists(nullType.isNull)))
-          )
+          .filter { _ =>
+            if !configuration.useDefaults then
+              false
+            else if !result.isRight && current.focus.exists(nullType.isNull) then
+              true
+            else if extendedField then
+              !current.focus.exists(objectType.isObject)
+            else
+              !cursor.focus.exists(s => objectType.asObject(s).exists(o => objectType.contains(o, key)))
+          }
           .fold(result.toValidated)(_.valid[DecodingFailure])
         )
     }.map(_.toEither)
