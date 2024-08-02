@@ -102,7 +102,7 @@ trait DecoderDerivation:
         val extendedField = configuration.extendedField.contains(label)
         val key = configuration.transformMemberNames(label)
         val current =
-          if extendedField then cursor.remove(labels)(using objectType)
+          if extendedField then cursor.remove(labels.map(configuration.transformMemberNames))(using objectType)
           else cursor.downField(key)(using objectType)
         decoder.decode(current).map(result => defaultOpt
           .filter { _ =>
