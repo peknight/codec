@@ -23,6 +23,8 @@ lazy val codec = (project in file("."))
     codecBase.js,
     codecCirce.jvm,
     codecCirce.js,
+    codecCirceParser.jvm,
+    codecCirceParser.js,
     codecDoobie.jvm,
     codecDoobie.js,
     codecHttp4s.jvm,
@@ -71,6 +73,16 @@ lazy val codecCirce = (crossProject(JSPlatform, JVMPlatform) in file("codec-circ
     libraryDependencies ++= Seq(
       "com.peknight" %%% "circe-ext" % pekExtVersion,
       "org.scalatest" %%% "scalatest" % scalaTestVersion % Test,
+    ),
+  )
+
+lazy val codecCirceParser = (crossProject(JSPlatform, JVMPlatform) in file("codec-circe-parser"))
+  .dependsOn(codecCirce)
+  .settings(commonSettings)
+  .settings(
+    name := "codec-circe-parser",
+    libraryDependencies ++= Seq(
+      "com.peknight" %%% "circe-parser-ext" % pekExtVersion,
     ),
   )
 
