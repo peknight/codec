@@ -4,7 +4,6 @@ import cats.Applicative
 import cats.syntax.applicative.*
 import cats.syntax.apply.*
 import cats.syntax.functor.*
-import cats.syntax.traverse.*
 import com.peknight.codec.Encoder
 import com.peknight.codec.configuration.EncoderConfiguration
 import com.peknight.codec.sum.ObjectType

@@ -9,7 +9,9 @@ import com.peknight.codec.cursor.Cursor.{FailedCursor, SuccessCursor}
 import com.peknight.codec.derivation.CodecDerivation
 import com.peknight.codec.error.{DecodingFailure, ParsingTypeError, WrongClassTag}
 import com.peknight.codec.number.Number
-import com.peknight.codec.sum.{NumberType, StringType}
+import com.peknight.generic.tuple.Map
+import com.peknight.generic.Generic
+import com.peknight.codec.sum.{NullType, NumberType, ObjectType, StringType}
 
 import scala.reflect.ClassTag
 import scala.util.Try
@@ -79,6 +81,28 @@ object Codec extends CodecDerivation:
 
   def cursorValueMap[F[_]: Applicative, S, A](encode: A => S)(decode: S => A): Codec[F, S, Cursor[S], A] =
     cursorMap[F, S, A](encode)(t => decode(t.value))
+
+  def forProduct[F[_], S, A, Repr <: Tuple](labels: Map[Repr, [X] =>> String])
+                                           (encode: A => Repr)(decode: Repr => Either[DecodingFailure, A])
+                                           (using
+                                             applicative: Applicative[F],
+                                             objectType: ObjectType[S],
+                                             nullType: NullType[S],
+                                             encoders: Generic.Product.Instances[[X] =>> Encoder[F, S, X], Repr],
+                                             decoders: Generic.Product.Instances[[X] =>> Decoder[F, Cursor[S], X], Repr]
+                                           ): Codec[F, S, Cursor[S], A] =
+    cursor[F, S, A](a => Encoder.handleForProduct[F, S, A, Repr](a)(labels)(encode))(t => Decoder.handleForProduct[F, S, A, Repr](t)(labels)(decode))
+
+  def forProductMap[F[_], S, A, Repr <: Tuple](labels: Map[Repr, [X] =>> String])
+                                              (encode: A => Repr)(decode: Repr => A)
+                                              (using
+                                                applicative: Applicative[F],
+                                                objectType: ObjectType[S],
+                                                nullType: NullType[S],
+                                                encoders: Generic.Product.Instances[[X] =>> Encoder[F, S, X], Repr],
+                                                decoders: Generic.Product.Instances[[X] =>> Decoder[F, Cursor[S], X], Repr]
+                                              ): Codec[F, S, Cursor[S], A] =
+    forProduct[F, S, A, Repr](labels)(encode)(repr => decode(repr).asRight)
 
   def codecN[F[_], S, A](using Encoder[F, Number, A], Decoder[F, Number, A])
                         (using Applicative[F], NumberType[S], ClassTag[A]): Codec[F, S, Cursor[S], A] =

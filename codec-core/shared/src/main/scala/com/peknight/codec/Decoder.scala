@@ -1,7 +1,7 @@
 package com.peknight.codec
 
 import cats.data.Validated.{Invalid, Valid}
-import cats.data.{NonEmptyList, StateT, Validated}
+import cats.data.{StateT, Validated}
 import cats.syntax.applicative.*
 import cats.syntax.apply.*
 import cats.syntax.either.*
@@ -24,11 +24,12 @@ import com.peknight.codec.obj.Object
 import com.peknight.codec.sum.*
 import com.peknight.generic.migration.Migration
 import com.peknight.generic.priority.PriorityInstancesF2
+import com.peknight.generic.{Generic, tuple}
 
 import java.time.format.DateTimeFormatter
 import scala.collection.{Map, mutable}
 import scala.reflect.ClassTag
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 trait Decoder[F[_], T, A]:
   self =>
@@ -175,6 +176,37 @@ object Decoder extends DecoderCursorInstances
   def cursorValueMap[F[_]: Applicative, S, A](f: S => A): Decoder[F, Cursor[S], A] = cursorMap[F, S, A](t => f(t.value))
 
   def fromState[F[_]: Monad, T, A](s: StateT[[X] =>> F[Either[DecodingFailure, X]], T, A]): Decoder[F, T, A] = s.runA(_)
+
+  def forProduct[F[_], S, A, Repr <: Tuple](labels: tuple.Map[Repr, [X] =>> String])(f: Repr => Either[DecodingFailure, A])(using
+    applicative: Applicative[F],
+    objectType: ObjectType[S],
+    nullType: NullType[S],
+    instances: => Generic.Product.Instances[[X] =>> Decoder[F, Cursor[S], X], Repr]
+  ): Decoder[F, Cursor[S], A] =
+    cursor[F, S, A](t => handleForProduct[F, S, A, Repr](t)(labels)(f))
+
+  private[codec] def handleForProduct[F[_], S, A, Repr <: Tuple](cursor: SuccessCursor[S])
+                                                                (labels: tuple.Map[Repr, [X] =>> String])
+                                                                (f: Repr => Either[DecodingFailure, A])
+                                                                (
+                                                                  using
+                                                                  applicative: Applicative[F],
+                                                                  objectType: ObjectType[S],
+                                                                  nullType: NullType[S],
+                                                                  instances: => Generic.Product.Instances[[X] =>> Decoder[F, Cursor[S], X], Repr]
+                                                                ): F[Either[DecodingFailure, A]] =
+    instances.constructWithGivenLabel[[X] =>> F[Validated[DecodingFailure, X]]](labels.asInstanceOf) {
+      [X] => (decoder: Decoder[F, Cursor[S], X], label: String) =>
+        decoder.decode(cursor.downField(label)).map(_.toValidated)
+    }.map(_.toEither.flatMap(f))
+
+  def forProductMap[F[_], S, A, Repr <: Tuple](labels: tuple.Map[Repr, [X] =>> String])(f: Repr => A)(using
+    applicative: Applicative[F],
+    objectType: ObjectType[S],
+    nullType: NullType[S],
+    instances: => Generic.Product.Instances[[X] =>> Decoder[F, Cursor[S], X], Repr]
+  ): Decoder[F, Cursor[S], A] =
+    forProduct[F, S, A, Repr](labels)(repr => f(repr).asRight)
 
   given [F[_]: Monad, T]: SemigroupK[[X] =>> Decoder[F, T, X]]
     with MonadError[[X] =>> Decoder[F, T, X], DecodingFailure] with
@@ -502,5 +534,4 @@ object Decoder extends DecoderCursorInstances
 
   def decodeWithEncoder[F[_], T, A](using encoder: Encoder[F, A, T])(using functor: Functor[F]): Decoder[F, T, A] =
     (t: T) => encoder.encode(t).map(_.asRight[DecodingFailure])
-
 end Decoder

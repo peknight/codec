@@ -11,8 +11,10 @@ import com.peknight.codec.instances.*
 import com.peknight.codec.number.Number
 import com.peknight.codec.obj.Object
 import com.peknight.codec.sum.*
+import com.peknight.generic.Generic
 import com.peknight.generic.migration.Migration
 import com.peknight.generic.priority.PriorityInstancesF2
+import com.peknight.generic.tuple.Map
 
 import java.time.format.DateTimeFormatter
 import java.time.temporal.TemporalAccessor
@@ -44,6 +46,23 @@ object Encoder extends EncoderValueInstances
   def identity[F[_]: Applicative, A]: Encoder[F, A, A] = map(Predef.identity)
 
   def const[F[_]: Applicative, S, A](s: S): Encoder[F, S, A] = applicative[F, S, A](_ => s)
+
+  def forProduct[F[_], S, A, Repr <: Tuple](labels: Map[Repr, [X] =>> String])(f: A => Repr)(using
+    applicative: Applicative[F], objectType: ObjectType[S],
+    instances: => Generic.Product.Instances[[X] =>> Encoder[F, S, X], Repr]
+  ): Encoder[F, S, A] =
+    instance[F, S, A](a => handleForProduct[F, S, A, Repr](a)(labels)(f))
+
+  private[codec] def handleForProduct[F[_], S, A, Repr <: Tuple](a: A)(labels: Map[Repr, [X] =>> String])(f: A => Repr)
+                                                                (using
+                                                                  applicative: Applicative[F],
+                                                                  objectType: ObjectType[S],
+                                                                  instances: => Generic.Product.Instances[[X] =>> Encoder[F, S, X], Repr]
+                                                                ): F[S] =
+    instances.foldRightWithGivenLabel(f(a))(List.empty[F[(String, S)]])(labels.asInstanceOf) {
+      [X] => (encoder: Encoder[F, S, X], x: X, label: String, acc: List[F[(String, S)]]) =>
+        encoder.encode(x).map((label, _)) :: acc
+    }.sequence.map(f => objectType.to(objectType.fromFoldable(f)))
 
   given encoderContravariant[F[_], S]: Contravariant[[X] =>> Encoder[F, S, X]] with
     def contramap[A, B](fa: Encoder[F, S, A])(f: B => A): Encoder[F, S, B] = fa.contramap(f)
