@@ -11,5 +11,9 @@ trait EncoderSyntax:
     def encodeTo[A](f: F[S] => (A => S) => F[A])(using encoder: Encoder[Id, S, A]): F[A] =
       f(fs)(encoder.encode)
   end extension
+
+  extension [A] (a: A)
+    def asS[F[_], S](using encoder: Encoder[F, S, A]): F[S] = encoder.encode(a)
+  end extension
 end EncoderSyntax
 object EncoderSyntax extends EncoderSyntax

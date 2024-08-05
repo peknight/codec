@@ -1,7 +1,5 @@
 package com.peknight.codec.syntax
 
-import cats.data.{Validated, ValidatedNel}
-import cats.syntax.either.*
 import cats.syntax.functor.*
 import cats.{Functor, Id}
 import com.peknight.codec.error.DecodingFailure
@@ -13,6 +11,10 @@ trait DecoderSyntax:
     def decodeTo[A](f: F[T] => (T => A) => F[A])(using encoder: Encoder[Id, A, T]): F[A] = f(ft)(encoder.encode)
     def eitherDecodeTo[A](f: F[T] => (T => Either[DecodingFailure, A]) => F[A])(using decoder: Decoder[Id, T, A]): F[A] =
       f(ft)(decoder.decode)
+  end extension
+
+  extension [T] (t: T)
+    def asA[F[_], A](using decoder: Decoder[F, T, A]): F[Either[DecodingFailure, A]] = decoder.decode(t)
   end extension
 end DecoderSyntax
 object DecoderSyntax extends DecoderSyntax
