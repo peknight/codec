@@ -6,6 +6,7 @@ import com.peknight.codec.Codec
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.error.DecodingFailure
 import com.peknight.codec.sum.StringType
+import com.peknight.commons.bigint.syntax.bigInt.toUnsignedBytes
 import com.peknight.error.parse.ParsingFailure
 import scodec.bits.Bases.{Alphabet, PaddedAlphabet}
 import scodec.bits.ByteVector
@@ -58,4 +59,8 @@ trait BasePlatform[A <: Alphabet, B <: Base : ClassTag]:
     toBaseWithAlphabet(toBaseStringWithAlphabet(bytes, alphabet), alphabet)
   def fromBigInt(value: BigInt, alphabet: A): B =
     fromByteVector(ByteVector(value.toByteArray), alphabet)
+  def fromUnsignedBigInt(value: BigInt, alphabet: A): B =
+    fromByteVector(value.toUnsignedBytes, alphabet)
+  def fromUnsignedBigInt(value: BigInt, minLength: Int, alphabet: A): B =
+    fromByteVector(value.toUnsignedBytes(minLength), alphabet)
 end BasePlatform

@@ -40,4 +40,6 @@ trait BaseAlphabetPlatform[A <: Alphabet, B <: Base : ClassTag] extends BasePlat
   def unsafeFromString(value: String): B = unsafeFromString(value, alphabet)
   def fromByteVector(bytes: ByteVector): B = fromByteVector(bytes, alphabet)
   def fromBigInt(value: BigInt): B = fromBigInt(value, alphabet)
+  def fromUnsignedBigInt(value: BigInt): B = fromUnsignedBigInt(value, alphabet)
+  def fromUnsignedBigInt(value: BigInt, minLength: Int): B = fromUnsignedBigInt(value, minLength, alphabet)
 end BaseAlphabetPlatform
