@@ -61,7 +61,7 @@ lazy val codecBase = (crossProject(JSPlatform, JVMPlatform) in file("codec-base"
   .settings(
     name := "codec-base",
     libraryDependencies ++= Seq(
-      "com.peknight" %%% "commons-bigint" % pekCommonsVersion,
+      "com.peknight" %%% "scodec-bits-ext" % pekExtVersion,
     ),
   )
 
@@ -160,7 +160,6 @@ val squantsVersion = "1.8.3"
 val scalaTestVersion = "3.2.18"
 val pekVersion = "0.1.0-SNAPSHOT"
 val pekGenericVersion = pekVersion
-val pekCommonsVersion = pekVersion
 val pekExtVersion = pekVersion
 val pekErrorVersion = pekVersion
 
