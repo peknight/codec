@@ -1,22 +1,27 @@
 package com.peknight.codec
 
-import cats.Applicative
 import cats.syntax.applicative.*
 import cats.syntax.either.*
 import cats.syntax.functor.*
+import cats.{Applicative, Functor}
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.cursor.Cursor.{FailedCursor, SuccessCursor}
 import com.peknight.codec.derivation.CodecDerivation
 import com.peknight.codec.error.{DecodingFailure, ParsingTypeError, WrongClassTag}
 import com.peknight.codec.number.Number
-import com.peknight.generic.tuple.Map
-import com.peknight.generic.Generic
 import com.peknight.codec.sum.{NullType, NumberType, ObjectType, StringType}
+import com.peknight.generic.Generic
+import com.peknight.generic.tuple.Map
 
 import scala.reflect.ClassTag
 import scala.util.Try
 
-trait Codec[F[_], S, T, A] extends Encoder[F, S, A] with Decoder[F, T, A]
+trait Codec[F[_], S, T, A] extends Encoder[F, S, A] with Decoder[F, T, A]:
+  def imap[B](f: A => B)(g: B => A)(using Functor[F]): Codec[F, S, T, B] =
+    Codec.instance[F, S, T, B](b => encode(g(b)))(t => decode(t).map(_.map(f)))
+  def iemap[B](f: A => Either[DecodingFailure, B])(g: B => A)(using Functor[F]): Codec[F, S, T, B] =
+    Codec.instance[F, S, T, B](b => encode(g(b)))(t => decode(t).map(_.flatMap(f)))
+end Codec
 object Codec extends CodecDerivation:
   def apply[F[_], S, T, A](using encoder: Encoder[F, S, A], decoder: Decoder[F, T, A]): Codec[F, S, T, A] =
     instance(encoder.encode)(decoder.decode)
