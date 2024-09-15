@@ -13,11 +13,11 @@ trait EnumEncoderDerivation:
   ): Encoder[F, S, A] =
     // Only used to validate if all cases are singletons
     summonAllSingletons[generic.Repr](generic.label)
-    (a: A) => encodeEnum(a, configuration, stringEncoder, generic)
+    Encoder.instance[F, S, A](a => encodeEnum(a, configuration, stringEncoder, generic))
 
   def unsafeDerived[F[_], S, A](using configuration: Configuration)
-                               (using stringEncoder: Encoder[F, S, String], generic: Generic.Sum[A]) =
-    (a: A) => encodeEnum(a, configuration, stringEncoder, generic)
+                               (using stringEncoder: Encoder[F, S, String], generic: Generic.Sum[A]): Encoder[F, S, A] =
+    Encoder.instance[F, S, A](a => encodeEnum(a, configuration, stringEncoder, generic))
 
   private[derivation] def encodeEnum[F[_], S, A](
     a: A,
@@ -33,13 +33,13 @@ trait EnumEncoderDerivation:
   ): Encoder[F, String, A] =
     // Only used to validate if all cases are singletons
     summonAllSingletons[generic.Repr](generic.label)
-    (a: A) => stringEncodeEnum[F, A](a, configuration, applicative, generic)
+    Encoder.instance[F, String, A](a => stringEncodeEnum[F, A](a, configuration, applicative, generic))
 
   def unsafeDerivedStringEncodeEnum[F[_], A](using configuration: Configuration)(using
     applicative: Applicative[F],
     generic: Generic.Sum[A]
   ): Encoder[F, String, A] =
-    (a: A) => stringEncodeEnum[F, A](a, configuration, applicative, generic)
+    Encoder.instance[F, String, A](a => stringEncodeEnum[F, A](a, configuration, applicative, generic))
 
   private[derivation] def stringEncodeEnum[F[_], A](a: A, configuration: Configuration, applicative: Applicative[F],
                                                     generic: Generic.Sum[A]): F[String] =

@@ -11,17 +11,25 @@ import com.peknight.generic.Generic
 import com.peknight.generic.compiletime.summonAllSingletons
 
 trait EnumDecoderDerivation:
+  def enumDecoderInstance[F[_], T, A](decode0: T => F[Either[DecodingFailure, A]])
+                                     (decoders0: Decoder[F, T, A] => Map[String, Decoder[F, T, ?]])
+  : EnumDecoder[F, T, A] =
+    new EnumDecoder[F, T, A]:
+      def decoders: Map[String, Decoder[F, T, ?]] = decoders0(this)
+      def decode(t: T): F[Either[DecodingFailure, A]] = decode0(t)
+  end enumDecoderInstance
+
   inline def derived[F[_], T, A](using configuration: Configuration)(using
     functor: Functor[F],
     stringDecoder: Decoder[F, T, String],
     generic: Generic.Sum[A]
   ): EnumDecoder[F, T, A] =
     val singletons = summonAllSingletons[generic.Repr](generic.label)
-    new EnumDecoder[F, T, A]:
-      def decoders: Map[String, Decoder[F, T, ?]] =
-        enumDecodersDict[F, T, A](this, configuration, generic)
-      def decode(t: T): F[Either[DecodingFailure, A]] =
-        decodeEnum[F, T, A](t, configuration, stringDecoder, generic)(singletons)
+    enumDecoderInstance[F, T, A](
+      t => decodeEnum[F, T, A](t, configuration, stringDecoder, generic)(singletons)
+    )(
+      self => enumDecodersDict[F, T, A](self, configuration, generic)
+    )
   end derived
 
   def unsafeDerived[F[_], T, A](using configuration: Configuration)(using
@@ -29,11 +37,11 @@ trait EnumDecoderDerivation:
     stringDecoder: Decoder[F, T, String],
     generic: Generic.Sum[A]
   ): EnumDecoder[F, T, A] =
-    new EnumDecoder[F, T, A]:
-      def decoders: Map[String, Decoder[F, T, ?]] =
-        enumDecodersDict[F, T, A](this, configuration, generic)
-      def decode(t: T): F[Either[DecodingFailure, A]] =
-        unsafeDecodeEnum[F, T, A, generic.Repr](t, configuration, stringDecoder, generic)
+    enumDecoderInstance[F, T, A](
+      t => unsafeDecodeEnum[F, T, A, generic.Repr](t, configuration, stringDecoder, generic)
+    )(
+      self => enumDecodersDict[F, T, A](self, configuration, generic)
+    )
   end unsafeDerived
 
   private[derivation] def decodeEnum[F[_]: Functor, T, A](
@@ -74,20 +82,22 @@ trait EnumDecoderDerivation:
     generic: Generic.Sum[A]
   ): EnumDecoder[F, String, A] =
     val singletons = summonAllSingletons[generic.Repr](generic.label)
-    new EnumDecoder[F, String, A]:
-      def decoders: Map[String, Decoder[F, String, ?]] = enumDecodersDict[F, String, A](this, configuration, generic)
-      def decode(t: String): F[Either[DecodingFailure, A]] = stringDecodeEnum[F, A](t, configuration, generic)(singletons)
+    enumDecoderInstance[F, String, A](
+      t => stringDecodeEnum[F, A](t, configuration, generic)(singletons)
+    )(
+      self => enumDecodersDict[F, String, A](self, configuration, generic)
+    )
   end derivedStringDecodeEnum
 
   def unsafeDerivedStringDecodeEnum[F[_], A](using configuration: Configuration)(using
     applicative: Applicative[F],
     generic: Generic.Sum[A]
   ): EnumDecoder[F, String, A] =
-    new EnumDecoder[F, String, A]:
-      def decoders: Map[String, Decoder[F, String, ?]] =
-        enumDecodersDict[F, String, A](this, configuration, generic)
-      def decode(t: String): F[Either[DecodingFailure, A]] =
-        unsafeStringDecodeEnum[F, A](t, configuration, generic)
+    enumDecoderInstance[F, String, A](
+      t => unsafeStringDecodeEnum[F, A](t, configuration, generic)
+    )(
+      self => enumDecodersDict[F, String, A](self, configuration, generic)
+    )
   end unsafeDerivedStringDecodeEnum
 
   private[derivation] def stringDecodeEnum[F[_]: Applicative, A](
