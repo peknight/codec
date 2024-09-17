@@ -52,6 +52,7 @@ lazy val codecCore = (crossProject(JSPlatform, JVMPlatform) in file("codec-core"
       "com.peknight" %%% "cats-ext" % pekExtVersion,
       "com.peknight" %%% "error-core" % pekErrorVersion,
       "org.typelevel" %%% "cats-parse" % catsParseVersion,
+      "org.scalatest" %%% "scalatest" % scalaTestVersion % Test,
     ),
   )
 
