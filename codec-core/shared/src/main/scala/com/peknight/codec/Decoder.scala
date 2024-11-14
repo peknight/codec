@@ -305,27 +305,49 @@ object Decoder extends DecoderCursorInstances
                                                           (f: (String, DateTimeFormatter) => A): Decoder[F, String, A] =
     parse(t => f(t, formatter))
 
+  def handleDecodeSeq[F[_], S, A, C[_]](builder: => mutable.Builder[A, C[A]])
+                                       (f: List[SuccessCursor[S]] => F[Either[DecodingFailure, C[A]]])
+                                       (using applicative: Applicative[F], arrayType: ArrayType[S])
+  : Decoder[F, Cursor[S], C[A]] =
+    case cursor: SuccessCursor[S] => cursor.downArray match
+      case arrayCursor: SuccessCursor[S] =>
+        val cursors = List.unfold[SuccessCursor[S], Cursor[S]](arrayCursor) {
+          case arrayCursor: SuccessCursor[S] => (arrayCursor, arrayCursor.right).some
+          case arrayCursor: FailedCursor[S] => none[(SuccessCursor[S], Cursor[S])]
+        }
+        f(cursors)
+      case arrayCursor: FailedCursor[S] if arrayType.isArray(cursor.value) => builder.result().asRight.pure[F]
+      case arrayCursor: FailedCursor[S] => NotArray.cursor(cursor).asLeft.pure[F]
+    case cursor: FailedCursor[S] => cursor.toDecodingFailure.asLeft.pure[F]
+  end handleDecodeSeq
+
   def decodeSeq[F[_], S, A, C[_]](builder: => mutable.Builder[A, C[A]])(
     using
     applicative: Applicative[F],
     decoder: Decoder[F, Cursor[S], A],
     arrayType: ArrayType[S]
   ): Decoder[F, Cursor[S], C[A]] =
-    case cursor: SuccessCursor[S] => cursor.downArray match
-      case arrayCursor: SuccessCursor[S] =>
-        type ValidatedF[T] = F[Validated[DecodingFailure, T]]
-        val res: F[Validated[DecodingFailure, C[A]]] = List
-          .unfold[SuccessCursor[S], Cursor[S]](arrayCursor) {
-            case arrayCursor: SuccessCursor[S] => (arrayCursor, arrayCursor.right).some
-            case arrayCursor: FailedCursor[S] => none[(SuccessCursor[S], Cursor[S])]
-          }
-          .traverse[ValidatedF, A](tt => decoder.decode(tt).map(_.toValidated))
-          .map(_.foldLeft(builder)(_ += _).result())
-        res.map(_.toEither)
-      case arrayCursor: FailedCursor[S] if arrayType.isArray(cursor.value) => builder.result().asRight.pure[F]
-      case arrayCursor: FailedCursor[S] => NotArray.cursor(cursor).asLeft.pure[F]
-    case cursor: FailedCursor[S] => cursor.toDecodingFailure.asLeft.pure[F]
+    type ValidatedF[T] = F[Validated[DecodingFailure, T]]
+    handleDecodeSeq[F, S, A, C](builder) { cursors =>
+      val res: F[Validated[DecodingFailure, C[A]]] = cursors
+        .traverse[ValidatedF, A](tt => decoder.decode(tt).map(_.toValidated))
+        .map(_.foldLeft(builder)(_ += _).result())
+      res.map(_.toEither)
+    }
   end decodeSeq
+
+  def decodeSeqIgnoreError[F[_], S, A, C[_]](builder: => mutable.Builder[A, C[A]])(
+    using
+    applicative: Applicative[F],
+    decoder: Decoder[F, Cursor[S], A],
+    arrayType: ArrayType[S]
+  ): Decoder[F, Cursor[S], C[A]] =
+    handleDecodeSeq[F, S, A, C](builder)(
+      _.traverse[F, Either[DecodingFailure, A]](tt => decoder.decode(tt))
+        .map(_.foldLeft(builder)((builder, either) => either.fold(_ => builder, a => builder += a)).result().asRight)
+    )
+  end decodeSeqIgnoreError
+
   def decodeSeqWithMonad[F[_], S, A, C[_]](builder: => mutable.Builder[A, C[A]])(
     using
     monad: Monad[F],
