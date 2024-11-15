@@ -305,17 +305,18 @@ object Decoder extends DecoderCursorInstances
                                                           (f: (String, DateTimeFormatter) => A): Decoder[F, String, A] =
     parse(t => f(t, formatter))
 
-  def handleDecodeSeq[F[_], S, A, C[_]](builder: => mutable.Builder[A, C[A]])
-                                       (f: List[SuccessCursor[S]] => F[Either[DecodingFailure, C[A]]])
-                                       (using applicative: Applicative[F], arrayType: ArrayType[S])
+  private def toCursorArray[S](arrayCursor: SuccessCursor[S]): List[SuccessCursor[S]] =
+    List.unfold[SuccessCursor[S], Cursor[S]](arrayCursor) {
+      case arrayCursor: SuccessCursor[S] => (arrayCursor, arrayCursor.right).some
+      case arrayCursor: FailedCursor[S] => none[(SuccessCursor[S], Cursor[S])]
+    }
+
+  private def handleDecodeSeq[F[_], S, A, C[_]](builder: => mutable.Builder[A, C[A]])
+                                               (f: SuccessCursor[S] => F[Either[DecodingFailure, C[A]]])
+                                               (using applicative: Applicative[F], arrayType: ArrayType[S])
   : Decoder[F, Cursor[S], C[A]] =
     case cursor: SuccessCursor[S] => cursor.downArray match
-      case arrayCursor: SuccessCursor[S] =>
-        val cursors = List.unfold[SuccessCursor[S], Cursor[S]](arrayCursor) {
-          case arrayCursor: SuccessCursor[S] => (arrayCursor, arrayCursor.right).some
-          case arrayCursor: FailedCursor[S] => none[(SuccessCursor[S], Cursor[S])]
-        }
-        f(cursors)
+      case arrayCursor: SuccessCursor[S] => f(arrayCursor)
       case arrayCursor: FailedCursor[S] if arrayType.isArray(cursor.value) => builder.result().asRight.pure[F]
       case arrayCursor: FailedCursor[S] => NotArray.cursor(cursor).asLeft.pure[F]
     case cursor: FailedCursor[S] => cursor.toDecodingFailure.asLeft.pure[F]
@@ -327,46 +328,41 @@ object Decoder extends DecoderCursorInstances
     decoder: Decoder[F, Cursor[S], A],
     arrayType: ArrayType[S]
   ): Decoder[F, Cursor[S], C[A]] =
-    type ValidatedF[T] = F[Validated[DecodingFailure, T]]
-    handleDecodeSeq[F, S, A, C](builder) { cursors =>
-      val res: F[Validated[DecodingFailure, C[A]]] = cursors
+    handleDecodeSeq[F, S, A, C](builder) { arrayCursor =>
+      type ValidatedF[T] = F[Validated[DecodingFailure, T]]
+      val res: F[Validated[DecodingFailure, C[A]]] = toCursorArray(arrayCursor)
         .traverse[ValidatedF, A](tt => decoder.decode(tt).map(_.toValidated))
         .map(_.foldLeft(builder)(_ += _).result())
       res.map(_.toEither)
     }
   end decodeSeq
-
   def decodeSeqIgnoreError[F[_], S, A, C[_]](builder: => mutable.Builder[A, C[A]])(
     using
     applicative: Applicative[F],
     decoder: Decoder[F, Cursor[S], A],
     arrayType: ArrayType[S]
   ): Decoder[F, Cursor[S], C[A]] =
-    handleDecodeSeq[F, S, A, C](builder)(
-      _.traverse[F, Either[DecodingFailure, A]](tt => decoder.decode(tt))
+    handleDecodeSeq[F, S, A, C](builder)(arrayCursor =>
+      toCursorArray(arrayCursor).traverse[F, Either[DecodingFailure, A]](tt => decoder.decode(tt))
         .map(_.foldLeft(builder)((builder, either) => either.fold(_ => builder, a => builder += a)).result().asRight)
     )
   end decodeSeqIgnoreError
-
   def decodeSeqWithMonad[F[_], S, A, C[_]](builder: => mutable.Builder[A, C[A]])(
     using
     monad: Monad[F],
     decoder: Decoder[F, Cursor[S], A],
     arrayType: ArrayType[S]
   ): Decoder[F, Cursor[S], C[A]] =
-    case cursor: SuccessCursor[S] => cursor.downArray match
-      case arrayCursor: SuccessCursor[S] =>
-        type EitherF[T] = F[Either[DecodingFailure, T]]
-        Monad[EitherF].tailRecM[(Cursor[S], mutable.Builder[A, C[A]]), C[A]]((arrayCursor, builder)) {
-          case (arrayCursor: SuccessCursor[S], builder) => decoder.decode(arrayCursor).map {
-            case Right(a) => ((arrayCursor.right, builder += a)).asLeft[C[A]].asRight[DecodingFailure]
-            case Left(e) => e.asLeft[Either[(Cursor[S], mutable.Builder[A, C[A]]), C[A]]]
-          }
-          case (arrayCursor: FailedCursor[S], builder) => builder.result().asRight.pure[EitherF]
+    handleDecodeSeq[F, S, A, C](builder) { arrayCursor =>
+      type EitherF[T] = F[Either[DecodingFailure, T]]
+      Monad[EitherF].tailRecM[(Cursor[S], mutable.Builder[A, C[A]]), C[A]]((arrayCursor, builder)) {
+        case (arrayCursor: SuccessCursor[S], builder) => decoder.decode(arrayCursor).map {
+          case Right(a) => ((arrayCursor.right, builder += a)).asLeft[C[A]].asRight[DecodingFailure]
+          case Left(e) => e.asLeft[Either[(Cursor[S], mutable.Builder[A, C[A]]), C[A]]]
         }
-      case arrayCursor: FailedCursor[S] if arrayType.isArray(cursor.value) => builder.result().asRight.pure[F]
-      case arrayCursor: FailedCursor[S] => NotArray.cursor(cursor).asLeft.pure[F]
-    case cursor: FailedCursor[S] => cursor.toDecodingFailure.asLeft.pure[F]
+        case (arrayCursor: FailedCursor[S], builder) => builder.result().asRight.pure[EitherF]
+      }
+    }
   end decodeSeqWithMonad
   def decodeNonEmptySeq[F[_], S, A, C[_], N](builder: => mutable.Builder[A, C[A]])(create: (A, C[A]) => N)(
     using
