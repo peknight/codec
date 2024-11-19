@@ -44,7 +44,7 @@ trait BasePlatform[A <: Alphabet, B <: Base : ClassTag]:
 
   def stringCodecBaseWithAlphabet[F[_]: Applicative](alphabet: A): Codec[F, String, String, B] =
     Codec.applicative[F, String, String, B](_.value)(t =>
-      baseParserWithAlphabet(alphabet).parseAll(t).left.map(DecodingFailure.apply)
+      baseParserWithAlphabet(alphabet).parseAll(t.replace("\\s*+", "")).left.map(DecodingFailure.apply)
     )
 
   def codecBaseSWithAlphabet[F[_]: Applicative, S: StringType](alphabet: A): Codec[F, S, Cursor[S], B] =
