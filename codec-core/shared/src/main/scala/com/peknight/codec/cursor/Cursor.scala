@@ -386,7 +386,8 @@ object Cursor:
     def up: Cursor[S] = up(changed, parent, arrayType.to(array))
 
     def delete: Cursor[S] =
-      parent.replace(arrayType.to(array), this, Some(CursorOp.DeleteGoParent))
+      parent.replace(arrayType.to(array.take(indexValue) ++ array.drop(indexValue + 1)), this,
+        Some(CursorOp.DeleteGoParent))
 
     def left: Cursor[S] =
       if indexValue == 0 then fail(CursorOp.MoveLeft)
