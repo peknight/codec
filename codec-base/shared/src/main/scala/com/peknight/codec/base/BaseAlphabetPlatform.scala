@@ -1,6 +1,6 @@
 package com.peknight.codec.base
 
-import cats.Applicative
+import cats.{Applicative, Eq}
 import cats.parse.Parser0
 import com.peknight.codec.Codec
 import com.peknight.codec.cursor.Cursor
@@ -35,6 +35,10 @@ trait BaseAlphabetPlatform[A <: Alphabet, B <: Base : ClassTag] extends BasePlat
 
   given codecBaseS[F[_]: Applicative, S: StringType]: Codec[F, S, Cursor[S], B] =
     codecBaseSWithAlphabet[F, S](alphabet)
+
+  given eqBase: Eq[B] with
+    def eqv(x: B, y: B): Boolean = x.value.equals(y.value)
+  end eqBase
 
   def fromString(value: String): Either[ParsingFailure, B] = fromString(value, alphabet)
   def unsafeFromString(value: String): B = unsafeFromString(value, alphabet)
