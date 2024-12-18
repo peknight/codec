@@ -1,11 +1,8 @@
 package com.peknight.codec.instances
 
 import cats.Applicative
-import cats.syntax.applicative.*
-import cats.syntax.either.*
 import com.peknight.codec.Decoder
 import com.peknight.codec.cursor.Cursor
-import com.peknight.codec.error.DecodingFailure
 import com.peknight.codec.number.Number
 import com.peknight.codec.sum.{BooleanType, NumberType, StringType}
 
