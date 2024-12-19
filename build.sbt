@@ -84,6 +84,7 @@ lazy val codecCirceParser = (crossProject(JSPlatform, JVMPlatform) in file("code
     name := "codec-circe-parser",
     libraryDependencies ++= Seq(
       "com.peknight" %%% "circe-parser-ext" % pekExtVersion,
+      "org.scalatest" %%% "scalatest" % scalaTestVersion % Test,
     ),
   )
 

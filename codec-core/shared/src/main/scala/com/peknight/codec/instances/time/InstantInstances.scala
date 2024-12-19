@@ -2,9 +2,9 @@ package com.peknight.codec.instances.time
 
 import cats.Applicative
 import com.peknight.codec.cursor.Cursor
-import com.peknight.codec.{Codec, Decoder, Encoder}
 import com.peknight.codec.number.Number
 import com.peknight.codec.sum.{NumberType, StringType}
+import com.peknight.codec.{Codec, Decoder, Encoder}
 
 import java.time.Instant
 
@@ -22,7 +22,7 @@ trait InstantInstances:
     Encoder.encodeS[F, S, Instant](using stringEncodeInstantOfEpochSecond)
 
   def numberDecodeInstantOfEpochSecond[F[_] : Applicative]: Decoder[F, Number, Instant] =
-    Decoder.numberDecodeNumberOption[F, Instant](_.toLong.map(Instant.ofEpochSecond))
+    Decoder.numberDecodeNumberOption[F, Instant](_.toBigDecimal.map(value => Instant.ofEpochSecond(value.toLong)))
 
   def stringDecodeInstantOfEpochSecond[F[_] : Applicative]: Decoder[F, String, Instant] =
     Decoder.stringDecodeWithNumberDecoder[F, Instant](using numberDecodeInstantOfEpochSecond)
@@ -64,7 +64,7 @@ trait InstantInstances:
     Encoder.encodeS[F, S, Instant](using stringEncodeInstantOfEpochMilli)
 
   def numberDecodeInstantOfEpochMilli[F[_] : Applicative]: Decoder[F, Number, Instant] =
-    Decoder.numberDecodeNumberOption[F, Instant](_.toLong.map(Instant.ofEpochMilli))
+    Decoder.numberDecodeNumberOption[F, Instant](_.toBigDecimal.map(value => Instant.ofEpochMilli(value.toLong)))
 
   def stringDecodeInstantOfEpochMilli[F[_] : Applicative]: Decoder[F, String, Instant] =
     Decoder.stringDecodeWithNumberDecoder[F, Instant](using numberDecodeInstantOfEpochMilli)
