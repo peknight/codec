@@ -74,7 +74,7 @@ trait DecoderDerivation:
     val labels = instances.labels.toList.asInstanceOf[List[String]]
     if cursor.focus.exists(objectType.isObject) then
       if configuration.strictDecoding then
-        if configuration.extendedField.exists(labels.contains) then
+        if configuration.extField.exists(labels.contains) then
           handleDecodeProduct(cursor, labels, configuration, objectType, nullType, instances)
         else
           val expectedFields = labels ++ configuration.discriminator
@@ -99,10 +99,10 @@ trait DecoderDerivation:
   ): F[Either[DecodingFailure, A]] =
     instances.constructWithLabelDefault[[X] =>> F[Validated[DecodingFailure, X]]] {
       [X] => (decoder: Decoder[F, Cursor[S], X], label: String, defaultOpt: Option[X]) =>
-        val extendedField = configuration.extendedField.contains(label)
+        val extField = configuration.extField.contains(label)
         val key = configuration.transformMemberNames(label)
         val current =
-          if extendedField then
+          if extField then
             val removeFields = (configuration.discriminator ++ labels.map(configuration.transformMemberNames)).toSeq
             cursor.remove(removeFields)(using objectType)
           else cursor.downField(key)(using objectType)
@@ -112,7 +112,7 @@ trait DecoderDerivation:
               false
             else if !result.isRight && current.focus.exists(nullType.isNull) then
               true
-            else if extendedField then
+            else if extField then
               !current.focus.exists(objectType.isObject)
             else
               !cursor.focus.exists(s => objectType.asObject(s).exists(o => objectType.contains(o, key)))

@@ -51,7 +51,7 @@ trait EncoderDerivation:
     instances.foldRightWithLabel(a)(List.empty[(String, S)].pure[F]) {
       [X] => (encoder: Encoder[F, S, X], x: X, label: String, acc: F[List[(String, S)]]) =>
         (encoder.encode(x), acc).mapN { (s, acc) =>
-          if configuration.extendedField.contains(label) then
+          if configuration.extField.contains(label) then
             objectType.asObject(s).fold(List.empty[(String, S)])(obj => objectType.toList(obj)) ::: acc
           else (configuration.transformMemberNames(label), s) :: acc
         }

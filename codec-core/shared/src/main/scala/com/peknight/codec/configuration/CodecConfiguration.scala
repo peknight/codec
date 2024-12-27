@@ -9,7 +9,7 @@ object CodecConfiguration:
     transformMemberNames: String => String,
     transformConstructorNames: String => String,
     discriminator: Option[String],
-    extendedField: Option[String],
+    extField: Option[String],
     useDefaults: Boolean,
     strictDecoding: Boolean
   ) extends CodecConfiguration:
@@ -18,8 +18,8 @@ object CodecConfiguration:
     def withTransformConstructorNames(f: String => String): Configuration = copy(transformConstructorNames = f)
     def withDiscriminator(discriminator: String): Configuration = copy(discriminator = Some(discriminator))
     def withoutDiscriminator: Configuration = copy(discriminator = None)
-    def withExtendedField(extendedField: String): Configuration = copy(extendedField = Some(extendedField))
-    def withoutExtendedField: Configuration = copy(extendedField = None)
+    def withExtField(extField: String): Configuration = copy(extField = Some(extField))
+    def withoutExtField: Configuration = copy(extField = None)
     def withDefaults: Configuration = copy(useDefaults = true)
     def withoutDefaults: Configuration = copy(useDefaults = false)
     def withStrictDecoding: Configuration = copy(strictDecoding = true)
@@ -30,11 +30,11 @@ object CodecConfiguration:
     transformMemberNames: String => String = Predef.identity,
     transformConstructorNames: String => String = Predef.identity,
     discriminator: Option[String] = None,
-    extendedField: Option[String] = None,
+    extField: Option[String] = None,
     useDefaults: Boolean = false,
     strictDecoding: Boolean = false
   ): CodecConfiguration =
-    Configuration(transformMemberNames, transformConstructorNames, discriminator, extendedField, useDefaults, strictDecoding)
+    Configuration(transformMemberNames, transformConstructorNames, discriminator, extField, useDefaults, strictDecoding)
 
   val default: com.peknight.codec.configuration.CodecConfiguration = apply()
 
