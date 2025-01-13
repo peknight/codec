@@ -1,6 +1,6 @@
 ThisBuild / version := "0.1.0-SNAPSHOT"
 
-ThisBuild / scalaVersion := "3.5.0"
+ThisBuild / scalaVersion := "3.6.2"
 
 ThisBuild / organization := "com.peknight"
 
@@ -154,9 +154,9 @@ lazy val codecSquants = (crossProject(JSPlatform, JVMPlatform) in file("codec-sq
 
 val catsParseVersion = "0.3.10"
 val scodecVersion = "1.2.1"
-val doobieVersion = "1.0.0-RC5"
+val doobieVersion = "1.0.0-RC6"
 val http4sVersion = "1.0.0-M34"
-val cirisVersion = "3.6.0"
+val cirisVersion = "3.7.0"
 val ip4sCoreVersion = "3.6.0"
 val squantsVersion = "1.8.3"
 val scalaTestVersion = "3.2.19"
