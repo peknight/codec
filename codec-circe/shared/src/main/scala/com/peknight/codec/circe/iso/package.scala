@@ -48,8 +48,8 @@ package object iso:
       case Cursor.TCursor(value, lastCursor, lastOp) =>
         CursorOps.topCursor(value, lastCursor.map(successCursorIsomorphism[Id].to).orNull,
           lastOp.map(cursorOpIsomorphism[Id].to).orNull).pure
-      case Cursor.OCursor(obj: JsonObject, keyValue, parent, changed, _, lastCursor, lastOp) =>
-        CursorOps.objectCursor(obj, keyValue, successCursorIsomorphism[Id].to(parent), changed,
+      case Cursor.OCursor(obj, keyValue, parent, changed, _, lastCursor, lastOp) =>
+        CursorOps.objectCursor(obj.asInstanceOf[JsonObject], keyValue, successCursorIsomorphism[Id].to(parent), changed,
           lastCursor.map(successCursorIsomorphism[Id].to).orNull, lastOp.map(cursorOpIsomorphism[Id].to).orNull).pure
       case Cursor.ACursor(array, indexValue, parent, changed, _, lastCursor, lastOp) =>
         CursorOps.arrayCursor(array, indexValue, successCursorIsomorphism[Id].to(parent), changed,

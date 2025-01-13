@@ -13,8 +13,6 @@ import cats.syntax.semigroup.*
 import cats.syntax.traverse.*
 import cats.syntax.validated.*
 import cats.{Applicative, Apply, Eval, Functor, Monad, MonadError, SemigroupK}
-import com.peknight.cats.ext.instances.applicative.given
-import com.peknight.cats.ext.instances.eitherT.given
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.cursor.Cursor.{FailedCursor, SuccessCursor}
 import com.peknight.codec.error.*
@@ -175,7 +173,9 @@ object Decoder extends DecoderCursorInstances
 
   def cursorValueMap[F[_]: Applicative, S, A](f: S => A): Decoder[F, Cursor[S], A] = cursorMap[F, S, A](t => f(t.value))
 
-  def fromState[F[_]: Monad, T, A](s: StateT[[X] =>> F[Either[DecodingFailure, X]], T, A]): Decoder[F, T, A] = s.runA(_)
+  def fromState[F[_]: Monad, T, A](s: StateT[[X] =>> F[Either[DecodingFailure, X]], T, A]): Decoder[F, T, A] =
+    import com.peknight.cats.ext.instances.eitherT.given
+    s.runA(_)
 
   def forProduct[F[_], S, A, Repr <: Tuple](labels: tuple.Map[Repr, [X] =>> String])(f: Repr => Either[DecodingFailure, A])(using
     applicative: Applicative[F],
@@ -195,6 +195,7 @@ object Decoder extends DecoderCursorInstances
                                                                   nullType: NullType[S],
                                                                   instances: => Generic.Product.Instances[[X] =>> Decoder[F, Cursor[S], X], Repr]
                                                                 ): F[Either[DecodingFailure, A]] =
+    import com.peknight.cats.ext.instances.applicative.given
     instances.constructWithGivenLabel[[X] =>> F[Validated[DecodingFailure, X]]](labels.asInstanceOf) {
       [X] => (decoder: Decoder[F, Cursor[S], X], label: String) =>
         decoder.decode(cursor.downField(label)).map(_.toValidated)
@@ -236,6 +237,7 @@ object Decoder extends DecoderCursorInstances
       fa.product(fb).map(_._1)
     def flatMap[A, B](fa: Decoder[F, T, A])(f: A => Decoder[F, T, B]): Decoder[F, T, B] = fa.flatMap(f)
     def tailRecM[A, B](a: A)(f: A => Decoder[F, T, Either[A, B]]): Decoder[F, T, B] =
+      import com.peknight.cats.ext.instances.eitherT.given
       (t: T) => Monad[[X] =>> F[Either[DecodingFailure, X]]].tailRecM[A, B](a)(a => f(a).decode(t))
     def raiseError[A](e: DecodingFailure): Decoder[F, T, A] = Decoder.failed(e)
     def handleErrorWith[A](fa: Decoder[F, T, A])(f: DecodingFailure => Decoder[F, T, A]): Decoder[F, T, A] =
@@ -254,6 +256,7 @@ object Decoder extends DecoderCursorInstances
    */
   def decodeField[F[_], S, A](k: String)(using Applicative[F], Decoder[F, Cursor[S], A], ObjectType[S])
   : StateT[[X] =>> F[Either[DecodingFailure, X]], Cursor[S], A] =
+    import com.peknight.cats.ext.instances.applicative.given
     StateT[[X] =>> F[Either[DecodingFailure, X]], Cursor[S], A] { c =>
       val field = c.downField(k)
       field.as[F, A].map {
@@ -328,6 +331,7 @@ object Decoder extends DecoderCursorInstances
     decoder: Decoder[F, Cursor[S], A],
     arrayType: ArrayType[S]
   ): Decoder[F, Cursor[S], C[A]] =
+    import com.peknight.cats.ext.instances.applicative.given
     handleDecodeSeq[F, S, A, C](builder) { arrayCursor =>
       type ValidatedF[T] = F[Validated[DecodingFailure, T]]
       val res: F[Validated[DecodingFailure, C[A]]] = toCursorArray(arrayCursor)
@@ -354,6 +358,7 @@ object Decoder extends DecoderCursorInstances
     arrayType: ArrayType[S]
   ): Decoder[F, Cursor[S], C[A]] =
     handleDecodeSeq[F, S, A, C](builder) { arrayCursor =>
+      import com.peknight.cats.ext.instances.eitherT.given
       type EitherF[T] = F[Either[DecodingFailure, T]]
       Monad[EitherF].tailRecM[(Cursor[S], mutable.Builder[A, C[A]]), C[A]]((arrayCursor, builder)) {
         case (arrayCursor: SuccessCursor[S], builder) => decoder.decode(arrayCursor).map {
@@ -372,6 +377,7 @@ object Decoder extends DecoderCursorInstances
   ): Decoder[F, Cursor[S], N] =
     case cursor: SuccessCursor[S] =>
       val arrayCursor = cursor.downArray
+      import com.peknight.cats.ext.instances.applicative.given
       type ValidatedF[T] = F[Validated[DecodingFailure, T]]
       val res: F[Validated[DecodingFailure, N]] = Applicative[ValidatedF].map2(
         decoder.decode(arrayCursor).map(_.toValidated),
@@ -388,6 +394,7 @@ object Decoder extends DecoderCursorInstances
   ): Decoder[F, Cursor[S], N] =
     case cursor: SuccessCursor[S] =>
       val arrayCursor = cursor.downArray
+      import com.peknight.cats.ext.instances.eitherT.given
       type EitherF[T] = F[Either[DecodingFailure, T]]
       Monad[EitherF].flatMap(decoder.decode(arrayCursor))(head =>
         Monad[EitherF].map(decodeSeqWithMonad[F, S, A, C](builder).decode(arrayCursor.delete))(
@@ -406,6 +413,7 @@ object Decoder extends DecoderCursorInstances
   ): Decoder[F, Cursor[S], M[K, V]] =
     case cursor: SuccessCursor[S] => objectType.asObject(cursor.value) match
       case Some(o) =>
+        import com.peknight.cats.ext.instances.applicative.given
         type ValidatedF[T] = F[Validated[DecodingFailure, T]]
         val res: F[Validated[DecodingFailure, M[K, V]]] =
           objectType.keys(o).toList.traverse[ValidatedF, (K, V)] { key =>
@@ -431,6 +439,7 @@ object Decoder extends DecoderCursorInstances
   ): Decoder[F, Cursor[S], M[K, V]] =
     case cursor: SuccessCursor[S] => objectType.asObject(cursor.value) match
       case Some(o) =>
+        import com.peknight.cats.ext.instances.eitherT.given
         type EitherF[T] = F[Either[DecodingFailure, T]]
         objectType.keys(o).toList.foldLeftM[EitherF, mutable.Builder[(K, V), M[K, V]]](builder) {
           (builder, key) =>
