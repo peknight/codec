@@ -7,6 +7,7 @@ import cats.syntax.foldable.*
 import cats.syntax.functor.*
 import cats.syntax.traverse.*
 import cats.{Applicative, Contravariant, FlatMap, Foldable, Functor, Traverse}
+import com.peknight.codec.derivation.EncoderDerivation
 import com.peknight.codec.instances.*
 import com.peknight.codec.number.Number
 import com.peknight.codec.obj.Object
@@ -27,12 +28,12 @@ trait Encoder[F[_], S, A]:
     (a: A) => self.encode(a).flatMap(that.encode)
   def >>[B](that: Encoder[F, A, B])(using FlatMap[F]): Encoder[F, S, B] = that << self
 end Encoder
-object Encoder extends EncoderValueInstances
+object Encoder extends EncoderDerivation
+  with EncoderValueInstances
   with EncoderArrayInstances
   with EncoderObjectInstances
   with EncoderNullInstances
   with EncoderIdentityInstances
-  with EncoderDerivationInstances
   with PriorityInstancesF2[Encoder]:
 
   def apply[F[_], S, A](using encoder: Encoder[F, S, A]): Encoder[F, S, A] = encoder

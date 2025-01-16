@@ -1,6 +1,7 @@
 package com.peknight.codec
 
-import com.peknight.codec.instances.{DecoderDerivationInstances, EncoderDerivationInstances}
+import com.peknight.codec.instances.generic.decoder.DecoderDerivationInstances
+import com.peknight.codec.instances.generic.encoder.EncoderDerivationInstances
 
 package object derivation:
   object all extends EncoderDerivationInstances with DecoderDerivationInstances

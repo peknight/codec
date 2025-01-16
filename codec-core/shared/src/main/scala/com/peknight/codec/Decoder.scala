@@ -15,6 +15,7 @@ import cats.syntax.validated.*
 import cats.{Applicative, Apply, Eval, Functor, Monad, MonadError, SemigroupK}
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.cursor.Cursor.{FailedCursor, SuccessCursor}
+import com.peknight.codec.derivation.DecoderDerivation
 import com.peknight.codec.error.*
 import com.peknight.codec.instances.*
 import com.peknight.codec.number.{BiggerDecimal, Number}
@@ -113,12 +114,12 @@ trait Decoder[F[_], T, A]:
     }
   def <<[B](that: Decoder[F, A, B])(using Monad[F]): Decoder[F, T, B] = that >> self
 end Decoder
-object Decoder extends DecoderCursorInstances
+object Decoder extends DecoderDerivation
+  with DecoderCursorInstances
   with DecoderValueInstances
   with DecoderArrayInstances
   with DecoderObjectInstances
   with DecoderNullInstances
-  with DecoderDerivationInstances
   with DecoderIdentityInstances
   with PriorityInstancesF2[Decoder]:
 
