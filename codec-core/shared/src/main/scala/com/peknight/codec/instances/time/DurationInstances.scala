@@ -6,15 +6,14 @@ import com.peknight.codec.number.Number
 import com.peknight.codec.sum.{NumberType, StringType}
 import com.peknight.codec.{Codec, Decoder, Encoder}
 
-import java.time.Duration
-import scala.math.BigDecimal.RoundingMode
+import scala.concurrent.duration.Duration
 
 trait DurationInstances:
   def numberEncodeDurationOfSeconds[F[_] : Applicative]: Encoder[F, Number, Duration] =
-    Encoder.map[F, Number, Duration](duration => Number.fromLong(duration.getSeconds))
+    Encoder.map[F, Number, Duration](duration => Number.fromLong(duration.toSeconds))
 
   def stringEncodeDurationOfSeconds[F[_] : Applicative]: Encoder[F, String, Duration] =
-    Encoder.map[F, String, Duration](_.getSeconds.toString)
+    Encoder.map[F, String, Duration](_.toSeconds.toString)
 
   def encodeDurationOfSecondsN[F[_] : Applicative, S: NumberType]: Encoder[F, S, Duration] =
     Encoder.encodeN[F, S, Duration](using numberEncodeDurationOfSeconds)
@@ -23,8 +22,7 @@ trait DurationInstances:
     Encoder.encodeS[F, S, Duration](using stringEncodeDurationOfSeconds)
 
   def ofSeconds(seconds: BigDecimal): Duration =
-    val sec = seconds.setScale(0, RoundingMode.FLOOR)
-    Duration.ofSeconds(sec.longValue, ((seconds - sec) * BigDecimal(1000_000_000L)).longValue)
+    Duration.fromNanos((seconds * BigDecimal(1000_000_000L)).longValue)
 
   def numberDecodeDurationOfSeconds[F[_] : Applicative]: Decoder[F, Number, Duration] =
     Decoder.numberDecodeNumberOption[F, Duration](_.toBigDecimal.map(ofSeconds))
