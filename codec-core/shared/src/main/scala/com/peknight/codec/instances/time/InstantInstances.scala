@@ -38,7 +38,7 @@ trait InstantInstances:
   def decodeInstantOfEpochSecondS[F[_] : Applicative, S: StringType]: Decoder[F, Cursor[S], Instant] =
     Decoder.decodeS[F, S, Instant](using stringDecodeInstantOfEpochSecond)
 
-  def decodeInstantOfEpochSecondNS[F[_] : Applicative, S: NumberType : StringType]: Decoder[F, Cursor[S], Instant] =
+  def decodeInstantOfEpochSecondNS[F[_] : Applicative, S: {NumberType, StringType}]: Decoder[F, Cursor[S], Instant] =
     Decoder.decodeNS[F, S, Instant](using numberDecodeInstantOfEpochSecond)
 
   def numberCodecInstantOfEpochSecond[F[_] : Applicative]: Codec[F, Number, Number, Instant] =
@@ -53,7 +53,7 @@ trait InstantInstances:
   def codecInstantOfEpochSecondS[F[_] : Applicative, S: StringType]: Codec[F, S, Cursor[S], Instant] =
     Codec[F, S, Cursor[S], Instant](using encodeInstantOfEpochSecondS, decodeInstantOfEpochSecondS)
 
-  def codecInstantOfEpochSecondNS[F[_] : Applicative, S: NumberType : StringType]: Codec[F, S, Cursor[S], Instant] =
+  def codecInstantOfEpochSecondNS[F[_] : Applicative, S: {NumberType, StringType}]: Codec[F, S, Cursor[S], Instant] =
     Codec[F, S, Cursor[S], Instant](using encodeInstantOfEpochSecondN, decodeInstantOfEpochSecondNS)
 
   def numberEncodeInstantOfEpochMilli[F[_] : Applicative]: Encoder[F, Number, Instant] =
@@ -82,7 +82,7 @@ trait InstantInstances:
   def decodeInstantOfEpochMilliS[F[_] : Applicative, S: StringType]: Decoder[F, Cursor[S], Instant] =
     Decoder.decodeS[F, S, Instant](using stringDecodeInstantOfEpochMilli)
 
-  def decodeInstantOfEpochMilliNS[F[_]: Applicative, S: NumberType: StringType]: Decoder[F, Cursor[S], Instant] =
+  def decodeInstantOfEpochMilliNS[F[_]: Applicative, S: {NumberType, StringType}]: Decoder[F, Cursor[S], Instant] =
     Decoder.decodeNS[F, S, Instant](using numberDecodeInstantOfEpochMilli)
 
   def numberCodecInstantOfEpochMilli[F[_] : Applicative]: Codec[F, Number, Number, Instant] =
@@ -97,7 +97,7 @@ trait InstantInstances:
   def codecInstantOfEpochMilliS[F[_] : Applicative, S: StringType]: Codec[F, S, Cursor[S], Instant] =
     Codec[F, S, Cursor[S], Instant](using encodeInstantOfEpochMilliS, decodeInstantOfEpochMilliS)
 
-  def codecInstantOfEpochMilliNS[F[_] : Applicative, S: NumberType : StringType]: Codec[F, S, Cursor[S], Instant] =
+  def codecInstantOfEpochMilliNS[F[_] : Applicative, S: {NumberType, StringType}]: Codec[F, S, Cursor[S], Instant] =
     Codec[F, S, Cursor[S], Instant](using encodeInstantOfEpochMilliN, decodeInstantOfEpochMilliNS)
 end InstantInstances
 object InstantInstances extends InstantInstances

@@ -31,7 +31,7 @@ trait DecoderValueInstances extends DecoderValueInstances1:
   given decodeStringS[F[_]: Applicative, S: StringType]: Decoder[F, Cursor[S], String] =
     Decoder.decodeS[F, S, String]
 
-  given decodeBooleanBS[F[_] : Applicative, S: BooleanType: StringType]: Decoder[F, Cursor[S], Boolean] =
+  given decodeBooleanBS[F[_] : Applicative, S: {BooleanType, StringType}]: Decoder[F, Cursor[S], Boolean] =
     Decoder.decodeBS[F, S]
 
   given stringDecodeChar[F[_]: Applicative]: Decoder[F, String, Char] =
@@ -42,28 +42,28 @@ trait DecoderValueInstances extends DecoderValueInstances1:
   given decodeCharS[F[_]: Applicative, S: StringType]: Decoder[F, Cursor[S], Char] =
     Decoder.decodeS[F, S, Char]
 
-  given decodeFloatNS[F[_]: Applicative, S: NumberType: StringType]: Decoder[F, Cursor[S], Float] =
+  given decodeFloatNS[F[_]: Applicative, S: {NumberType, StringType}]: Decoder[F, Cursor[S], Float] =
     Decoder.decodeNS[F, S, Float]
 
-  given decodeDoubleNS[F[_]: Applicative, S: NumberType: StringType]: Decoder[F, Cursor[S], Double] =
+  given decodeDoubleNS[F[_]: Applicative, S: {NumberType, StringType}]: Decoder[F, Cursor[S], Double] =
     Decoder.decodeNS[F, S, Double]
     
-  given decodeByteNS[F[_]: Applicative, S: NumberType: StringType]: Decoder[F, Cursor[S], Byte] =
+  given decodeByteNS[F[_]: Applicative, S: {NumberType, StringType}]: Decoder[F, Cursor[S], Byte] =
     Decoder.decodeNS[F, S, Byte]
     
-  given decodeShortNS[F[_]: Applicative, S: NumberType: StringType]: Decoder[F, Cursor[S], Short] =
+  given decodeShortNS[F[_]: Applicative, S: {NumberType, StringType}]: Decoder[F, Cursor[S], Short] =
     Decoder.decodeNS[F, S, Short]
 
-  given decodeIntNS[F[_]: Applicative, S: NumberType: StringType]: Decoder[F, Cursor[S], Int] =
+  given decodeIntNS[F[_]: Applicative, S: {NumberType, StringType}]: Decoder[F, Cursor[S], Int] =
     Decoder.decodeNS[F, S, Int]
 
-  given decodeLongNS[F[_]: Applicative, S: NumberType: StringType]: Decoder[F, Cursor[S], Long] =
+  given decodeLongNS[F[_]: Applicative, S: {NumberType, StringType}]: Decoder[F, Cursor[S], Long] =
     Decoder.decodeNS[F, S, Long]
 
-  given decodeBigIntNS[F[_]: Applicative, S: NumberType: StringType]: Decoder[F, Cursor[S], BigInt] =
+  given decodeBigIntNS[F[_]: Applicative, S: {NumberType, StringType}]: Decoder[F, Cursor[S], BigInt] =
     Decoder.decodeNS[F, S, BigInt]
 
-  given decodeBigDecimalNS[F[_]: Applicative, S: NumberType: StringType]: Decoder[F, Cursor[S], BigDecimal] =
+  given decodeBigDecimalNS[F[_]: Applicative, S: {NumberType, StringType}]: Decoder[F, Cursor[S], BigDecimal] =
     Decoder.decodeNS[F, S, BigDecimal]
     
   given stringDecodeUUID[F[_]: Applicative]: HighPriority[Decoder[F, String, UUID]] =

@@ -14,6 +14,6 @@ trait PortInstances extends PortInstances1:
 
   given encodePortN[F[_]: Applicative, S: NumberType]: Encoder[F, S, Port] = Encoder.encodeN[F, S, Port]
 
-  given decodePortNS[F[_]: Applicative, S: NumberType: StringType]: Decoder[F, Cursor[S], Port] =
+  given decodePortNS[F[_]: Applicative, S: {NumberType, StringType}]: Decoder[F, Cursor[S], Port] =
     Decoder.decodeNS[F, S, Port]
 end PortInstances

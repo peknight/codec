@@ -12,5 +12,5 @@ trait NumberCodecInstances[T: ClassTag] extends NumberCodecInstances1[T]:
   given numberEncodeT[F[_]: Applicative]: Encoder[F, Number, T] =
     Encoder.map[F, Number, T](toNumber)
   given encodeTN[F[_]: Applicative, S: NumberType]: Encoder[F, S, T] = Encoder.encodeN[F, S, T]
-  given decodeTNS[F[_]: Applicative, S: NumberType: StringType]: Decoder[F, Cursor[S], T] = Decoder.decodeNS[F, S, T]
+  given decodeTNS[F[_]: Applicative, S: {NumberType, StringType}]: Decoder[F, Cursor[S], T] = Decoder.decodeNS[F, S, T]
 end NumberCodecInstances
