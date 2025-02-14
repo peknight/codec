@@ -93,8 +93,8 @@ object Codec extends CodecDerivation:
                                              applicative: Applicative[F],
                                              objectType: ObjectType[S],
                                              nullType: NullType[S],
-                                             encoders: Generic.Product.Instances[[X] =>> Encoder[F, S, X], Repr],
-                                             decoders: Generic.Product.Instances[[X] =>> Decoder[F, Cursor[S], X], Repr]
+                                             encoders: => Generic.Product.Instances[[X] =>> Encoder[F, S, X], Repr],
+                                             decoders: => Generic.Product.Instances[[X] =>> Decoder[F, Cursor[S], X], Repr]
                                            ): Codec[F, S, Cursor[S], A] =
     cursor[F, S, A](a => Encoder.handleForProduct[F, S, A, Repr](a)(labels)(encode))(t => Decoder.handleForProduct[F, S, A, Repr](t)(labels)(decode))
 
@@ -104,8 +104,8 @@ object Codec extends CodecDerivation:
                                                 applicative: Applicative[F],
                                                 objectType: ObjectType[S],
                                                 nullType: NullType[S],
-                                                encoders: Generic.Product.Instances[[X] =>> Encoder[F, S, X], Repr],
-                                                decoders: Generic.Product.Instances[[X] =>> Decoder[F, Cursor[S], X], Repr]
+                                                encoders: => Generic.Product.Instances[[X] =>> Encoder[F, S, X], Repr],
+                                                decoders: => Generic.Product.Instances[[X] =>> Decoder[F, Cursor[S], X], Repr]
                                               ): Codec[F, S, Cursor[S], A] =
     forProduct[F, S, A, Repr](labels)(encode)(repr => decode(repr).asRight)
 

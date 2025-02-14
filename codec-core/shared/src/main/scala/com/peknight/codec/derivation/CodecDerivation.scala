@@ -32,8 +32,8 @@ trait CodecDerivation:
     applicative: Applicative[F],
     objectType: ObjectType[S],
     nullType: NullType[S],
-    encoders: Generic.Product.Instances[[X] =>> Encoder[F, S, X], A],
-    decoders: Generic.Product.Instances[[X] =>> Decoder[F, Cursor[S], X], A]
+    encoders: => Generic.Product.Instances[[X] =>> Encoder[F, S, X], A],
+    decoders: => Generic.Product.Instances[[X] =>> Decoder[F, Cursor[S], X], A]
   ): Codec[F, S, Cursor[S], A] =
     new Codec[F, S, Cursor[S], A]:
       def encode(a: A): F[S] = EncoderDerivation.encodeProduct(a, configuration, objectType, encoders)
@@ -48,8 +48,8 @@ trait CodecDerivation:
     stringDecoder: Decoder[F, Cursor[S], String],
     stringOptionDecoder: Decoder[F, Cursor[S], Option[String]],
     generic: Generic.Sum[A],
-    encoders: Generic.Sum.Instances[[X] =>> Encoder[F, S, X], A],
-    decoders0: Generic.Sum.Instances[[X] =>> Decoder[F, Cursor[S], X], A]
+    encoders: => Generic.Sum.Instances[[X] =>> Encoder[F, S, X], A],
+    decoders0: => Generic.Sum.Instances[[X] =>> Decoder[F, Cursor[S], X], A]
   ): Codec[F, S, Cursor[S], A] =
     generic.singletons.sequence match
       case Some(singletons) =>
