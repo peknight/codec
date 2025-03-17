@@ -3,7 +3,7 @@ package com.peknight.codec.cursor
 import cats.syntax.applicative.*
 import cats.syntax.either.*
 import cats.syntax.functor.*
-import cats.{Applicative, Eq, Functor}
+import cats.{Applicative, Eq, Functor, Show}
 import com.peknight.codec.Decoder
 import com.peknight.codec.cursor.Cursor.{ArrayCursor, FailedCursor, ObjectCursor, SuccessCursor, TopCursor}
 import com.peknight.codec.error.{CursorFailure, DecodingFailure, MissingField}
@@ -235,6 +235,7 @@ sealed trait Cursor[S]:
     history.foldRight(this)((op, c) => c.replayOne(op))
 
   def toDecodingFailure: DecodingFailure =
+    given Show[S] = Show.fromToString
     this match
       case cursor: FailedCursor[S] if cursor.missingField => MissingField.cursor(this)
       case _ => CursorFailure.cursor(this)

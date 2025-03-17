@@ -4,7 +4,7 @@ import cats.data.*
 import cats.syntax.applicative.*
 import cats.syntax.either.*
 import cats.syntax.functor.*
-import cats.{Applicative, Order}
+import cats.{Applicative, Order, Show}
 import com.peknight.cats.ext.data.ChainBuilder
 import com.peknight.cats.ext.instances.applicative.given
 import com.peknight.codec.Decoder
@@ -69,7 +69,7 @@ trait DecoderArrayInstances extends DecoderArrayInstances1:
           [X] => (ft: Decoder[F, Cursor[S], X], index: Int) => ft.decode(cursor.downN(index)).map(_.toValidated)
         }.map(_.toEither)
       case Some(vector) => TupleSizeNotMatch(instances.size, vector.size).asLeft.pure[F]
-      case None => NotArray.cursor(cursor).asLeft.pure[F]
+      case None => NotArray.cursor(cursor)(using Show.fromToString[S]).asLeft.pure[F]
     case cursor: FailedCursor[S] => cursor.toDecodingFailure.asLeft.pure[F]
   end decodeTupleA
 

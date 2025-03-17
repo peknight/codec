@@ -4,7 +4,7 @@ import cats.syntax.applicative.*
 import cats.syntax.either.*
 import cats.syntax.functor.*
 import cats.syntax.option.*
-import cats.{Applicative, Functor}
+import cats.{Applicative, Functor, Show}
 import com.peknight.codec.Decoder
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.cursor.Cursor.{FailedCursor, SuccessCursor}
@@ -20,6 +20,7 @@ trait DecoderNullInstances extends DecoderNullInstances1:
     arrayType: ArrayType[S],
     nullType: NullType[S]
   ): Decoder[F, Cursor[S], Option[A]] =
+    given Show[S] = Show.fromToString
     Decoder.instance[F, Cursor[S], Option[A]] {
       case cursor: SuccessCursor[S] if nullType.isNull(cursor.value) => none.asRight.pure
       case cursor: SuccessCursor[S] => decoder.decode(cursor).map(_.map(_.some))
@@ -38,6 +39,7 @@ trait DecoderNullInstances extends DecoderNullInstances1:
     arrayType: ArrayType[S],
     nullType: NullType[S]
   ): Decoder[F, Cursor[S], None.type] =
+    given Show[S] = Show.fromToString
     Decoder.applicative[F, Cursor[S], None.type] {
       case cursor: SuccessCursor[S] if nullType.isNull(cursor.value) => None.asRight
       case cursor: SuccessCursor[S] => NotNull.cursor(cursor).asLeft

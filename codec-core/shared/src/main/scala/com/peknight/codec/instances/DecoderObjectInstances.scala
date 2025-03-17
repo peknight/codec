@@ -3,7 +3,7 @@ package com.peknight.codec.instances
 import cats.data.NonEmptyMap
 import cats.syntax.applicative.*
 import cats.syntax.either.*
-import cats.{Applicative, Order}
+import cats.{Applicative, Order, Show}
 import com.peknight.codec.Decoder
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.error.*
@@ -24,7 +24,7 @@ trait DecoderObjectInstances extends DecoderObjectInstances1:
   given objectDecodeUnit[F[_]: Applicative, S]: Decoder[F, Object[S], Unit] =
     Decoder.applicative[F, Object[S], Unit] { t =>
       if t.isEmpty then ().asRight
-      else NotUnit.value(t).asLeft
+      else NotUnit.value(t)(using Show.fromToString[Object[S]]).asLeft
     }
 
   given decodeUnitAOU[F[_], S](using Applicative[F], ObjectType[S], ArrayType[S], NullType[S])
@@ -47,5 +47,5 @@ trait DecoderObjectInstances extends DecoderObjectInstances1:
     order: Order[K]
   ): Decoder[F, Cursor[S], NonEmptyMap[K, V]] =
     Decoder.decodeMap[F, S, K, V, SortedMap](SortedMap.newBuilder[K, V](Order.catsKernelOrderingForOrder(order)))
-      .emap(map => cursor => NonEmptyMap.fromMap(map).toRight(EmptyMap.cursor(cursor)))
+      .emap(map => cursor => NonEmptyMap.fromMap(map).toRight(EmptyMap.cursor(cursor)(using Show.fromToString[S])))
 end DecoderObjectInstances

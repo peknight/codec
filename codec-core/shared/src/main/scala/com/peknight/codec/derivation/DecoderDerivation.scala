@@ -6,7 +6,7 @@ import cats.syntax.either.*
 import cats.syntax.flatMap.*
 import cats.syntax.functor.*
 import cats.syntax.validated.*
-import cats.{Applicative, Monad}
+import cats.{Applicative, Monad, Show}
 import com.peknight.cats.ext.instances.applicative.given
 import com.peknight.codec.Decoder
 import com.peknight.codec.configuration.DecoderConfiguration
@@ -71,6 +71,7 @@ trait DecoderDerivation:
     nullType: NullType[S],
     instances: => Generic.Product.Instances[[X] =>> Decoder[F, Cursor[S], X], A]
   ): F[Either[DecodingFailure, A]] =
+    given Show[S] = Show.fromToString
     val labels = instances.labels.toList.asInstanceOf[List[String]]
     if cursor.focus.exists(objectType.isObject) then
       if configuration.strictDecoding then
@@ -128,6 +129,7 @@ trait DecoderDerivation:
     stringOptionDecoder: Decoder[F, Cursor[S], Option[String]],
     instances: => Generic.Sum.Instances[[X] =>> Decoder[F, Cursor[S], X], A]
   ): F[Either[DecodingFailure, A]] =
+    given Show[S] = Show.fromToString
     configuration.discriminator match
       case Some(discriminator) =>
         val discriminatorT = cursor.downField(discriminator)(using objectType)

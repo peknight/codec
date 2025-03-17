@@ -3,7 +3,7 @@ package com.peknight.codec.derivation
 import cats.syntax.applicative.*
 import cats.syntax.either.*
 import cats.syntax.functor.*
-import cats.{Applicative, Functor, Id}
+import cats.{Applicative, Functor, Id, Show}
 import com.peknight.codec.Decoder
 import com.peknight.codec.configuration.Configuration
 import com.peknight.codec.error.{DecodingFailure, NoSuchEnum}
@@ -53,7 +53,8 @@ trait EnumDecoderDerivation:
     singletons: generic.Repr
   ): F[Either[DecodingFailure, A]] =
     stringDecoder.decode(t).map {
-      case Right(caseName) => stringDecodeEnum[Id, A](caseName, configuration, generic)(singletons).left.map(_.value(t))
+      case Right(caseName) => 
+        stringDecodeEnum[Id, A](caseName, configuration, generic)(singletons).left.map(_.value(t)(using Show.fromToString[T]))
       case Left(e) => e.asLeft[A]
     }
 
@@ -64,7 +65,8 @@ trait EnumDecoderDerivation:
     generic: Generic.Sum[A],
   ): F[Either[DecodingFailure, A]] =
     stringDecoder.decode(t).map {
-      case Right(caseName) => unsafeStringDecodeEnum[Id, A](caseName, configuration, generic).left.map(_.value(t))
+      case Right(caseName) =>
+        unsafeStringDecodeEnum[Id, A](caseName, configuration, generic).left.map(_.value(t)(using Show.fromToString[T]))
       case Left(e) => e.asLeft[A]
     }
 

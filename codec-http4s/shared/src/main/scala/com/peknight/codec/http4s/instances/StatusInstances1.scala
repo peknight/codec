@@ -1,6 +1,6 @@
 package com.peknight.codec.http4s.instances
 
-import cats.Applicative
+import cats.{Applicative, Show}
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.error.{DecodingFailure, WrongClassTag}
 import com.peknight.codec.number.Number
@@ -16,7 +16,7 @@ trait StatusInstances1:
 
   given numberDecodeStatus[F[_]: Applicative]: Decoder[F, Number, Status] =
     Decoder.applicative[F, Number, Status] { number =>
-      number.toInt.toRight(WrongClassTag[Status].value(number))
+      number.toInt.toRight(WrongClassTag[Status].value(number)(using Show.fromToString[Number]))
         .flatMap(code => Status.fromInt(code))
         .left.map(DecodingFailure.apply)
     }

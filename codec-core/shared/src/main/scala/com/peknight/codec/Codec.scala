@@ -3,7 +3,7 @@ package com.peknight.codec
 import cats.syntax.applicative.*
 import cats.syntax.either.*
 import cats.syntax.functor.*
-import cats.{Applicative, Functor}
+import cats.{Applicative, Functor, Show}
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.cursor.Cursor.{FailedCursor, SuccessCursor}
 import com.peknight.codec.derivation.CodecDerivation
@@ -39,10 +39,10 @@ object Codec extends CodecDerivation:
     applicative[F, S, T, A](encode)(t => decode(t).asRight[DecodingFailure])
 
   def mapOption[F[_]: Applicative, S, T, A: ClassTag](encode: A => S)(decode: T => Option[A]): Codec[F, S, T, A] =
-    applicative[F, S, T, A](encode)(t => decode(t).toRight(WrongClassTag[A].value(t)))
+    applicative[F, S, T, A](encode)(t => decode(t).toRight(WrongClassTag[A].value(t)(using Show.fromToString[T])))
 
   def mapTry[F[_]: Applicative, S, T, A: ClassTag](encode: A => S)(decode: T => Try[A]): Codec[F, S, T, A] =
-    applicative[F, S, T, A](encode)(t => decode(t).toEither.left.map(e => ParsingTypeError[A](e).value(t)))
+    applicative[F, S, T, A](encode)(t => decode(t).toEither.left.map(e => ParsingTypeError[A](e).value(t)(using Show.fromToString[T])))
 
   def parse[F[_]: Applicative, S, T, A: ClassTag](encode: A => S)(decode: T => A): Codec[F, S, T, A] =
     mapTry(encode)(t => Try(decode(t)))
@@ -78,11 +78,11 @@ object Codec extends CodecDerivation:
 
   def cursorValue[F[_]: Applicative, S, A](encode: A => F[S])(decode: S => F[Either[DecodingFailure, A]])
   : Codec[F, S, Cursor[S], A] =
-    cursor[F, S, A](encode)(t => decode(t.value).map(_.left.map(_.cursor(t))))
+    cursor[F, S, A](encode)(t => decode(t.value).map(_.left.map(_.cursor(t)(using Show.fromToString[S]))))
 
   def cursorValueApplicative[F[_]: Applicative, S, A](encode: A => S)(decode: S => Either[DecodingFailure, A])
   : Codec[F, S, Cursor[S], A] =
-    cursorApplicative(encode)(t => decode(t.value).left.map(_.cursor(t)))
+    cursorApplicative(encode)(t => decode(t.value).left.map(_.cursor(t)(using Show.fromToString[S])))
 
   def cursorValueMap[F[_]: Applicative, S, A](encode: A => S)(decode: S => A): Codec[F, S, Cursor[S], A] =
     cursorMap[F, S, A](encode)(t => decode(t.value))

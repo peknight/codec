@@ -1,8 +1,8 @@
 package com.peknight.codec.error
 
-import cats.Monoid
 import cats.data.NonEmptyList
 import cats.syntax.option.*
+import cats.{Eval, Monoid, Show}
 import com.peknight.codec.cursor.{Cursor, CursorOp}
 import com.peknight.codec.error.DecodingFailure.{Common, Pure}
 import com.peknight.error.Error
@@ -40,28 +40,34 @@ trait DecodingFailure extends com.peknight.error.codec.DecodingFailure:
         case _ => Common(this, messageOption = messageOpt, cause = cause)
   end message
 
-  override def value[T](value: T): DecodingFailure = pure match
-    case Pure(e) => Common(e, value = value.some, cause = cause)
-    case c @ Common(_, _, _, _, _, _, _) => c.copy(value = value.some)
-    case _ => Common(this, value = value.some, cause = cause)
+  override def value[A](value: A)(using show: Show[A]): DecodingFailure = pure match
+    case Pure(e) => Common(e, valueShow = (value, Eval.later(show.show(value))).some, cause = cause)
+    case c @ Common(_, _, _, _, _, _, _) => c.copy(valueShow = (value, Eval.later(show.show(value))).some)
+    case _ => Common(this, valueShow = (value, Eval.later(show.show(value))).some, cause = cause)
 
-  override def prepended[T](value: T): DecodingFailure = pure match
-    case Pure(e) => Common(e, value = value.some, cause = cause)
-    case c @ Common(_, _, _, None, _, _, _) => c.copy(value = value.some)
-    case c @ Common(_, _, _, Some(t: Tuple), _, _, _) => c.copy(value = (value *: t).some)
-    case c @ Common(_, _, _, Some(v), _, _, _) => c.copy(value = (value *: v *: EmptyTuple).some)
-    case _ => Common(this, value = value.some, cause = cause)
+  override def prepended[A](value: A)(using show: Show[A]): DecodingFailure = pure match
+    case Pure(e) => Common(e, valueShow = (value, Eval.later(show.show(value))).some, cause = cause)
+    case c @ Common(_, _, _, None, _, _, _) => c.copy(valueShow = (value, Eval.later(show.show(value))).some)
+    case c @ Common(_, _, _, Some((t: Tuple, eval)), _, _, _) =>
+      c.copy(valueShow = (value *: t, eval.flatMap(s => Eval.later(s"${show.show(value)},$s"))).some)
+    case c @ Common(_, _, _, Some((v, eval)), _, _, _) =>
+      c.copy(valueShow = (value *: v *: EmptyTuple, eval.flatMap(s => Eval.later(s"${show.show(value)},$s"))).some)
+    case _ => Common(this, valueShow = (value, Eval.later(show.show(value))).some, cause = cause)
 
-  override def *:[T](value: T): DecodingFailure = prepended(value)
+  override def *:[A](value: A)(using show: Show[A]): DecodingFailure = prepended(value)
 
-  def cursor[S](value: Option[S], pathString: String, history: List[CursorOp]): DecodingFailure =
+  def cursor[S](value: Option[S], pathString: String, history: List[CursorOp])(using show: Show[S]): DecodingFailure =
     this match
-      case Pure(e) => Common(e, value = value, cause = cause, pathString = pathString.some, history = history.some)
+      case Pure(e) =>
+        Common(e, valueShow = value.map(v => (v, Eval.later(show.show(v)))), cause = cause,
+          pathString = pathString.some, history = history.some)
       case c @ Common(_, _, _, _, _, _, _) =>
-        c.copy(value = value, cause = cause, pathString = pathString.some, history = history.some)
-      case e => Common(e, value = value, cause = cause, pathString = pathString.some, history = history.some)
+        c.copy(valueShow = value.map(v => (v, Eval.later(show.show(v)))), cause = cause, pathString = pathString.some,
+          history = history.some)
+      case e => Common(e, valueShow = value.map(v => (v, Eval.later(show.show(v)))), cause = cause,
+        pathString = pathString.some, history = history.some)
   end cursor
-  def cursor[S](t: Cursor[S]): DecodingFailure =
+  def cursor[S: Show](t: Cursor[S]): DecodingFailure =
     cursor[S](t.focus, t.pathString, t.history)
 end DecodingFailure
 object DecodingFailure extends DecodingFailure:
@@ -71,15 +77,15 @@ object DecodingFailure extends DecodingFailure:
   private[codec] case class Errors(errors: NonEmptyList[DecodingFailure]) extends DecodingFailure
     with com.peknight.error.Errors[DecodingFailure]
 
-  private[codec] case class Common[+E, +T](
-    error: E,
-    label: Option[String] = None,
-    override val messageOption: Option[String] = None,
-    value: Option[T] = None,
-    override val cause: Option[Error] = None,
-    pathString: Option[String] = None,
-    history: Option[List[CursorOp]] = None
-  ) extends DecodingFailure with com.peknight.error.Common[E, T]:
+  private[codec] case class Common[+E, A](
+                                           error: E,
+                                           label: Option[String] = None,
+                                           override val messageOption: Option[String] = None,
+                                           valueShow: Option[(A, Eval[String])] = None,
+                                           override val cause: Option[Error] = None,
+                                           pathString: Option[String] = None,
+                                           history: Option[List[CursorOp]] = None
+  ) extends DecodingFailure with com.peknight.error.Common[E, A]:
     override protected def labelOption: Option[String] =
       val labelOpt = label.filter(_.nonEmpty)
       val pathOpt = pathString.map(_.replaceFirst("^\\.", "")).filter(_.nonEmpty)

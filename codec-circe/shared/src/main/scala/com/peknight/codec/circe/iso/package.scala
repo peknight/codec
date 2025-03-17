@@ -74,7 +74,7 @@ package object iso:
   end cursorIsomorphism
   given decodingFailureIsomorphism[F[_]: Applicative]: Isomorphism[F, DecodingFailure, io.circe.DecodingFailure] with
     def to(failure: DecodingFailure): F[io.circe.DecodingFailure] = failure match
-      case Common(e: WrongType, _, _, Some(value: Json), _, _, Some(history)) =>
+      case Common(e: WrongType, _, _, Some((value: Json, _)), _, _, Some(history)) =>
         io.circe.DecodingFailure(WrongTypeExpectation(e.expectedType, value), history.map(cursorOpIsomorphism[Id].to))
           .pure
       case Common(e: Error, _, _, _, _, _, Some(history)) =>
