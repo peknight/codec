@@ -8,10 +8,26 @@ import cats.{Applicative, Functor, Show}
 import com.peknight.codec.Decoder
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.cursor.Cursor.{FailedCursor, SuccessCursor}
-import com.peknight.codec.error.{MissingField, NotNull}
+import com.peknight.codec.error.{DecodingFailure, MissingField, NotNull}
 import com.peknight.codec.sum.{ArrayType, NullType, ObjectType}
 
 trait DecoderNullInstances extends DecoderNullInstances1:
+  def handleDecodeOptionAOU[F[_], S, A](f: SuccessCursor[S] => F[Either[DecodingFailure,Option[A]]])(
+    using
+    applicative: Applicative[F],
+    objectType: ObjectType[S],
+    arrayType: ArrayType[S],
+    nullType: NullType[S]
+  ): Decoder[F, Cursor[S], Option[A]] =
+    given Show[S] = Show.fromToString
+    Decoder.instance[F, Cursor[S], Option[A]] {
+      case cursor: SuccessCursor[S] if nullType.isNull(cursor.value) => none.asRight.pure
+      case cursor: SuccessCursor[S] => f(cursor)
+      case cursor: FailedCursor[S] if !cursor.incorrectFocus => none.asRight.pure
+      case cursor: FailedCursor[S] => MissingField.cursor(cursor).asLeft.pure
+    }
+  end handleDecodeOptionAOU
+
   given decodeOptionAOU[F[_], S, A](
     using
     applicative: Applicative[F],
@@ -20,13 +36,7 @@ trait DecoderNullInstances extends DecoderNullInstances1:
     arrayType: ArrayType[S],
     nullType: NullType[S]
   ): Decoder[F, Cursor[S], Option[A]] =
-    given Show[S] = Show.fromToString
-    Decoder.instance[F, Cursor[S], Option[A]] {
-      case cursor: SuccessCursor[S] if nullType.isNull(cursor.value) => none.asRight.pure
-      case cursor: SuccessCursor[S] => decoder.decode(cursor).map(_.map(_.some))
-      case cursor: FailedCursor[S] if !cursor.incorrectFocus => none.asRight.pure
-      case cursor: FailedCursor[S] => MissingField.cursor(cursor).asLeft.pure
-    }
+    handleDecodeOptionAOU[F, S, A](decoder.decode(_).map(_.map(_.some)))
   end decodeOptionAOU
 
   given decodeSome[F[_], T, A](using functor: Functor[F], decoder: Decoder[F, T, A]): Decoder[F, T, Some[A]] =
