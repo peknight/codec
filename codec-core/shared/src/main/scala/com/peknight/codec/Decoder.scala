@@ -270,8 +270,8 @@ object Decoder extends DecoderDerivation
   def toBooleanOption(t: String): Option[Boolean] =
     if "true".equalsIgnoreCase(t) then Some(true)
     else if "false".equalsIgnoreCase(t) then Some(false)
-    else if List("1", "t", "yes", "y", "on").exists(t.equalsIgnoreCase) then Some(true)
-    else if List("0", "f", "no", "n", "off").exists(t.equalsIgnoreCase) then Some(false)
+    else if List("1", "t", "yes", "y", "on", "是").exists(t.equalsIgnoreCase) then Some(true)
+    else if List("0", "f", "no", "n", "off", "否").exists(t.equalsIgnoreCase) then Some(false)
     else None
 
   def parseNumber(input: String): Either[DecodingFailure, Number] =
