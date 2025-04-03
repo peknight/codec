@@ -1,6 +1,6 @@
 package com.peknight.codec.derivation
 
-import cats.{Applicative, Monad}
+import cats.Monad
 import com.peknight.codec.configuration.CodecConfiguration
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.error.DecodingFailure
@@ -29,7 +29,7 @@ trait CodecDerivation:
         stringOptionDecoder, generic.asInstanceOf, encoders.asInstanceOf, decoders.asInstanceOf)
 
   def derivedProduct[F[_], S, A](using configuration: CodecConfiguration)(using
-    applicative: Applicative[F],
+    monad: Monad[F],
     objectType: ObjectType[S],
     nullType: NullType[S],
     encoders: => Generic.Product.Instances[[X] =>> Encoder[F, S, X], A],

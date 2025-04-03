@@ -25,7 +25,7 @@ trait EnumEncoderDerivation:
     stringEncoder: Encoder[F, S, String],
     generic: Generic.Sum[A]
   ): F[S] =
-    stringEncoder.encode(configuration.transformConstructorNames(generic.label(a)))
+    stringEncoder.encode(configuration.transformConstructorNames(generic.label(a)).head)
 
   inline def derivedStringEncodeEnum[F[_], A](using configuration: Configuration)(using
     applicative: Applicative[F],
@@ -43,7 +43,7 @@ trait EnumEncoderDerivation:
 
   private[derivation] def stringEncodeEnum[F[_], A](a: A, configuration: Configuration, applicative: Applicative[F],
                                                     generic: Generic.Sum[A]): F[String] =
-    applicative.pure(configuration.transformConstructorNames(generic.label(a)))
+    applicative.pure(configuration.transformConstructorNames(generic.label(a)).head)
 
 end EnumEncoderDerivation
 object EnumEncoderDerivation extends EnumEncoderDerivation

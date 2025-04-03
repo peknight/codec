@@ -1,12 +1,13 @@
 package com.peknight.codec.derivation
 
-import cats.data.Validated
+import cats.data.{NonEmptyList, Validated}
 import cats.syntax.applicative.*
 import cats.syntax.either.*
 import cats.syntax.flatMap.*
 import cats.syntax.functor.*
+import cats.syntax.option.*
 import cats.syntax.validated.*
-import cats.{Applicative, Monad, Show}
+import cats.{Monad, Show}
 import com.peknight.cats.ext.instances.applicative.given
 import com.peknight.codec.Decoder
 import com.peknight.codec.configuration.DecoderConfiguration
@@ -32,7 +33,7 @@ trait DecoderDerivation:
     )
 
   def derivedProduct[F[_], S, A](using configuration: DecoderConfiguration)(using
-    applicative: Applicative[F],
+    monad: Monad[F],
     objectType: ObjectType[S],
     nullType: NullType[S],
     instances: => Generic.Product.Instances[[X] =>> Decoder[F, Cursor[S], X], A]
@@ -64,7 +65,7 @@ trait DecoderDerivation:
             decodeSum(cursor, configuration, objectType, stringOptionDecoder, instances)
   end derivedSum
 
-  private[derivation] def decodeProduct[F[_]: Applicative, S, A](
+  private[derivation] def decodeProduct[F[_]: Monad, S, A](
     cursor: Cursor[S],
     configuration: DecoderConfiguration,
     objectType: ObjectType[S],
@@ -90,7 +91,7 @@ trait DecoderDerivation:
         handleDecodeProduct(cursor, labels, configuration, objectType, nullType, instances)
     else NotObject.cursor(cursor).asLeft[A].pure[F]
 
-  private def handleDecodeProduct[F[_]: Applicative, S, A](
+  private def handleDecodeProduct[F[_]: Monad, S, A](
     cursor: Cursor[S],
     labels: List[String],
     configuration: DecoderConfiguration,
@@ -101,25 +102,36 @@ trait DecoderDerivation:
     instances.constructWithLabelDefault[[X] =>> F[Validated[DecodingFailure, X]]] {
       [X] => (decoder: Decoder[F, Cursor[S], X], label: String, defaultOpt: Option[X]) =>
         val extField = configuration.extField.contains(label)
-        val key = configuration.transformMemberNames(label)
-        val current =
+        val keys = configuration.transformMemberNames(label)
+        val cursors =
           if extField then
-            val removeFields = (configuration.discriminator ++ labels.map(configuration.transformMemberNames)).toSeq
-            cursor.remove(removeFields)(using objectType)
-          else cursor.downField(key)(using objectType)
-        decoder.decode(current).map(result => defaultOpt
-          .filter { _ =>
-            if !configuration.useDefaults then
-              false
-            else if !result.isRight && current.focus.exists(nullType.isNull) then
-              true
-            else if extField then
-              !current.focus.exists(objectType.isObject)
-            else
-              !cursor.focus.exists(s => objectType.asObject(s).exists(o => objectType.contains(o, key)))
+            val removeFields = configuration.discriminator.toList :::
+              labels.flatMap(label => configuration.transformMemberNames(label).toList)
+            NonEmptyList.one(cursor.remove(removeFields)(using objectType))
+          else keys.map(key => cursor.downField(key)(using objectType))
+        given CanEqual[None.type, X] = CanEqual.derived
+        Monad[F].tailRecM[(List[Cursor[S]], Option[(Cursor[S], Either[DecodingFailure, X])]), (Cursor[S], Either[DecodingFailure, X])](
+          (cursors.toList, None)
+        ) {
+          case (head :: tail, result) => decoder.decode(head).map {
+            case Left(error) => (tail, result.getOrElse((head, error.asLeft)).some).asLeft
+            case rn @ Right(None) => (tail, (head, rn).some).asLeft
+            case r => (head, r).asRight
           }
-          .fold(result.toValidated)(_.valid[DecodingFailure])
-        )
+          case (_, result) => result.get.asRight.pure
+        }.map { case (current, result) =>
+          (current, result, defaultOpt) match
+            case (_, result, None) => result.toValidated
+            case (_, result, _) if !configuration.useDefaults => result.toValidated
+            case (current, Left(_), Some(d)) if current.focus.exists(nullType.isNull) => d.valid[DecodingFailure]
+            case (current, _, Some(d)) if extField && current.focus.flatMap(objectType.asObject).exists(objectType.isEmpty) =>
+              d.valid[DecodingFailure]
+            case (_, result, Some(d)) =>
+              val keyExists = cursor.focus.flatMap(objectType.asObject).exists(o => keys.exists(key =>
+                objectType.contains(o, key)
+              ))
+              if keyExists then result.toValidated else d.valid[DecodingFailure]
+        }
     }.map(_.toEither)
 
   private[derivation] def decodeSum[F[_]: Monad, S, A](
@@ -134,15 +146,17 @@ trait DecoderDerivation:
       case Some(discriminator) =>
         val discriminatorT = cursor.downField(discriminator)(using objectType)
         stringOptionDecoder.decode(discriminatorT).flatMap {
-          case Right(Some(sumTypeName)) =>
-            decodersDict(configuration, instances).get(sumTypeName) match
-              case None =>
-                NoSuchType(sumTypeName).label(instances.label).cursor(cursor).asLeft[A].pure[F]
-              case Some(e: EnumDecoder[F, Cursor[S], _]) =>
-                e.asInstanceOf[Decoder[F, Cursor[S], A]].decode(discriminatorT)
-              case Some(decoder) => decoder.asInstanceOf[Decoder[F, Cursor[S], A]].decode(cursor)
-          case Right(None) =>
-            NoDiscriminatorField(discriminator).label(instances.label).cursor(discriminatorT).asLeft[A].pure[F]
+          case Right(sumTypeNameOption) =>
+            sumTypeNameOption.orElse(configuration.sumTypeOnNone) match
+              case Some(sumTypeName) =>
+                decodersDict(configuration, instances).get(sumTypeName) match
+                  case None =>
+                    NoSuchType(sumTypeName).label(instances.label).cursor(cursor).asLeft[A].pure[F]
+                  case Some(e: EnumDecoder[F, Cursor[S], _]) =>
+                    e.asInstanceOf[Decoder[F, Cursor[S], A]].decode(discriminatorT)
+                  case Some(decoder) => decoder.asInstanceOf[Decoder[F, Cursor[S], A]].decode(cursor)
+              case _ =>
+                NoDiscriminatorField(discriminator).label(instances.label).cursor(discriminatorT).asLeft[A].pure[F]
           case Left(failure) => failure.asLeft[A].pure[F]
         }
       case _ =>
@@ -152,7 +166,7 @@ trait DecoderDerivation:
           case Some(sumTypeName :: tail) =>
             if tail.nonEmpty && configuration.strictDecoding then
               val constructorNames = instances.labels.toList.asInstanceOf[List[String]]
-                .map(configuration.transformConstructorNames)
+                .flatMap(label => configuration.transformConstructorNames(label).toList)
               NotSingleKeyObject(constructorNames).label(instances.label).cursor(cursor).asLeft[A].pure[F]
             else
               val downCursor = cursor.downField(sumTypeName)(using objectType)
@@ -169,7 +183,7 @@ trait DecoderDerivation:
       [X] => (decoder: Decoder[F, T, X], label: String, map: Map[String, Decoder[F, T, ?]]) =>
         decoder match
           case d: SumDecoder[F, T, X] => map ++ d.decoders
-          case d => map + (configuration.transformConstructorNames(label) -> d)
+          case d => map ++ configuration.transformConstructorNames(label).map(_ -> d).toList.toMap
     }
 end DecoderDerivation
 

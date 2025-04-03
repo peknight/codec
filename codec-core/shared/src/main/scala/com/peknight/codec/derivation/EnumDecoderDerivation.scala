@@ -76,7 +76,7 @@ trait EnumDecoderDerivation:
     generic: Generic.Sum[A]
   ): Map[String, Decoder[F, T, A]] =
     generic.labels.toList.asInstanceOf[List[String]]
-      .map(label => (configuration.transformConstructorNames(label), decoder))
+      .flatMap(label => configuration.transformConstructorNames(label).map(_ -> decoder).toList)
       .toMap
 
   inline def derivedStringDecodeEnum[F[_], A](using configuration: Configuration)(using
@@ -108,7 +108,7 @@ trait EnumDecoderDerivation:
     generic: Generic.Sum[A]
   )(singletons: generic.Repr): F[Either[DecodingFailure, A]] =
     generic.labels.zip(singletons).toList.asInstanceOf[List[(String, A)]]
-      .find(tuple => configuration.transformConstructorNames(tuple._1) == caseName)
+      .find(tuple => configuration.transformConstructorNames(tuple._1).toList.contains(caseName))
       .map(_._2)
       .toRight(NoSuchEnum(caseName).label(generic.label))
       .pure[F]
@@ -119,7 +119,7 @@ trait EnumDecoderDerivation:
     generic: Generic.Sum[A]
   ): F[Either[DecodingFailure, A]] =
     generic.labels.zip(generic.singletons).toList.asInstanceOf[List[(String, Option[A])]]
-      .find(tuple => configuration.transformConstructorNames(tuple._1) == caseName)
+      .find(tuple => configuration.transformConstructorNames(tuple._1).toList.contains(caseName))
       .flatMap(_._2)
       .toRight(NoSuchEnum(caseName).label(generic.label))
       .pure[F]

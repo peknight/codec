@@ -53,7 +53,7 @@ trait EncoderDerivation:
         (encoder.encode(x), acc).mapN { (s, acc) =>
           if configuration.extField.contains(label) then
             objectType.asObject(s).fold(List.empty[(String, S)])(obj => objectType.toList(obj)) ::: acc
-          else (configuration.transformMemberNames(label), s) :: acc
+          else (configuration.transformMemberNames(label).head, s) :: acc
         }
     }.map(f => objectType.to(objectType.fromFoldable(f)))
 
@@ -64,7 +64,7 @@ trait EncoderDerivation:
     stringEncoder: Encoder[F, S, String],
     instances: => Generic.Sum.Instances[[X] =>> Encoder[F, S, X], A]
   ): F[S] =
-    val constructorName = configuration.transformConstructorNames(instances.label(a))
+    val constructorName = configuration.transformConstructorNames(instances.label(a)).head
     val encoder = instances.instance(a)
     (
       encoder.encode(a),
