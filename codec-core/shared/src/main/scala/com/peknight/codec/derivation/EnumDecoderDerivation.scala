@@ -95,12 +95,19 @@ trait EnumDecoderDerivation:
     applicative: Applicative[F],
     generic: Generic.Sum[A]
   ): EnumDecoder[F, String, A] =
+    partialDerivedStringDecodeEnum[F, A]()
+  end unsafeDerivedStringDecodeEnum
+
+  def partialDerivedStringDecodeEnum[F[_], A](f: String => Option[A] = _ => None)
+                                             (using configuration: Configuration)
+                                             (using applicative: Applicative[F], generic: Generic.Sum[A])
+  : EnumDecoder[F, String, A] =
     enumDecoderInstance[F, String, A](
-      t => unsafeStringDecodeEnum[F, A](t, configuration, generic)
+      t => unsafeStringDecodeEnum[F, A](t, configuration, generic, f)
     )(
       self => enumDecodersDict[F, String, A](self, configuration, generic)
     )
-  end unsafeDerivedStringDecodeEnum
+  end partialDerivedStringDecodeEnum
 
   private[derivation] def stringDecodeEnum[F[_]: Applicative, A](
     caseName: String,
@@ -116,11 +123,13 @@ trait EnumDecoderDerivation:
   private[derivation] def unsafeStringDecodeEnum[F[_]: Applicative, A](
     caseName: String,
     configuration: Configuration,
-    generic: Generic.Sum[A]
+    generic: Generic.Sum[A],
+    f: String => Option[A] = _ => None
   ): F[Either[DecodingFailure, A]] =
     generic.labels.zip(generic.singletons).toList.asInstanceOf[List[(String, Option[A])]]
       .find(tuple => configuration.transformConstructorNames(tuple._1).toList.contains(caseName))
       .flatMap(_._2)
+      .orElse(f(caseName))
       .toRight(NoSuchEnum(caseName).label(generic.label))
       .pure[F]
 

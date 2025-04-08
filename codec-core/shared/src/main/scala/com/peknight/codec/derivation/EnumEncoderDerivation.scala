@@ -39,11 +39,17 @@ trait EnumEncoderDerivation:
     applicative: Applicative[F],
     generic: Generic.Sum[A]
   ): Encoder[F, String, A] =
-    Encoder.instance[F, String, A](a => stringEncodeEnum[F, A](a, configuration, applicative, generic))
+    partialDerivedStringEncodeEnum[F, A]()
+
+  def partialDerivedStringEncodeEnum[F[_], A](f: PartialFunction[A, String] = PartialFunction.empty)
+                                             (using configuration: Configuration)
+                                             (using applicative: Applicative[F], generic: Generic.Sum[A])
+  : Encoder[F, String, A] =
+    Encoder.instance[F, String, A](a => stringEncodeEnum[F, A](a, configuration, applicative, generic, f))
 
   private[derivation] def stringEncodeEnum[F[_], A](a: A, configuration: Configuration, applicative: Applicative[F],
-                                                    generic: Generic.Sum[A]): F[String] =
-    applicative.pure(configuration.transformConstructorNames(generic.label(a)).head)
-
+                                                    generic: Generic.Sum[A],
+                                                    f: PartialFunction[A, String] = PartialFunction.empty): F[String] =
+    applicative.pure(if f.isDefinedAt(a) then f(a) else configuration.transformConstructorNames(generic.label(a)).head)
 end EnumEncoderDerivation
 object EnumEncoderDerivation extends EnumEncoderDerivation

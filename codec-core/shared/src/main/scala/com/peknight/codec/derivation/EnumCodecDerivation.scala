@@ -65,13 +65,20 @@ trait EnumCodecDerivation:
     applicative: Applicative[F],
     generic: Generic.Sum[A]
   ): Codec[F, String, String, A] =
+    partialDerivedStringCodecEnum[F, A]()()
+  end unsafeDerivedStringCodecEnum
+  def partialDerivedStringCodecEnum[F[_], A](f: PartialFunction[A, String] = PartialFunction.empty)
+                                            (g: String => Option[A] = _ => None)
+                                            (using configuration: Configuration)
+                                            (using applicative: Applicative[F], generic: Generic.Sum[A])
+  : Codec[F, String, String, A] =
     enumCodecInstance[F, String, String, A](
-      a => EnumEncoderDerivation.stringEncodeEnum(a, configuration, applicative, generic)
+      a => EnumEncoderDerivation.stringEncodeEnum(a, configuration, applicative, generic, f)
     )(
-      t => EnumDecoderDerivation.unsafeStringDecodeEnum(t, configuration, generic)
+      t => EnumDecoderDerivation.unsafeStringDecodeEnum(t, configuration, generic, g)
     )(
       self => EnumDecoderDerivation.enumDecodersDict[F, String, A](self, configuration, generic)
     )
-  end unsafeDerivedStringCodecEnum
+  end partialDerivedStringCodecEnum
 end EnumCodecDerivation
 object EnumCodecDerivation extends EnumCodecDerivation
