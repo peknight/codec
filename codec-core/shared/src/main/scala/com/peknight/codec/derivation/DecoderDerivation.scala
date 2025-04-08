@@ -124,8 +124,9 @@ trait DecoderDerivation:
             case (_, result, None) => result.toValidated
             case (_, result, _) if !configuration.useDefaults => result.toValidated
             case (current, Left(_), Some(d)) if current.focus.exists(nullType.isNull) => d.valid[DecodingFailure]
-            case (current, _, Some(d)) if extField && current.focus.flatMap(objectType.asObject).exists(objectType.isEmpty) =>
-              d.valid[DecodingFailure]
+            case (current, result, Some(d)) if extField =>
+              if current.focus.flatMap(objectType.asObject).exists(objectType.isEmpty) then d.valid[DecodingFailure]
+              else result.toValidated
             case (_, result, Some(d)) =>
               val keyExists = cursor.focus.flatMap(objectType.asObject).exists(o => keys.exists(key =>
                 objectType.contains(o, key)
