@@ -316,9 +316,12 @@ object Decoder extends DecoderDerivation
     }
 
   private def handleDecodeSeq[F[_], S, A, C[_]](builder: => mutable.Builder[A, C[A]])
+                                               (p: PartialFunction[S, F[Either[DecodingFailure, C[A]]]] = PartialFunction.empty)
                                                (f: SuccessCursor[S] => F[Either[DecodingFailure, C[A]]])
                                                (using applicative: Applicative[F], arrayType: ArrayType[S])
   : Decoder[F, Cursor[S], C[A]] =
+    case cursor: SuccessCursor[S] if p.isDefinedAt(cursor.value) =>
+      p(cursor.value).map(_.left.map(_.cursor(cursor)(using Show.fromToString[S])))
     case cursor: SuccessCursor[S] => cursor.downArray match
       case arrayCursor: SuccessCursor[S] => f(arrayCursor)
       case arrayCursor: FailedCursor[S] if arrayType.isArray(cursor.value) => builder.result().asRight.pure[F]
@@ -326,28 +329,39 @@ object Decoder extends DecoderDerivation
     case cursor: FailedCursor[S] => cursor.toDecodingFailure.asLeft.pure[F]
   end handleDecodeSeq
 
-  def decodeSeq[F[_], S, A, C[_]](builder: => mutable.Builder[A, C[A]])(
+  private def decodeSeqValidated[F[_], S, A, C[_]](builder: => mutable.Builder[A, C[A]])(arrayCursor: SuccessCursor[S])(
     using
     applicative: Applicative[F],
-    decoder: Decoder[F, Cursor[S], A],
-    arrayType: ArrayType[S]
-  ): Decoder[F, Cursor[S], C[A]] =
+    decoder: Decoder[F, Cursor[S], A]
+  ): F[Either[DecodingFailure, C[A]]] =
     import com.peknight.cats.ext.instances.applicative.given
-    handleDecodeSeq[F, S, A, C](builder) { arrayCursor =>
-      type ValidatedF[T] = F[Validated[DecodingFailure, T]]
-      val res: F[Validated[DecodingFailure, C[A]]] = toCursorArray(arrayCursor)
-        .traverse[ValidatedF, A](tt => decoder.decode(tt).map(_.toValidated))
-        .map(_.foldLeft(builder)(_ += _).result())
-      res.map(_.toEither)
-    }
+    type ValidatedF[T] = F[Validated[DecodingFailure, T]]
+    val res: F[Validated[DecodingFailure, C[A]]] = toCursorArray(arrayCursor)
+      .traverse[ValidatedF, A](tt => decoder.decode(tt).map(_.toValidated))
+      .map(_.foldLeft(builder)(_ += _).result())
+    res.map(_.toEither)
+
+  def decodeSeqAS[F[_], S, A, C[_]](builder: => mutable.Builder[A, C[A]])(f: String => F[Either[DecodingFailure, C[A]]])
+                                   (using Applicative[F], Decoder[F, Cursor[S], A], ArrayType[S], StringType[S])
+  : Decoder[F, Cursor[S], C[A]] =
+    handleDecodeSeq[F, S, A, C](builder) {
+      case value if StringType[S].asString(value).isDefined => StringType[S].asString(value).map(f).get
+    } (decodeSeqValidated[F, S, A, C](builder)(_))
+  end decodeSeqAS
+
+  def decodeSeq[F[_], S, A, C[_]](builder: => mutable.Builder[A, C[A]])
+                                 (using Applicative[F], Decoder[F, Cursor[S], A], ArrayType[S])
+  : Decoder[F, Cursor[S], C[A]] =
+    handleDecodeSeq[F, S, A, C](builder)()(decodeSeqValidated[F, S, A, C](builder)(_))
   end decodeSeq
+
   def decodeSeqIgnoreError[F[_], S, A, C[_]](builder: => mutable.Builder[A, C[A]])(
     using
     applicative: Applicative[F],
     decoder: Decoder[F, Cursor[S], A],
     arrayType: ArrayType[S]
   ): Decoder[F, Cursor[S], C[A]] =
-    handleDecodeSeq[F, S, A, C](builder)(arrayCursor =>
+    handleDecodeSeq[F, S, A, C](builder)()(arrayCursor =>
       toCursorArray(arrayCursor).traverse[F, Either[DecodingFailure, A]](tt => decoder.decode(tt))
         .map(_.foldLeft(builder)((builder, either) => either.fold(_ => builder, a => builder += a)).result().asRight)
     )
@@ -358,7 +372,7 @@ object Decoder extends DecoderDerivation
     decoder: Decoder[F, Cursor[S], A],
     arrayType: ArrayType[S]
   ): Decoder[F, Cursor[S], C[A]] =
-    handleDecodeSeq[F, S, A, C](builder) { arrayCursor =>
+    handleDecodeSeq[F, S, A, C](builder)() { arrayCursor =>
       import com.peknight.cats.ext.instances.eitherT.given
       type EitherF[T] = F[Either[DecodingFailure, T]]
       Monad[EitherF].tailRecM[(Cursor[S], mutable.Builder[A, C[A]]), C[A]]((arrayCursor, builder)) {

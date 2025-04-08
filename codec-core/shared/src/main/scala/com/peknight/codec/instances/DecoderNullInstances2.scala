@@ -12,7 +12,7 @@ import com.peknight.codec.error.{DecodingFailure, MissingField, NotNull}
 import com.peknight.codec.sum.{ArrayType, NullType, ObjectType}
 
 trait DecoderNullInstances2:
-  def handleDecodeOptionO[F[_], S, A](f: PartialFunction[S, F[Either[DecodingFailure,Option[A]]]])(
+  def handleDecodeOptionO[F[_], S, A](f: PartialFunction[S, F[Either[DecodingFailure,Option[A]]]] = PartialFunction.empty)(
     using
     applicative: Applicative[F],
     decoder: Decoder[F, Cursor[S], A],
@@ -33,10 +33,10 @@ trait DecoderNullInstances2:
     decoder: Decoder[F, Cursor[S], A],
     objectType: ObjectType[S]
   ): Decoder[F, Cursor[S], Option[A]] =
-    handleDecodeOptionO[F, S, A](PartialFunction.empty)
+    handleDecodeOptionO[F, S, A]()
   end decodeOptionO
 
-  def handleDecodeOptionA[F[_], S, A](f: PartialFunction[S, F[Either[DecodingFailure,Option[A]]]])(
+  def handleDecodeOptionA[F[_], S, A](f: PartialFunction[S, F[Either[DecodingFailure,Option[A]]]] = PartialFunction.empty)(
     using
     applicative: Applicative[F],
     decoder: Decoder[F, Cursor[S], A],
@@ -57,10 +57,10 @@ trait DecoderNullInstances2:
     decoder: Decoder[F, Cursor[S], A],
     arrayType: ArrayType[S]
   ): Decoder[F, Cursor[S], Option[A]] =
-    handleDecodeOptionA[F, S, A](PartialFunction.empty)
+    handleDecodeOptionA[F, S, A]()
   end decodeOptionA
 
-  def handleDecodeOptionU[F[_], S, A](f: PartialFunction[S, F[Either[DecodingFailure,Option[A]]]])(
+  def handleDecodeOptionU[F[_], S, A](f: PartialFunction[S, F[Either[DecodingFailure,Option[A]]]] = PartialFunction.empty)(
     using
     applicative: Applicative[F],
     decoder: Decoder[F, Cursor[S], A],
@@ -81,7 +81,7 @@ trait DecoderNullInstances2:
     decoder: Decoder[F, Cursor[S], A],
     nullType: NullType[S]
   ): Decoder[F, Cursor[S], Option[A]] =
-    handleDecodeOptionU[F, S, A](PartialFunction.empty)
+    handleDecodeOptionU[F, S, A]()
   end decodeOptionU
 
   given decodeNoneO[F[_], S](using applicative: Applicative[F], objectType: ObjectType[S])

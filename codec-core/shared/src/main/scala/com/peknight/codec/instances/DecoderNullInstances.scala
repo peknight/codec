@@ -12,7 +12,7 @@ import com.peknight.codec.error.{DecodingFailure, MissingField, NotNull}
 import com.peknight.codec.sum.{ArrayType, NullType, ObjectType}
 
 trait DecoderNullInstances extends DecoderNullInstances1:
-  def handleDecodeOptionAOU[F[_], S, A](f: PartialFunction[S, F[Either[DecodingFailure,Option[A]]]])(
+  def handleDecodeOptionAOU[F[_], S, A](f: PartialFunction[S, F[Either[DecodingFailure,Option[A]]]] = PartialFunction.empty)(
     using
     applicative: Applicative[F],
     decoder: Decoder[F, Cursor[S], A],
@@ -38,7 +38,7 @@ trait DecoderNullInstances extends DecoderNullInstances1:
     arrayType: ArrayType[S],
     nullType: NullType[S]
   ): Decoder[F, Cursor[S], Option[A]] =
-    handleDecodeOptionAOU[F, S, A](PartialFunction.empty)
+    handleDecodeOptionAOU[F, S, A]()
   end decodeOptionAOU
 
   given decodeSome[F[_], T, A](using functor: Functor[F], decoder: Decoder[F, T, A]): Decoder[F, T, Some[A]] =

@@ -13,7 +13,7 @@ import com.peknight.codec.sum.{ArrayType, NullType, ObjectType}
 
 trait DecoderNullInstances1 extends DecoderNullInstances2:
 
-  def handleDecodeOptionAO[F[_], S, A](f: PartialFunction[S, F[Either[DecodingFailure, Option[A]]]])(
+  def handleDecodeOptionAO[F[_], S, A](f: PartialFunction[S, F[Either[DecodingFailure, Option[A]]]] = PartialFunction.empty)(
     using
     applicative: Applicative[F],
     decoder: Decoder[F, Cursor[S], A],
@@ -36,10 +36,10 @@ trait DecoderNullInstances1 extends DecoderNullInstances2:
     objectType: ObjectType[S],
     arrayType: ArrayType[S]
   ): Decoder[F, Cursor[S], Option[A]] =
-    handleDecodeOptionAO[F, S, A](PartialFunction.empty)
+    handleDecodeOptionAO[F, S, A]()
   end decodeOptionAO
 
-  def handleDecodeOptionOU[F[_], S, A](f: PartialFunction[S, F[Either[DecodingFailure, Option[A]]]])(
+  def handleDecodeOptionOU[F[_], S, A](f: PartialFunction[S, F[Either[DecodingFailure, Option[A]]]] = PartialFunction.empty)(
     using
     applicative: Applicative[F],
     decoder: Decoder[F, Cursor[S], A],
@@ -63,10 +63,10 @@ trait DecoderNullInstances1 extends DecoderNullInstances2:
     objectType: ObjectType[S],
     nullType: NullType[S]
   ): Decoder[F, Cursor[S], Option[A]] =
-    handleDecodeOptionOU[F, S, A](PartialFunction.empty)
+    handleDecodeOptionOU[F, S, A]()
   end decodeOptionOU
 
-  def handleDecodeOptionAU[F[_], S, A](f: PartialFunction[S, F[Either[DecodingFailure, Option[A]]]])(
+  def handleDecodeOptionAU[F[_], S, A](f: PartialFunction[S, F[Either[DecodingFailure, Option[A]]]] = PartialFunction.empty)(
     using
     applicative: Applicative[F],
     decoder: Decoder[F, Cursor[S], A],
@@ -90,7 +90,7 @@ trait DecoderNullInstances1 extends DecoderNullInstances2:
     arrayType: ArrayType[S],
     nullType: NullType[S]
   ): Decoder[F, Cursor[S], Option[A]] =
-    handleDecodeOptionAU[F, S, A](PartialFunction.empty)
+    handleDecodeOptionAU[F, S, A]()
   end decodeOptionAU
 
   given decodeNoneAO[F[_], S](using applicative: Applicative[F], objectType: ObjectType[S], arrayType: ArrayType[S])
