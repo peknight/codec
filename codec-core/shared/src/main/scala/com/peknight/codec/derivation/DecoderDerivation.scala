@@ -149,7 +149,8 @@ trait DecoderDerivation:
           case Right(sumTypeNameOption) =>
             sumTypeNameOption.orElse(configuration.sumTypeOnNone) match
               case Some(sumTypeName) =>
-                decodersDict(configuration, instances).get(sumTypeName) match
+                val dict = decodersDict(configuration, instances)
+                dict.get(sumTypeName).orElse(configuration.sumTypeOnNone.flatMap(dict.get)) match
                   case None =>
                     NoSuchType(sumTypeName).label(instances.label).cursor(cursor).asLeft[A].pure[F]
                   case Some(e: EnumDecoder[F, Cursor[S], _]) =>
