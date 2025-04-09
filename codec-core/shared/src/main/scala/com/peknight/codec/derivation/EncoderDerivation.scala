@@ -81,7 +81,7 @@ trait EncoderDerivation:
         configuration.discriminator match
           case Some(discriminator) =>
             objectType.to(objectType.asObject(s).fold(objectType.singleton(discriminator, s))(obj =>
-              objectType.add(obj, discriminator, encodedConstructorName))
+              objectType.prepended(obj, discriminator, encodedConstructorName))
             )
           case _ => objectType.to(objectType.singleton(constructorName, s))
     }

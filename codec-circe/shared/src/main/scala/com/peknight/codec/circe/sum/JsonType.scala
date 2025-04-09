@@ -27,6 +27,7 @@ trait JsonType extends StringType[Json] with ArrayType[Json] with ObjectType[Jso
   override def fromFoldable[F[_]](fields: F[(String, Json)])(using Foldable[F]): JsonObject =
     JsonObject.fromFoldable(fields)
   override def add(o: JsonObject, key: String, value: Json): JsonObject = o.add(key, value)
+  override def prepended(o: JsonObject, key: String, value: Json): JsonObject = (key, value) +: o
   override def keys(o: JsonObject): Iterable[String] = o.keys
   override def contains(o: JsonObject, key: String): Boolean = o.contains(key)
   override def remove(o: JsonObject, key: String): JsonObject = o.remove(key)
