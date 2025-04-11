@@ -97,5 +97,50 @@ trait DurationInstances:
 
   def codecDurationOfMillisNS[F[_] : Applicative, S: {NumberType, StringType}]: Codec[F, S, Cursor[S], Duration] =
     Codec[F, S, Cursor[S], Duration](using encodeDurationOfMillisN, decodeDurationOfMillisNS)
+
+  def numberEncodeDurationOfDays[F[_] : Applicative]: Encoder[F, Number, Duration] =
+    Encoder.map[F, Number, Duration](duration => Number.fromLong(duration.toDays))
+
+  def stringEncodeDurationOfDays[F[_] : Applicative]: Encoder[F, String, Duration] =
+    Encoder.map[F, String, Duration](_.toDays.toString)
+
+  def encodeDurationOfDaysN[F[_] : Applicative, S: NumberType]: Encoder[F, S, Duration] =
+    Encoder.encodeN[F, S, Duration](using numberEncodeDurationOfDays)
+
+  def encodeDurationOfDaysS[F[_] : Applicative, S: StringType]: Encoder[F, S, Duration] =
+    Encoder.encodeS[F, S, Duration](using stringEncodeDurationOfDays)
+
+  def numberDecodeDurationOfDays[F[_] : Applicative]: Decoder[F, Number, Duration] =
+    Decoder.numberDecodeNumberOption[F, Duration](_.toBigDecimal.map(days =>
+      ofSeconds(days * BigDecimal(24L * 60 * 60))
+    ))
+
+  def stringDecodeDurationOfDays[F[_] : Applicative]: Decoder[F, String, Duration] =
+    Decoder.stringDecodeWithNumberDecoder[F, Duration](using numberDecodeDurationOfDays)
+
+  def decodeDurationOfDaysN[F[_] : Applicative, S: NumberType]: Decoder[F, Cursor[S], Duration] =
+    Decoder.decodeN[F, S, Duration](using numberDecodeDurationOfDays)
+
+  def decodeDurationOfDaysS[F[_] : Applicative, S: StringType]: Decoder[F, Cursor[S], Duration] =
+    Decoder.decodeS[F, S, Duration](using stringDecodeDurationOfDays)
+
+  def decodeDurationOfDaysNS[F[_] : Applicative, S: {NumberType, StringType}]: Decoder[F, Cursor[S], Duration] =
+    Decoder.decodeNS[F, S, Duration](using numberDecodeDurationOfDays)
+
+  def numberCodecDurationOfDays[F[_] : Applicative]: Codec[F, Number, Number, Duration] =
+    Codec[F, Number, Number, Duration](using numberEncodeDurationOfDays, numberDecodeDurationOfDays)
+
+  def stringCodecDurationOfDays[F[_] : Applicative]: Codec[F, String, String, Duration] =
+    Codec[F, String, String, Duration](using stringEncodeDurationOfDays, stringDecodeDurationOfDays)
+
+  def codecDurationOfDaysN[F[_] : Applicative, S: NumberType]: Codec[F, S, Cursor[S], Duration] =
+    Codec[F, S, Cursor[S], Duration](using encodeDurationOfDaysN, decodeDurationOfDaysN)
+
+  def codecDurationOfDaysS[F[_] : Applicative, S: StringType]: Codec[F, S, Cursor[S], Duration] =
+    Codec[F, S, Cursor[S], Duration](using encodeDurationOfDaysS, decodeDurationOfDaysS)
+
+  def codecDurationOfDaysNS[F[_] : Applicative, S: {NumberType, StringType}]: Codec[F, S, Cursor[S], Duration] =
+    Codec[F, S, Cursor[S], Duration](using encodeDurationOfDaysN, decodeDurationOfDaysNS)
+
 end DurationInstances
 object DurationInstances extends DurationInstances
