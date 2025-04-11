@@ -9,7 +9,9 @@ trait ObjectType[S]:
   def asObject(s: S): Option[Obj]
   def fromObject(o: Object[S]): Obj
   def toObject(o: Obj): Object[S]
+  def empty: S = to(emptyObject)
   def isObject(s: S): Boolean = asObject(s).isDefined
+  def emptyObject: Obj = fromObject(Object.empty[S])
   def singleton(key: String, value: S): Obj = fromObject(Object.singleton(key, value))
   def fromFoldable[F[_]](fields: F[(String, S)])(using Foldable[F]): Obj = fromObject(Object.fromFoldable(fields))
   def add(o: Obj, key: String, value: S): Obj = fromObject(toObject(o).add(key, value))
@@ -32,6 +34,7 @@ object ObjectType:
       def asObject(s: S): Option[Object[S]] = g(s)
       def fromObject(o: Object[S]): Object[S] = o
       def toObject(o: Object[S]): Object[S] = o
+      override def emptyObject: Object[S] = Object.empty[S]
       override def singleton(key: String, value: S): Object[S] = Object.singleton(key, value)
       override def fromFoldable[F[_]](fields: F[(String, S)])(using Foldable[F]): Object[S] = Object.fromFoldable(fields)
       override def add(o: Object[S], key: String, value: S): Object[S] = o.add(key, value)
