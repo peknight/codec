@@ -98,6 +98,50 @@ trait DurationInstances:
   def codecDurationOfMillisNS[F[_] : Applicative, S: {NumberType, StringType}]: Codec[F, S, Cursor[S], FiniteDuration] =
     Codec[F, S, Cursor[S], FiniteDuration](using encodeDurationOfMillisN, decodeDurationOfMillisNS)
 
+  def numberEncodeDurationOfMinutes[F[_] : Applicative]: Encoder[F, Number, FiniteDuration] =
+    Encoder.map[F, Number, FiniteDuration](duration => Number.fromLong(duration.toMinutes))
+
+  def stringEncodeDurationOfMinutes[F[_] : Applicative]: Encoder[F, String, FiniteDuration] =
+    Encoder.map[F, String, FiniteDuration](_.toMinutes.toString)
+
+  def encodeDurationOfMinutesN[F[_] : Applicative, S: NumberType]: Encoder[F, S, FiniteDuration] =
+    Encoder.encodeN[F, S, FiniteDuration](using numberEncodeDurationOfMinutes)
+
+  def encodeDurationOfMinutesS[F[_] : Applicative, S: StringType]: Encoder[F, S, FiniteDuration] =
+    Encoder.encodeS[F, S, FiniteDuration](using stringEncodeDurationOfMinutes)
+
+  def numberDecodeDurationOfMinutes[F[_] : Applicative]: Decoder[F, Number, FiniteDuration] =
+    Decoder.numberDecodeNumberOption[F, FiniteDuration](_.toBigDecimal.map(minutes =>
+      ofSeconds(minutes * BigDecimal(60))
+    ))
+
+  def stringDecodeDurationOfMinutes[F[_] : Applicative]: Decoder[F, String, FiniteDuration] =
+    Decoder.stringDecodeWithNumberDecoder[F, FiniteDuration](using numberDecodeDurationOfMinutes)
+
+  def decodeDurationOfMinutesN[F[_] : Applicative, S: NumberType]: Decoder[F, Cursor[S], FiniteDuration] =
+    Decoder.decodeN[F, S, FiniteDuration](using numberDecodeDurationOfMinutes)
+
+  def decodeDurationOfMinutesS[F[_] : Applicative, S: StringType]: Decoder[F, Cursor[S], FiniteDuration] =
+    Decoder.decodeS[F, S, FiniteDuration](using stringDecodeDurationOfMinutes)
+
+  def decodeDurationOfMinutesNS[F[_] : Applicative, S: {NumberType, StringType}]: Decoder[F, Cursor[S], FiniteDuration] =
+    Decoder.decodeNS[F, S, FiniteDuration](using numberDecodeDurationOfMinutes)
+
+  def numberCodecDurationOfMinutes[F[_] : Applicative]: Codec[F, Number, Number, FiniteDuration] =
+    Codec[F, Number, Number, FiniteDuration](using numberEncodeDurationOfMinutes, numberDecodeDurationOfMinutes)
+
+  def stringCodecDurationOfMinutes[F[_] : Applicative]: Codec[F, String, String, FiniteDuration] =
+    Codec[F, String, String, FiniteDuration](using stringEncodeDurationOfMinutes, stringDecodeDurationOfMinutes)
+
+  def codecDurationOfMinutesN[F[_] : Applicative, S: NumberType]: Codec[F, S, Cursor[S], FiniteDuration] =
+    Codec[F, S, Cursor[S], FiniteDuration](using encodeDurationOfMinutesN, decodeDurationOfMinutesN)
+
+  def codecDurationOfMinutesS[F[_] : Applicative, S: StringType]: Codec[F, S, Cursor[S], FiniteDuration] =
+    Codec[F, S, Cursor[S], FiniteDuration](using encodeDurationOfMinutesS, decodeDurationOfMinutesS)
+
+  def codecDurationOfMinutesNS[F[_] : Applicative, S: {NumberType, StringType}]: Codec[F, S, Cursor[S], FiniteDuration] =
+    Codec[F, S, Cursor[S], FiniteDuration](using encodeDurationOfMinutesN, decodeDurationOfMinutesNS)
+
   def numberEncodeDurationOfDays[F[_] : Applicative]: Encoder[F, Number, FiniteDuration] =
     Encoder.map[F, Number, FiniteDuration](duration => Number.fromLong(duration.toDays))
 
@@ -141,6 +185,5 @@ trait DurationInstances:
 
   def codecDurationOfDaysNS[F[_] : Applicative, S: {NumberType, StringType}]: Codec[F, S, Cursor[S], FiniteDuration] =
     Codec[F, S, Cursor[S], FiniteDuration](using encodeDurationOfDaysN, decodeDurationOfDaysNS)
-
 end DurationInstances
 object DurationInstances extends DurationInstances
