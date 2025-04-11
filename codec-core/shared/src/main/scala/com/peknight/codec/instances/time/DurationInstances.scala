@@ -8,7 +8,7 @@ import com.peknight.codec.{Codec, Decoder, Encoder}
 
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
-trait FiniteDurationInstances:
+trait DurationInstances:
   def numberEncodeDurationOfSeconds[F[_] : Applicative]: Encoder[F, Number, FiniteDuration] =
     Encoder.map[F, Number, FiniteDuration](duration => Number.fromLong(duration.toSeconds))
 
@@ -142,5 +142,5 @@ trait FiniteDurationInstances:
   def codecDurationOfDaysNS[F[_] : Applicative, S: {NumberType, StringType}]: Codec[F, S, Cursor[S], FiniteDuration] =
     Codec[F, S, Cursor[S], FiniteDuration](using encodeDurationOfDaysN, decodeDurationOfDaysNS)
 
-end FiniteDurationInstances
-object FiniteDurationInstances extends FiniteDurationInstances
+end DurationInstances
+object DurationInstances extends DurationInstances
