@@ -188,5 +188,4 @@ trait DecoderDerivation:
           case d => map ++ configuration.transformConstructorNames(label).map(_ -> d).toList.toMap
     }
 end DecoderDerivation
-
 object DecoderDerivation extends DecoderDerivation

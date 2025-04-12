@@ -1,8 +1,7 @@
 package com.peknight.codec.instances
 
-import cats.Applicative
-import cats.syntax.applicative.*
 import cats.syntax.either.*
+import cats.{Applicative, Show}
 import com.peknight.codec.Decoder
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.error.{NotNumber, WrongClassTag}
@@ -11,8 +10,9 @@ import com.peknight.codec.sum.{BooleanType, NumberType, StringType}
 import com.peknight.generic.priority.HighPriority
 
 import java.net.URI
-import java.time.*
+import java.time.{Duration as JDuration, *}
 import java.util.{Currency, UUID}
+import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.reflect.ClassTag
 
 trait DecoderValueInstances extends DecoderValueInstances1:
@@ -78,12 +78,30 @@ trait DecoderValueInstances extends DecoderValueInstances1:
   given decodeURIS[F[_]: Applicative, S: StringType]: HighPriority[Decoder[F, Cursor[S], URI]] =
     HighPriority(Decoder.decodeS[F, S, URI])
 
-  given stringDecodeDuration[F[_]: Applicative]: HighPriority[Decoder[F, String, Duration]] =
-    HighPriority(Decoder.parse[F, String, Duration](Duration.parse))
+  given stringDecodeJavaDuration[F[_]: Applicative]: HighPriority[Decoder[F, String, JDuration]] =
+    HighPriority(Decoder.parse[F, String, JDuration](JDuration.parse))
 
-  given decodeDurationS[F[_]: Applicative, S: StringType]
+  given decodeJavaDurationS[F[_]: Applicative, S: StringType]
+  : HighPriority[Decoder[F, Cursor[S], JDuration]] =
+    HighPriority(Decoder.decodeS[F, S, JDuration])
+
+  given stringDecodeDuration[F[_] : Applicative]: HighPriority[Decoder[F, String, Duration]] =
+    HighPriority(Decoder.parse[F, String, Duration](Duration.apply))
+
+  given decodeDurationS[F[_] : Applicative, S: StringType]
   : HighPriority[Decoder[F, Cursor[S], Duration]] =
     HighPriority(Decoder.decodeS[F, S, Duration])
+
+  given stringDecodeFiniteDuration[F[_]: Applicative]: HighPriority[Decoder[F, String, FiniteDuration]] =
+    HighPriority(Decoder.parse[F, String, FiniteDuration] { s =>
+      Duration(s) match
+        case d: FiniteDuration => d
+        case d => throw WrongClassTag[FiniteDuration].value(d)(using Show.fromToString[Duration])
+    })
+
+  given decodeFiniteDurationS[F[_] : Applicative, S: StringType]
+  : HighPriority[Decoder[F, Cursor[S], FiniteDuration]] =
+    HighPriority(Decoder.decodeS[F, S, FiniteDuration])
 
   given stringDecodeInstant[F[_]: Applicative]: HighPriority[Decoder[F, String, Instant]] =
     HighPriority(Decoder.parse[F, String, Instant](Instant.parse))

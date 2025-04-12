@@ -7,11 +7,11 @@ import com.peknight.codec.sum.{BooleanType, NumberType, StringType}
 import com.peknight.generic.priority.HighPriority
 
 import java.net.URI
-import java.time.*
 import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder, SignStyle}
 import java.time.temporal.ChronoField
+import java.time.{Duration as JDuration, *}
 import java.util.{Currency, UUID}
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration.{Duration, FiniteDuration}
 
 trait EncoderValueInstances extends EncoderValueInstances1:
   given stringEncodeString[F[_]: Applicative]: Encoder[F, String, String] = Encoder.identity[F, String]
@@ -77,10 +77,22 @@ trait EncoderValueInstances extends EncoderValueInstances1:
 
   given encodeURIS[F[_]: Applicative, S: StringType]: Encoder[F, S, URI] = Encoder.encodeS[F, S, URI]
 
-  given stringEncodeDuration[F[_]: Applicative]: Encoder[F, String, Duration] = Encoder.encodeWithToString[F, Duration]
+  given stringEncodeJavaDuration[F[_]: Applicative]: Encoder[F, String, JDuration] =
+    Encoder.encodeWithToString[F, JDuration]
 
-  given encodeDurationS[F[_]: Applicative, S: StringType]: Encoder[F, S, Duration] = 
+  given encodeJavaDurationS[F[_]: Applicative, S: StringType]: Encoder[F, S, JDuration] =
+    Encoder.encodeS[F, S, JDuration]
+
+  given stringEncodeDuration[F[_] : Applicative]: Encoder[F, String, Duration] = Encoder.encodeWithToString[F, Duration]
+
+  given encodeDurationS[F[_] : Applicative, S: StringType]: Encoder[F, S, Duration] =
     Encoder.encodeS[F, S, Duration]
+
+  given stringEncodeFiniteDuration[F[_] : Applicative]: Encoder[F, String, FiniteDuration] =
+    Encoder.encodeWithToString[F, FiniteDuration]
+
+  given encodeFiniteDurationS[F[_] : Applicative, S: StringType]: Encoder[F, S, FiniteDuration] =
+    Encoder.encodeS[F, S, FiniteDuration]
 
   given stringEncodeInstant[F[_]: Applicative]: Encoder[F, String, Instant] = Encoder.encodeWithToString[F, Instant]
 
