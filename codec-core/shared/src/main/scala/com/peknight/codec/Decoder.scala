@@ -20,6 +20,7 @@ import com.peknight.codec.error.*
 import com.peknight.codec.instances.*
 import com.peknight.codec.number.{BiggerDecimal, Number}
 import com.peknight.codec.obj.Object
+import com.peknight.codec.reader.{Key, Reader}
 import com.peknight.codec.sum.*
 import com.peknight.generic.migration.Migration
 import com.peknight.generic.priority.PriorityInstancesF2
@@ -563,10 +564,22 @@ object Decoder extends DecoderDerivation
     stringType: StringType[S],
     classTag: ClassTag[A]
   ): Decoder[F, Cursor[S], A] =
+    given Show[S] = Show.fromToString[S]
     cursor[F, S, A] { t =>
       StringType[S].asString(t.value) match
-        case Some(s) => decoder.decode(s).map(_.left.map(_.cursor(t)(using Show.fromToString[S])))
-        case None => WrongClassTag[A].cursor(t)(using Show.fromToString[S]).asLeft.pure
+        case Some(s) => decoder.decode(s).map(_.left.map(_.cursor(t)))
+        case None => WrongClassTag[A].cursor(t).asLeft.pure
+    }
+
+  def decodeKey[F[_], A](using decoder: Decoder[F, String, A], reader: Reader[F, String])(using Monad[F], ClassTag[A])
+  : Decoder[F, Key, A] =
+    given Show[Key] = Show.fromToString[Key]
+    Decoder.instance[F, Key, A] { key =>
+      reader.run(key).flatMap {
+        case Right(Some(value)) => decoder.decode(value).map(_.left.map(_.value(key)))
+        case Right(None) => WrongClassTag[A].value(key).asLeft.pure
+        case Left(error) => DecodingFailure(error).asLeft.pure
+      }
     }
 
   def stringDecodeWithNumberDecoder[F[_], A](using decoder: Decoder[F, Number, A])(using applicative: Applicative[F])
