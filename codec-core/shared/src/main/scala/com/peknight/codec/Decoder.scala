@@ -12,7 +12,7 @@ import cats.syntax.option.*
 import cats.syntax.semigroup.*
 import cats.syntax.traverse.*
 import cats.syntax.validated.*
-import cats.{Applicative, Apply, Eval, Functor, Monad, MonadError, SemigroupK, Show}
+import cats.{Applicative, Apply, Eval, Functor, Monad, MonadError, SemigroupK, Show, Traverse}
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.cursor.Cursor.{FailedCursor, SuccessCursor}
 import com.peknight.codec.derivation.DecoderDerivation
@@ -316,6 +316,17 @@ object Decoder extends DecoderDerivation
       case arrayCursor: SuccessCursor[S] => (arrayCursor, arrayCursor.right).some
       case arrayCursor: FailedCursor[S] => none[(SuccessCursor[S], Cursor[S])]
     }
+
+  def stringDecodeSeq[F[_], A, C[_]](f: String => C[String])
+                                    (using decoder: Decoder[F, String, A])
+                                    (using Applicative[F], Traverse[C]): Decoder[F, String, C[A]] =
+    instance[F, String, C[A]] { t =>
+      import com.peknight.cats.ext.instances.applicative.given
+      type ValidatedF[T] = F[Validated[DecodingFailure, T]]
+      val res: F[Validated[DecodingFailure, C[A]]] = f(t).traverse[ValidatedF, A](tt => decoder.decode(tt).map(_.toValidated))
+      res.map(_.toEither)
+    }
+
 
   private def handleDecodeSeq[F[_], S, A, C[_]](builder: => mutable.Builder[A, C[A]])
                                                (p: PartialFunction[S, F[Either[DecodingFailure, C[A]]]] = PartialFunction.empty)
