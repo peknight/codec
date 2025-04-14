@@ -10,3 +10,4 @@ trait EnvPropsReaderInstances:
   given envPropsReader[F[_]: Async]: Reader[F, String] =
     reader(key => env(ScreamingSnakeCase.join(key.keys.toSeq.flatMap(split))).or(prop(key.keys.mkString("."))))
 end EnvPropsReaderInstances
+object EnvPropsReaderInstances extends EnvPropsReaderInstances

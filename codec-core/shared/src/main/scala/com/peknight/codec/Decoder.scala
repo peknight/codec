@@ -330,7 +330,6 @@ object Decoder extends DecoderDerivation
         case Left(error) => error.asLeft.pure
     }
 
-
   private def handleDecodeSeq[F[_], S, A, C[_]](builder: => mutable.Builder[A, C[A]])
                                                (p: PartialFunction[S, F[Either[DecodingFailure, C[A]]]] = PartialFunction.empty)
                                                (f: SuccessCursor[S] => F[Either[DecodingFailure, C[A]]])
