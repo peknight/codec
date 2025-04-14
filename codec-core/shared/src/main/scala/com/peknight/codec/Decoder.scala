@@ -590,12 +590,9 @@ object Decoder extends DecoderDerivation
     given Show[Key] = Show.fromToString[Key]
     Decoder.instance[F, Key, A] { key =>
       reader.run(key).flatMap {
-        case Right(Some(value)) =>
-          decoder.decode(value).map(_.left.map(_.value(key)))
-        case Right(None) =>
-          ReadNone.value(key).asLeft.pure
-        case Left(error) =>
-          DecodingFailure(error).asLeft.pure
+        case Right(Some(value)) => decoder.decode(value).map(_.left.map(_.value(key)))
+        case Right(None) => ReadNone(key).asLeft.pure
+        case Left(error) => DecodingFailure(error).asLeft.pure
       }
     }
 

@@ -1,6 +1,7 @@
 package com.peknight.codec.error
 
-object ReadNone extends DecodingFailure:
-  override protected def lowPriorityLabelMessage(label: String): Option[String] = Some(s"Read none: $label")
-  override protected def lowPriorityMessage: Option[String] = Some("Read none")
+import com.peknight.codec.reader.Key
+
+case class ReadNone(key: Key) extends DecodingFailure:
+  override protected def lowPriorityMessage: Option[String] = Some(s"Read none: ${key.keys.mkString(".")}")
 end ReadNone

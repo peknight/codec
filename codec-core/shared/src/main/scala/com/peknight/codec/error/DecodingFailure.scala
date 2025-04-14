@@ -121,7 +121,7 @@ object DecodingFailure extends DecodingFailure:
     Error.base(error) match
       case MissingField => true
       case OptionEmpty => true
-      case ReadNone => true
+      case _: ReadNone => true
       case _ => false
 
   given Monoid[DecodingFailure] with
