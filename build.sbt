@@ -27,6 +27,8 @@ lazy val codec = (project in file("."))
     codecCirceParser.js,
     codecDoobie.jvm,
     codecDoobie.js,
+    codecFs2IO.jvm,
+    codecFs2IO.js,
     codecHttp4s.jvm,
     codecHttp4s.js,
     codecHttp4sCirce.jvm,
@@ -102,6 +104,15 @@ lazy val codecDoobie = (crossProject(JSPlatform, JVMPlatform) in file("codec-doo
     ),
   )
 
+lazy val codecFs2IO = (crossProject(JSPlatform, JVMPlatform) in file("codec-fs2-io"))
+  .dependsOn(codecCore)
+  .settings(commonSettings)
+  .settings(
+    name := "codec-fs2-io",
+    libraryDependencies ++= Seq(
+      "co.fs2" %%% "fs2-io" % fs2Version,
+    )
+  )
 lazy val codecHttp4s = (crossProject(JSPlatform, JVMPlatform) in file("codec-http4s"))
   .dependsOn(codecCore)
   .settings(commonSettings)
@@ -153,6 +164,7 @@ lazy val codecSquants = (crossProject(JSPlatform, JVMPlatform) in file("codec-sq
   )
 
 val catsParseVersion = "0.3.10"
+val fs2Version = "3.11.0"
 val scodecVersion = "1.2.1"
 val doobieVersion = "1.0.0-RC6"
 val http4sVersion = "1.0.0-M34"

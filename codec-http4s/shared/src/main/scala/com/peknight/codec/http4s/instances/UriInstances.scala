@@ -15,3 +15,4 @@ trait UriInstances:
 
   given codecUriS[F[_]: Applicative, S: StringType]: Codec[F, S, Cursor[S], Uri] = Codec.codecS[F, S, Uri]
 end UriInstances
+object UriInstances extends UriInstances
