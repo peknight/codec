@@ -6,6 +6,7 @@ import cats.{Eval, Monoid, Show}
 import com.peknight.codec.cursor.{Cursor, CursorOp}
 import com.peknight.codec.error.DecodingFailure.{Common, Pure}
 import com.peknight.error.Error
+import com.peknight.error.option.OptionEmpty
 
 import scala.annotation.tailrec
 
@@ -115,6 +116,13 @@ object DecodingFailure extends DecodingFailure:
   def apply[E](head: E, tail: List[E]): DecodingFailure =
     if tail.isEmpty then pure(head)
     else Errors(NonEmptyList(pure(head), tail.map(pure)))
+
+  def isNullError[E](error: E): Boolean =
+    Error.base(error) match
+      case MissingField => true
+      case OptionEmpty => true
+      case ReadNone => true
+      case _ => false
 
   given Monoid[DecodingFailure] with
     def empty: DecodingFailure = Success

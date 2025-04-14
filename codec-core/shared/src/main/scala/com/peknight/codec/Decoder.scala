@@ -122,6 +122,7 @@ object Decoder extends DecoderDerivation
   with DecoderObjectInstances
   with DecoderNullInstances
   with DecoderIdentityInstances
+  with DecoderKeyInstances
   with PriorityInstancesF2[Decoder]:
 
   def apply[F[_], T, A](using decoder: Decoder[F, T, A]): Decoder[F, T, A] = decoder
@@ -571,13 +572,13 @@ object Decoder extends DecoderDerivation
         case None => WrongClassTag[A].cursor(t).asLeft.pure
     }
 
-  def decodeKey[F[_], A](using decoder: Decoder[F, String, A], reader: Reader[F, String])(using Monad[F], ClassTag[A])
+  def decodeK[F[_], A](using decoder: Decoder[F, String, A], reader: Reader[F, String])(using Monad[F])
   : Decoder[F, Key, A] =
     given Show[Key] = Show.fromToString[Key]
     Decoder.instance[F, Key, A] { key =>
       reader.run(key).flatMap {
         case Right(Some(value)) => decoder.decode(value).map(_.left.map(_.value(key)))
-        case Right(None) => WrongClassTag[A].value(key).asLeft.pure
+        case Right(None) => ReadNone.value(key).asLeft.pure
         case Left(error) => DecodingFailure(error).asLeft.pure
       }
     }

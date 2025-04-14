@@ -9,6 +9,7 @@ import com.peknight.codec.Decoder
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.cursor.Cursor.{FailedCursor, SuccessCursor}
 import com.peknight.codec.error.{DecodingFailure, MissingField, NotNull}
+import com.peknight.codec.reader.Key
 import com.peknight.codec.sum.{ArrayType, NullType, ObjectType}
 
 trait DecoderNullInstances extends DecoderNullInstances1:
@@ -40,6 +41,15 @@ trait DecoderNullInstances extends DecoderNullInstances1:
   ): Decoder[F, Cursor[S], Option[A]] =
     handleDecodeOptionAOU[F, S, A]()
   end decodeOptionAOU
+
+  given decodeOptionKey[F[_], A](using monad: Functor[F], decoder: Decoder[F, Key, A]): Decoder[F, Key, Option[A]] =
+    Decoder.instance[F, Key, Option[A]] { key =>
+      decoder.decode(key).map {
+        case Right(value) => value.some.asRight
+        case Left(error) if DecodingFailure.isNullError(error) => none.asRight
+        case Left(error) => error.asLeft
+      }
+    }
 
   given decodeSome[F[_], T, A](using functor: Functor[F], decoder: Decoder[F, T, A]): Decoder[F, T, Some[A]] =
     Decoder.instance[F, T, Some[A]](t => decoder.decode(t).map(_.map(Some(_))))

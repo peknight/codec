@@ -15,8 +15,6 @@ import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.error.*
 import com.peknight.codec.reader.Key
 import com.peknight.codec.sum.{NullType, ObjectType}
-import com.peknight.error.Error
-import com.peknight.error.option.OptionEmpty
 import com.peknight.generic.Generic
 import com.peknight.generic.tuple.syntax.sequence
 
@@ -154,17 +152,12 @@ trait DecoderDerivation:
       (current, result, defaultOpt) match
         case (_, result, None) => result.toValidated
         case (_, result, _) if !configuration.useDefaults => result.toValidated
-        case (current, Left(error), Some(d)) if isNull(current) || isNullError(error) => d.valid[DecodingFailure]
+        case (current, Left(error), Some(d)) if isNull(current) || DecodingFailure.isNullError(error) =>
+          d.valid[DecodingFailure]
         case (current, result, Some(d)) if extField =>
           if isExtEmpty(current) then d.valid[DecodingFailure] else result.toValidated
         case (_, result, Some(d)) => if keyExists then result.toValidated else d.valid[DecodingFailure]
     }
-
-  private def isNullError[E](error: E): Boolean =
-    Error.base(error) match
-      case MissingField => true
-      case OptionEmpty => true
-      case _ => false
 
   private def handleDerivedSum[F[_], T, A](decodeSum: T => F[Either[DecodingFailure, A]])(
     using configuration: DecoderConfiguration
