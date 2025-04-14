@@ -317,14 +317,17 @@ object Decoder extends DecoderDerivation
       case arrayCursor: FailedCursor[S] => none[(SuccessCursor[S], Cursor[S])]
     }
 
-  def stringDecodeSeq[F[_], A, C[_]](f: String => C[String])
+  def stringDecodeSeq[F[_], A, C[_]](f: String => Either[DecodingFailure, C[String]])
                                     (using decoder: Decoder[F, String, A])
                                     (using Applicative[F], Traverse[C]): Decoder[F, String, C[A]] =
     instance[F, String, C[A]] { t =>
       import com.peknight.cats.ext.instances.applicative.given
       type ValidatedF[T] = F[Validated[DecodingFailure, T]]
-      val res: F[Validated[DecodingFailure, C[A]]] = f(t).traverse[ValidatedF, A](tt => decoder.decode(tt).map(_.toValidated))
-      res.map(_.toEither)
+      f(t) match
+        case Right(tt) =>
+          val res: F[Validated[DecodingFailure, C[A]]] = tt.traverse[ValidatedF, A](tt => decoder.decode(tt).map(_.toValidated))
+          res.map(_.toEither)
+        case Left(error) => error.asLeft.pure
     }
 
 
@@ -588,9 +591,12 @@ object Decoder extends DecoderDerivation
     given Show[Key] = Show.fromToString[Key]
     Decoder.instance[F, Key, A] { key =>
       reader.run(key).flatMap {
-        case Right(Some(value)) => decoder.decode(value).map(_.left.map(_.value(key)))
-        case Right(None) => ReadNone.value(key).asLeft.pure
-        case Left(error) => DecodingFailure(error).asLeft.pure
+        case Right(Some(value)) =>
+          decoder.decode(value).map(_.left.map(_.value(key)))
+        case Right(None) =>
+          ReadNone.value(key).asLeft.pure
+        case Left(error) =>
+          DecodingFailure(error).asLeft.pure
       }
     }
 
@@ -605,4 +611,7 @@ object Decoder extends DecoderDerivation
 
   def decodeWithEncoder[F[_], T, A](using encoder: Encoder[F, A, T])(using functor: Functor[F]): Decoder[F, T, A] =
     (t: T) => encoder.encode(t).map(_.asRight[DecodingFailure])
+
+  def load[F[_], A](key: Key = Key.empty)(using decoder: Decoder[F, Key, A]): F[Either[DecodingFailure, A]] =
+    decoder.decode(key)
 end Decoder

@@ -37,7 +37,7 @@ object CodecConfiguration:
     discriminator: Option[String] = None,
     sumTypeOnNone: Option[String] = None,
     extField: Option[String] = None,
-    useDefaults: Boolean = false,
+    useDefaults: Boolean = true,
     strictDecoding: Boolean = false
   ): CodecConfiguration =
     Configuration(transformMemberNames, transformConstructorNames, discriminator, sumTypeOnNone, extField, useDefaults,

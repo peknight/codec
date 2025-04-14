@@ -68,7 +68,7 @@ trait DecoderDerivation:
     case Key(keys) => instances.constructWithLabelDefault[[X] =>> F[Validated[DecodingFailure, X]]] {
       [X] => (decoder: Decoder[F, Key, X], label: String, defaultOpt: Option[X]) =>
         val ks = configuration.transformMemberNames(label).map(key => Key(keys :+ key))
-        decodeProductMember[F, Key, X](ks, decoder, defaultOpt, false, configuration)(_ => false)(_ => true)(false)
+        decodeProductMember[F, Key, X](ks, decoder, defaultOpt, false, configuration)(_ => false)(_ => true)(true)
     }.map(_.toEither)
 
   def derivedSumByKey[F[_], A](using configuration: DecoderConfiguration)(using
