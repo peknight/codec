@@ -140,6 +140,7 @@ lazy val codecCiris = (crossProject(JSPlatform, JVMPlatform) in file("codec-ciri
     name := "codec-ciris",
     libraryDependencies ++= Seq(
       "is.cir" %%% "ciris" % cirisVersion,
+      "com.peknight" %%% "commons-text" % pekCommonsVersion,
     )
   )
 
@@ -174,6 +175,7 @@ val squantsVersion = "1.8.3"
 val scalaTestVersion = "3.2.19"
 val pekVersion = "0.1.0-SNAPSHOT"
 val pekGenericVersion = pekVersion
+val pekCommonsVersion = pekVersion
 val pekExtVersion = pekVersion
 val pekErrorVersion = pekVersion
 
