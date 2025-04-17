@@ -19,6 +19,8 @@ lazy val codec = (project in file("."))
   .aggregate(
     codecCore.jvm,
     codecCore.js,
+    codecEffect.jvm,
+    codecEffect.js,
     codecBase.jvm,
     codecBase.js,
     codecCirce.jvm,
@@ -53,8 +55,20 @@ lazy val codecCore = (crossProject(JSPlatform, JVMPlatform) in file("codec-core"
       "com.peknight" %%% "generic-migration" % pekGenericVersion,
       "com.peknight" %%% "cats-ext" % pekExtVersion,
       "com.peknight" %%% "error-core" % pekErrorVersion,
+      "com.peknight" %%% "commons-text" % pekCommonsVersion,
       "org.typelevel" %%% "cats-parse" % catsParseVersion,
       "org.scalatest" %%% "scalatest" % scalaTestVersion % Test,
+    ),
+  )
+
+lazy val codecEffect = (crossProject(JSPlatform, JVMPlatform) in file("codec-effect"))
+  .dependsOn(codecCore)
+  .settings(commonSettings)
+  .settings(
+    name := "codec-effect",
+    libraryDependencies ++= Seq(
+      "org.typelevel" %%% "cats-effect" % catsEffectVersion,
+      "com.peknight" %%% "commons-text" % pekCommonsVersion,
     ),
   )
 
@@ -164,6 +178,7 @@ lazy val codecSquants = (crossProject(JSPlatform, JVMPlatform) in file("codec-sq
     )
   )
 
+val catsEffectVersion = "3.5.7"
 val catsParseVersion = "0.3.10"
 val fs2Version = "3.11.0"
 val scodecVersion = "1.2.1"
