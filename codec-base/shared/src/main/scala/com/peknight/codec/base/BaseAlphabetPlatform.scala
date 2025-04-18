@@ -40,6 +40,10 @@ trait BaseAlphabetPlatform[A <: Alphabet, B <: Base : ClassTag] extends BasePlat
     def eqv(x: B, y: B): Boolean = x.value.equals(y.value)
   end eqBase
 
+  given showBase: Show[B] with
+    def show(t: B): String = t.value
+  end showBase
+
   def fromString(value: String): Either[ParsingFailure, B] = fromString(value, alphabet)
   def unsafeFromString(value: String): B = unsafeFromString(value, alphabet)
   def fromByteVector(bytes: ByteVector): B = fromByteVector(bytes, alphabet)
