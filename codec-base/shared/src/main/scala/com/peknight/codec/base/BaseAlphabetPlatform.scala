@@ -1,7 +1,7 @@
 package com.peknight.codec.base
 
-import cats.{Applicative, Eq}
 import cats.parse.Parser0
+import cats.{Applicative, Eq, Show}
 import com.peknight.codec.Codec
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.sum.StringType
@@ -22,7 +22,7 @@ trait BaseAlphabetPlatform[A <: Alphabet, B <: Base : ClassTag] extends BasePlat
   def stringCodecBaseString[F[_]: Applicative]: Codec[F, String, String, ByteVector] =
     stringCodecBaseStringWithAlphabet[F](alphabet)
 
-  def codecBaseStringS[F[_]: Applicative, S: StringType]: Codec[F, S, Cursor[S], ByteVector] =
+  def codecBaseStringS[F[_]: Applicative, S: {StringType, Show}]: Codec[F, S, Cursor[S], ByteVector] =
     codecBaseStringSWithAlphabet[F, S](alphabet)
 
   def baseStringParser: Parser0[String] =
@@ -33,7 +33,7 @@ trait BaseAlphabetPlatform[A <: Alphabet, B <: Base : ClassTag] extends BasePlat
   given stringCodecBase[F[_]: Applicative]: Codec[F, String, String, B] =
     stringCodecBaseWithAlphabet[F](alphabet)
 
-  given codecBaseS[F[_]: Applicative, S: StringType]: Codec[F, S, Cursor[S], B] =
+  given codecBaseS[F[_]: Applicative, S: {StringType, Show}]: Codec[F, S, Cursor[S], B] =
     codecBaseSWithAlphabet[F, S](alphabet)
 
   given eqBase: Eq[B] with

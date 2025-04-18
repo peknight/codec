@@ -55,11 +55,11 @@ trait Decoder[F[_], T, A]:
       case left => left
     }
   end ensure
-  def ensure(errors: A => List[DecodingFailure])(using Functor[F]): Decoder[F, T, A] =
+  def ensure(errors: A => List[DecodingFailure])(using Functor[F], Show[T]): Decoder[F, T, A] =
     (t: T) => self.decode(t).map {
       case r@Right(a) => errors(a) match
         case Nil => r
-        case head :: tail => DecodingFailure(head, tail).value(t)(using Show.fromToString[T]).asLeft[A]
+        case head :: tail => DecodingFailure(head, tail).value(t).asLeft[A]
       case left => left
     }
   end ensure
@@ -135,13 +135,13 @@ object Decoder extends DecoderDerivation
   def map[F[_]: Applicative, T, A](f: T => A): Decoder[F, T, A] =
     applicative[F, T, A](t => f(t).asRight[DecodingFailure])
 
-  def mapOption[F[_]: Applicative, T, A: ClassTag](f: T => Option[A]): Decoder[F, T, A] =
-    applicative[F, T, A](t => f(t).toRight(WrongClassTag[A].value(t)(using Show.fromToString[T])))
+  def mapOption[F[_]: Applicative, T: Show, A: ClassTag](f: T => Option[A]): Decoder[F, T, A] =
+    applicative[F, T, A](t => f(t).toRight(WrongClassTag[A].value(t)))
 
-  def mapTry[F[_]: Applicative, T, A: ClassTag](f: T => Try[A]): Decoder[F, T, A] =
-    applicative[F, T, A](t => f(t).toEither.left.map(e => ParsingTypeError[A](e).value(t)(using Show.fromToString[T])))
+  def mapTry[F[_]: Applicative, T: Show, A: ClassTag](f: T => Try[A]): Decoder[F, T, A] =
+    applicative[F, T, A](t => f(t).toEither.left.map(e => ParsingTypeError[A](e).value(t)))
 
-  def parse[F[_]: Applicative, T, A: ClassTag](f: T => A): Decoder[F, T, A] =
+  def parse[F[_]: Applicative, T: Show, A: ClassTag](f: T => A): Decoder[F, T, A] =
     mapTry[F, T, A](t => Try(f(t)))
 
   def identity[F[_]: Applicative, A]: Decoder[F, A, A] = map[F, A, A](Predef.identity)
@@ -152,38 +152,42 @@ object Decoder extends DecoderDerivation
 
   def failed[F[_] : Applicative, T, A](f: T => DecodingFailure): Decoder[F, T, A] = (t: T) => f(t).asLeft[A].pure[F]
 
-  def cursor[F[_]: Applicative, S, A](f: SuccessCursor[S] => F[Either[DecodingFailure, A]])
+  def cursor[F[_]: Applicative, S: Show, A](f: SuccessCursor[S] => F[Either[DecodingFailure, A]])
   : Decoder[F, Cursor[S], A] =
     case cursor: SuccessCursor[S] => f(cursor)
     case cursor: FailedCursor[S] => cursor.toDecodingFailure.asLeft[A].pure[F]
   end cursor
-  def cursorApplicative[F[_]: Applicative, S, A](f: SuccessCursor[S] => Either[DecodingFailure, A])
+  def cursorApplicative[F[_]: Applicative, S: Show, A](f: SuccessCursor[S] => Either[DecodingFailure, A])
   : Decoder[F, Cursor[S], A] =
     cursor[F, S, A](t => f(t).pure[F])
 
-  def cursorMap[F[_]: Applicative, S, A](f: SuccessCursor[S] => A): Decoder[F, Cursor[S], A] =
+  def cursorMap[F[_]: Applicative, S: Show, A](f: SuccessCursor[S] => A): Decoder[F, Cursor[S], A] =
     cursorApplicative[F, S, A](t => f(t).asRight[DecodingFailure])
 
-  def cursorIdentity[F[_]: Applicative, S]: Decoder[F, Cursor[S], S] = cursorMap[F, S, S](_.value)
+  def cursorIdentity[F[_]: Applicative, S: Show]: Decoder[F, Cursor[S], S] = cursorMap[F, S, S](_.value)
 
-  def cursorConst[F[_]: Applicative, S, A](a: A): Decoder[F, Cursor[S], A] = cursorMap[F, S, A](_ => a)
+  def cursorConst[F[_]: Applicative, S: Show, A](a: A): Decoder[F, Cursor[S], A] = cursorMap[F, S, A](_ => a)
 
-  def cursorValue[F[_]: Applicative, S, A](f: S => F[Either[DecodingFailure, A]]): Decoder[F, Cursor[S], A] =
-    cursor[F, S, A](t => f(t.value).map(_.left.map(_.cursor(t)(using Show.fromToString[S]))))
+  def cursorValue[F[_]: Applicative, S: Show, A](f: S => F[Either[DecodingFailure, A]]): Decoder[F, Cursor[S], A] =
+    cursor[F, S, A](t => f(t.value).map(_.left.map(_.cursor(t))))
 
-  def cursorValueApplicative[F[_]: Applicative, S, A](f: S => Either[DecodingFailure, A]): Decoder[F, Cursor[S], A] =
-    cursorApplicative[F, S, A](t => f(t.value).left.map(_.cursor(t)(using Show.fromToString[S])))
+  def cursorValueApplicative[F[_]: Applicative, S: Show, A](f: S => Either[DecodingFailure, A]): Decoder[F, Cursor[S], A] =
+    cursorApplicative[F, S, A](t => f(t.value).left.map(_.cursor(t)))
 
-  def cursorValueMap[F[_]: Applicative, S, A](f: S => A): Decoder[F, Cursor[S], A] = cursorMap[F, S, A](t => f(t.value))
+  def cursorValueMap[F[_]: Applicative, S: Show, A](f: S => A): Decoder[F, Cursor[S], A] =
+    cursorMap[F, S, A](t => f(t.value))
 
   def fromState[F[_]: Monad, T, A](s: StateT[[X] =>> F[Either[DecodingFailure, X]], T, A]): Decoder[F, T, A] =
     import com.peknight.cats.ext.instances.eitherT.given
     s.runA(_)
 
-  def forProduct[F[_], S, A, Repr <: Tuple](labels: tuple.Map[Repr, [X] =>> String])(f: Repr => Either[DecodingFailure, A])(using
+  def forProduct[F[_], S, A, Repr <: Tuple](labels: tuple.Map[Repr, [X] =>> String])(
+    f: Repr => Either[DecodingFailure, A]
+  )(using
     applicative: Applicative[F],
     objectType: ObjectType[S],
     nullType: NullType[S],
+    show: Show[S],
     instances: => Generic.Product.Instances[[X] =>> Decoder[F, Cursor[S], X], Repr]
   ): Decoder[F, Cursor[S], A] =
     cursor[F, S, A](t => handleForProduct[F, S, A, Repr](t)(labels)(f))
@@ -208,6 +212,7 @@ object Decoder extends DecoderDerivation
     applicative: Applicative[F],
     objectType: ObjectType[S],
     nullType: NullType[S],
+    show: Show[S],
     instances: => Generic.Product.Instances[[X] =>> Decoder[F, Cursor[S], X], Repr]
   ): Decoder[F, Cursor[S], A] =
     forProduct[F, S, A, Repr](labels)(repr => f(repr).asRight)
@@ -290,16 +295,17 @@ object Decoder extends DecoderDerivation
 
   def nullUnit[S](s: S)(using nullType: NullType[S]): Option[Unit] = nullType.asNull(s)
 
-  def decodeUnit[F[_] : Applicative, S](t: SuccessCursor[S])(f: S => Option[Unit]): F[Either[DecodingFailure, Unit]] =
+  def decodeUnit[F[_] : Applicative, S: Show](t: SuccessCursor[S])(f: S => Option[Unit])
+  : F[Either[DecodingFailure, Unit]] =
     f(t.value) match
       case Some(_) => ().asRight.pure
-      case None => NotUnit.cursor(t)(using Show.fromToString[S]).asLeft.pure
+      case None => NotUnit.cursor(t).asLeft.pure
   end decodeUnit
 
   def numberDecodeNumber[F[_]: Applicative, A](f: Number => A): Decoder[F, Number, A] = map[F, Number, A](f)
 
   def numberDecodeNumberOption[F[_]: Applicative, A: ClassTag](f: Number => Option[A]): Decoder[F, Number, A] =
-    applicative[F, Number, A](t => f(t).toRight(WrongClassTag[A].value(t)(using Show.fromToString[Number])))
+    applicative[F, Number, A](t => f(t).toRight(WrongClassTag[A].value(t)))
 
   def stringDecodeWithNumber[F[_] : Applicative, A: ClassTag](f: Number => A): Decoder[F, String, A] =
     stringDecodeWithNumberOption[F, A](number => Some(f(number)))
@@ -333,14 +339,14 @@ object Decoder extends DecoderDerivation
   private def handleDecodeSeq[F[_], S, A, C[_]](builder: => mutable.Builder[A, C[A]])
                                                (p: PartialFunction[S, F[Either[DecodingFailure, C[A]]]] = PartialFunction.empty)
                                                (f: SuccessCursor[S] => F[Either[DecodingFailure, C[A]]])
-                                               (using applicative: Applicative[F], arrayType: ArrayType[S])
+                                               (using applicative: Applicative[F], arrayType: ArrayType[S], show: Show[S])
   : Decoder[F, Cursor[S], C[A]] =
     case cursor: SuccessCursor[S] if p.isDefinedAt(cursor.value) =>
-      p(cursor.value).map(_.left.map(_.cursor(cursor)(using Show.fromToString[S])))
+      p(cursor.value).map(_.left.map(_.cursor(cursor)))
     case cursor: SuccessCursor[S] => cursor.downArray match
       case arrayCursor: SuccessCursor[S] => f(arrayCursor)
       case arrayCursor: FailedCursor[S] if arrayType.isArray(cursor.value) => builder.result().asRight.pure[F]
-      case arrayCursor: FailedCursor[S] => NotArray.cursor(cursor)(using Show.fromToString[S]).asLeft.pure[F]
+      case arrayCursor: FailedCursor[S] => NotArray.cursor(cursor).asLeft.pure[F]
     case cursor: FailedCursor[S] => cursor.toDecodingFailure.asLeft.pure[F]
   end handleDecodeSeq
 
@@ -357,7 +363,7 @@ object Decoder extends DecoderDerivation
     res.map(_.toEither)
 
   def decodeSeqAS[F[_], S, A, C[_]](builder: => mutable.Builder[A, C[A]])(f: String => F[Either[DecodingFailure, C[A]]])
-                                   (using Applicative[F], Decoder[F, Cursor[S], A], ArrayType[S], StringType[S])
+                                   (using Applicative[F], Decoder[F, Cursor[S], A], ArrayType[S], StringType[S], Show[S])
   : Decoder[F, Cursor[S], C[A]] =
     handleDecodeSeq[F, S, A, C](builder) {
       case value if StringType[S].asString(value).isDefined => StringType[S].asString(value).map(f).get
@@ -365,7 +371,7 @@ object Decoder extends DecoderDerivation
   end decodeSeqAS
 
   def decodeSeq[F[_], S, A, C[_]](builder: => mutable.Builder[A, C[A]])
-                                 (using Applicative[F], Decoder[F, Cursor[S], A], ArrayType[S])
+                                 (using Applicative[F], Decoder[F, Cursor[S], A], ArrayType[S], Show[S])
   : Decoder[F, Cursor[S], C[A]] =
     handleDecodeSeq[F, S, A, C](builder)()(decodeSeqValidated[F, S, A, C](builder)(_))
   end decodeSeq
@@ -374,7 +380,8 @@ object Decoder extends DecoderDerivation
     using
     applicative: Applicative[F],
     decoder: Decoder[F, Cursor[S], A],
-    arrayType: ArrayType[S]
+    arrayType: ArrayType[S],
+    show: Show[S]
   ): Decoder[F, Cursor[S], C[A]] =
     handleDecodeSeq[F, S, A, C](builder)()(arrayCursor =>
       toCursorArray(arrayCursor).traverse[F, Either[DecodingFailure, A]](tt => decoder.decode(tt))
@@ -385,7 +392,8 @@ object Decoder extends DecoderDerivation
     using
     monad: Monad[F],
     decoder: Decoder[F, Cursor[S], A],
-    arrayType: ArrayType[S]
+    arrayType: ArrayType[S],
+    show: Show[S]
   ): Decoder[F, Cursor[S], C[A]] =
     handleDecodeSeq[F, S, A, C](builder)() { arrayCursor =>
       import com.peknight.cats.ext.instances.eitherT.given
@@ -403,7 +411,8 @@ object Decoder extends DecoderDerivation
     using
     applicative: Applicative[F],
     decoder: Decoder[F, Cursor[S], A],
-    arrayType: ArrayType[S]
+    arrayType: ArrayType[S],
+    show: Show[S]
   ): Decoder[F, Cursor[S], N] =
     case cursor: SuccessCursor[S] =>
       val arrayCursor = cursor.downArray
@@ -420,7 +429,8 @@ object Decoder extends DecoderDerivation
     using
     monad: Monad[F],
     decoder: Decoder[F, Cursor[S], A],
-    arrayType: ArrayType[S]
+    arrayType: ArrayType[S],
+    show: Show[S]
   ): Decoder[F, Cursor[S], N] =
     case cursor: SuccessCursor[S] =>
       val arrayCursor = cursor.downArray
@@ -439,12 +449,12 @@ object Decoder extends DecoderDerivation
     applicative: Applicative[F],
     keyDecoder: Decoder[F, String, K],
     valueDecoder: Decoder[F, Cursor[S], V],
-    objectType: ObjectType[S]
+    objectType: ObjectType[S],
+    show: Show[S]
   ): Decoder[F, Cursor[S], M[K, V]] =
     case cursor: SuccessCursor[S] => objectType.asObject(cursor.value) match
       case Some(o) =>
         import com.peknight.cats.ext.instances.applicative.given
-        given Show[S] = Show.fromToString
         type ValidatedF[T] = F[Validated[DecodingFailure, T]]
         val res: F[Validated[DecodingFailure, M[K, V]]] =
           objectType.keys(o).toList.traverse[ValidatedF, (K, V)] { key =>
@@ -457,7 +467,7 @@ object Decoder extends DecoderDerivation
             }
           }.map(_.foldLeft(builder)(_ += _).result())
         res.map(_.toEither)
-      case None => NotObject.cursor(cursor)(using Show.fromToString[S]).asLeft.pure[F]
+      case None => NotObject.cursor(cursor).asLeft.pure[F]
     case cursor: FailedCursor[S] => cursor.toDecodingFailure.asLeft.pure[F]
   end decodeMap
 
@@ -466,7 +476,8 @@ object Decoder extends DecoderDerivation
     monad: Monad[F],
     keyDecoder: Decoder[F, String, K],
     valueDecoder: Decoder[F, Cursor[S], V],
-    objectType: ObjectType[S]
+    objectType: ObjectType[S],
+    show: Show[S]
   ): Decoder[F, Cursor[S], M[K, V]] =
     case cursor: SuccessCursor[S] => objectType.asObject(cursor.value) match
       case Some(o) =>
@@ -475,11 +486,11 @@ object Decoder extends DecoderDerivation
         objectType.keys(o).toList.foldLeftM[EitherF, mutable.Builder[(K, V), M[K, V]]](builder) {
           (builder, key) =>
             val c = cursor.downField(key)
-            Monad[EitherF].flatMap(keyDecoder.decode(key).map(_.left.map(_.cursor(c)(using Show.fromToString[S])))) { k =>
+            Monad[EitherF].flatMap(keyDecoder.decode(key).map(_.left.map(_.cursor(c)))) { k =>
               Monad[EitherF].map(valueDecoder.decode(c))(v => builder += ((k, v)))
             }
         }.map(_.result())
-      case _ => NotObject.cursor(cursor)(using Show.fromToString[S]).asLeft.pure[F]
+      case _ => NotObject.cursor(cursor).asLeft.pure[F]
     case cursor: FailedCursor[S] => cursor.toDecodingFailure.asLeft.pure[F]
   end decodeMapWithMonad
 
@@ -489,8 +500,8 @@ object Decoder extends DecoderDerivation
     decodeA: Decoder[F, Cursor[S], A],
     decodeB: Decoder[F, Cursor[S], B],
     objectType: ObjectType[S],
+    show: Show[S]
   ): Decoder[F, Cursor[S], Either[A, B]] =
-    given Show[S] = Show.fromToString
     cursor[F, S, Either[A, B]] { t => (t.downField(leftKey), t.downField(rightKey)) match
       case (lCursor: SuccessCursor[S], rCursor: SuccessCursor[S]) =>
         NotSingleKeyObject(List(leftKey, rightKey)).cursor(t).asLeft.pure
@@ -506,30 +517,29 @@ object Decoder extends DecoderDerivation
     decodeE: Decoder[F, Cursor[S], E],
     decodeA: Decoder[F, Cursor[S], A],
     objectType: ObjectType[S],
+    show: Show[S]
   ): Decoder[F, Cursor[S], Validated[E, A]] =
     cursor[F, S, Validated[E, A]] { t => (t.downField(failureKey), t.downField(successKey)) match
         case (fCursor: SuccessCursor[S], sCursor: SuccessCursor[S]) =>
-          NotSingleKeyObject(List(failureKey, successKey)).cursor(t)(using Show.fromToString[S]).asLeft.pure
+          NotSingleKeyObject(List(failureKey, successKey)).cursor(t).asLeft.pure
         case (fCursor: SuccessCursor[S], sCursor: FailedCursor[S]) => decodeE.decode(fCursor).map(_.map(_.invalid))
         case (fCursor: FailedCursor[S], sCursor: SuccessCursor[S]) => decodeA.decode(sCursor).map(_.map(_.valid))
         case (fCursor: FailedCursor[S], sCursor: FailedCursor[S]) =>
-          MissingField.cursor(t)(using Show.fromToString[S]).asLeft.pure
+          MissingField.cursor(t).asLeft.pure
     }
 
-  def decodeB[F[_], S](using applicative: Applicative[F], booleanType: BooleanType[S])
-  : Decoder[F, Cursor[S], Boolean] =
+  def decodeB[F[_]: Applicative, S: {BooleanType, Show}]: Decoder[F, Cursor[S], Boolean] =
     cursorValueApplicative[F, S, Boolean] { t =>
-      booleanType.asBoolean(t) match
+      BooleanType[S].asBoolean(t) match
         case Some(b) => b.asRight
         case None => WrongClassTag[Boolean].asLeft
     }
 
-  def decodeBS[F[_], S](using applicative: Applicative[F], booleanType: BooleanType[S], stringType: StringType[S])
-  : Decoder[F, Cursor[S], Boolean] =
+  def decodeBS[F[_]: Applicative, S: {BooleanType, StringType, Show}]: Decoder[F, Cursor[S], Boolean] =
     cursorValue[F, S, Boolean] { t =>
-      booleanType.asBoolean(t) match
+      BooleanType[S].asBoolean(t) match
         case Some(b) => b.asRight.pure[F]
-        case None => stringType.asString(t) match
+        case None => StringType[S].asString(t) match
           case Some(s) => mapOption(toBooleanOption).decode(s)
           case None => WrongClassTag[Boolean].asLeft.pure[F]
     }
@@ -538,6 +548,7 @@ object Decoder extends DecoderDerivation
     using
     applicative: Applicative[F],
     numberType: NumberType[S],
+    show: Show[S],
     classTag: ClassTag[A]
   ): Decoder[F, Cursor[S], A] =
     cursorValue[F, S, A] { t =>
@@ -551,6 +562,7 @@ object Decoder extends DecoderDerivation
     applicative: Applicative[F],
     numberType: NumberType[S],
     stringType: StringType[S],
+    show: Show[S],
     classTag: ClassTag[A]
   ): Decoder[F, Cursor[S], A] =
     cursorValue[F, S, A] { t =>
@@ -564,7 +576,8 @@ object Decoder extends DecoderDerivation
   def decodeO[F[_], S, A](using decoder: Decoder[F, Object[S], A])(
     using
     applicative: Applicative[F],
-    objectType: ObjectType.Aux[S, Object[S]]
+    objectType: ObjectType.Aux[S, Object[S]],
+    show: Show[S]
   ): Decoder[F, Cursor[S], A] =
     cursorValue[F, S, A] { t =>
       objectType.asObject(t) match
@@ -576,9 +589,9 @@ object Decoder extends DecoderDerivation
     using
     applicative: Applicative[F],
     stringType: StringType[S],
+    show: Show[S],
     classTag: ClassTag[A]
   ): Decoder[F, Cursor[S], A] =
-    given Show[S] = Show.fromToString[S]
     cursor[F, S, A] { t =>
       StringType[S].asString(t.value) match
         case Some(s) => decoder.decode(s).map(_.left.map(_.cursor(t)))
@@ -587,7 +600,6 @@ object Decoder extends DecoderDerivation
 
   def decodeK[F[_], A](using decoder: Decoder[F, String, A], reader: Reader[F, String])(using Monad[F])
   : Decoder[F, Key, A] =
-    given Show[Key] = Show.fromToString[Key]
     Decoder.instance[F, Key, A] { key =>
       reader.run(key).flatMap {
         case Right(Some(value)) => decoder.decode(value).map(_.left.map(_.value(key)))

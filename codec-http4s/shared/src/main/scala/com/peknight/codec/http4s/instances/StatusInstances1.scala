@@ -16,17 +16,17 @@ trait StatusInstances1:
 
   given numberDecodeStatus[F[_]: Applicative]: Decoder[F, Number, Status] =
     Decoder.applicative[F, Number, Status] { number =>
-      number.toInt.toRight(WrongClassTag[Status].value(number)(using Show.fromToString[Number]))
+      number.toInt.toRight(WrongClassTag[Status].value(number))
         .flatMap(code => Status.fromInt(code))
         .left.map(DecodingFailure.apply)
     }
 
-  given decodeStatusN[F[_]: Applicative, S: NumberType]: Decoder[F, Cursor[S], Status] =
+  given decodeStatusN[F[_]: Applicative, S: {NumberType, Show}]: Decoder[F, Cursor[S], Status] =
     Decoder.decodeN[F, S, Status]
 
   given stringDecodeStatus[F[_]: Applicative]: Decoder[F, String, Status] =
     Decoder.stringDecodeWithNumberDecoder[F, Status]
 
-  given decodeStatusS[F[_]: Applicative, S: StringType]: Decoder[F, Cursor[S], Status] =
+  given decodeStatusS[F[_]: Applicative, S: {StringType, Show}]: Decoder[F, Cursor[S], Status] =
     Decoder.decodeS[F, S, Status]
 end StatusInstances1

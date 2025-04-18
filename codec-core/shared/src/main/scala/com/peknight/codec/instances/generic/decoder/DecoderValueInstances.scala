@@ -1,6 +1,6 @@
 package com.peknight.codec.instances.generic.decoder
 
-import cats.Applicative
+import cats.{Applicative, Show}
 import com.peknight.codec.Decoder
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.number.Number
@@ -16,12 +16,13 @@ trait DecoderValueInstances extends DecoderValueInstances1:
     applicative: Applicative[F],
     numberType: NumberType[S],
     stringType: StringType[S],
-    classTag: ClassTag[A],
     decoder: Decoder[F, Number, A],
+    show: Show[S],
+    classTag: ClassTag[A],
   ): MidPriority[Decoder[F, Cursor[S], A]] =
     MidPriority(Decoder.decodeNS[F, S, A])
     
-  given stringDecodeWithNumberDecoderM[F[_], A](using applicative:  Applicative[F], decoder: Decoder[F, Number, A])
+  given stringDecodeWithNumberDecoderM[F[_], A](using applicative: Applicative[F], decoder: Decoder[F, Number, A])
   : MidPriority[Decoder[F, String, A]] =
     MidPriority(Decoder.stringDecodeWithNumberDecoder[F, A])
 end DecoderValueInstances

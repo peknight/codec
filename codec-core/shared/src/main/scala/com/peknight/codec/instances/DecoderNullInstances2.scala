@@ -16,9 +16,9 @@ trait DecoderNullInstances2:
     using
     applicative: Applicative[F],
     decoder: Decoder[F, Cursor[S], A],
-    objectType: ObjectType[S]
+    objectType: ObjectType[S],
+    show: Show[S]
   ): Decoder[F, Cursor[S], Option[A]] =
-    given Show[S] = Show.fromToString
     Decoder.instance[F, Cursor[S], Option[A]] {
       case cursor: SuccessCursor[S] if f.isDefinedAt(cursor.value) => f(cursor.value).map(_.left.map(_.cursor(cursor)))
       case cursor: SuccessCursor[S] => decoder.decode(cursor).map(_.map(_.some))
@@ -31,7 +31,8 @@ trait DecoderNullInstances2:
     using
     applicative: Applicative[F],
     decoder: Decoder[F, Cursor[S], A],
-    objectType: ObjectType[S]
+    objectType: ObjectType[S],
+    show: Show[S]
   ): Decoder[F, Cursor[S], Option[A]] =
     handleDecodeOptionO[F, S, A]()
   end decodeOptionO
@@ -40,9 +41,9 @@ trait DecoderNullInstances2:
     using
     applicative: Applicative[F],
     decoder: Decoder[F, Cursor[S], A],
-    arrayType: ArrayType[S]
+    arrayType: ArrayType[S],
+    show: Show[S]
   ): Decoder[F, Cursor[S], Option[A]] =
-    given Show[S] = Show.fromToString
     Decoder.instance[F, Cursor[S], Option[A]] {
       case cursor: SuccessCursor[S] if f.isDefinedAt(cursor.value) => f(cursor.value).map(_.left.map(_.cursor(cursor)))
       case cursor: SuccessCursor[S] => decoder.decode(cursor).map(_.map(_.some))
@@ -55,7 +56,8 @@ trait DecoderNullInstances2:
     using
     applicative: Applicative[F],
     decoder: Decoder[F, Cursor[S], A],
-    arrayType: ArrayType[S]
+    arrayType: ArrayType[S],
+    show: Show[S]
   ): Decoder[F, Cursor[S], Option[A]] =
     handleDecodeOptionA[F, S, A]()
   end decodeOptionA
@@ -64,9 +66,9 @@ trait DecoderNullInstances2:
     using
     applicative: Applicative[F],
     decoder: Decoder[F, Cursor[S], A],
-    nullType: NullType[S]
+    nullType: NullType[S],
+    show: Show[S]
   ): Decoder[F, Cursor[S], Option[A]] =
-    given Show[S] = Show.fromToString
     Decoder.instance[F, Cursor[S], Option[A]] {
       case cursor: SuccessCursor[S] if nullType.isNull(cursor.value) => none.asRight.pure
       case cursor: SuccessCursor[S] if f.isDefinedAt(cursor.value) => f(cursor.value).map(_.left.map(_.cursor(cursor)))
@@ -79,14 +81,13 @@ trait DecoderNullInstances2:
     using
     applicative: Applicative[F],
     decoder: Decoder[F, Cursor[S], A],
-    nullType: NullType[S]
+    nullType: NullType[S],
+    show: Show[S]
   ): Decoder[F, Cursor[S], Option[A]] =
     handleDecodeOptionU[F, S, A]()
   end decodeOptionU
 
-  given decodeNoneO[F[_], S](using applicative: Applicative[F], objectType: ObjectType[S])
-  : Decoder[F, Cursor[S], None.type] =
-    given Show[S] = Show.fromToString
+  given decodeNoneO[F[_]: Applicative, S: {ObjectType, Show}]: Decoder[F, Cursor[S], None.type] =
     Decoder.applicative[F, Cursor[S], None.type] {
       case cursor: SuccessCursor[S] => NotNull.cursor(cursor).asLeft
       case cursor: FailedCursor[S] if !cursor.incorrectFocusO => None.asRight
@@ -94,9 +95,7 @@ trait DecoderNullInstances2:
     }
   end decodeNoneO
 
-  given decodeNoneA[F[_], S](using applicative: Applicative[F], arrayType: ArrayType[S])
-  : Decoder[F, Cursor[S], None.type] =
-    given Show[S] = Show.fromToString
+  given decodeNoneA[F[_]: Applicative, S: {ArrayType, Show}]: Decoder[F, Cursor[S], None.type] =
     Decoder.applicative[F, Cursor[S], None.type] {
       case cursor: SuccessCursor[S] => NotNull.cursor(cursor).asLeft
       case cursor: FailedCursor[S] if !cursor.incorrectFocusA => None.asRight
@@ -104,11 +103,9 @@ trait DecoderNullInstances2:
     }
   end decodeNoneA
 
-  given decodeNoneU[F[_], S](using applicative: Applicative[F], nullType: NullType[S])
-  : Decoder[F, Cursor[S], None.type] =
-    given Show[S] = Show.fromToString
+  given decodeNoneU[F[_]: Applicative, S: {NullType, Show}]: Decoder[F, Cursor[S], None.type] =
     Decoder.applicative[F, Cursor[S], None.type] {
-      case cursor: SuccessCursor[S] if nullType.isNull(cursor.value) => None.asRight
+      case cursor: SuccessCursor[S] if NullType[S].isNull(cursor.value) => None.asRight
       case cursor: SuccessCursor[S] => NotNull.cursor(cursor).asLeft
       case cursor: FailedCursor[S] => MissingField.cursor(cursor).asLeft
     }

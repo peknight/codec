@@ -1,6 +1,6 @@
 package com.peknight.codec.base
 
-import cats.Applicative
+import cats.{Applicative, Show}
 import cats.parse.{Parser, Parser0}
 import com.peknight.codec.Codec
 import com.peknight.codec.cursor.Cursor
@@ -26,7 +26,7 @@ trait BasePlatform[A <: Alphabet, B <: Base : ClassTag]:
       fromBaseDescriptiveWithAlphabet(t, alphabet).left.map(DecodingFailure.apply)
     )
 
-  def codecBaseStringSWithAlphabet[F[_]: Applicative, S: StringType](alphabet: A)
+  def codecBaseStringSWithAlphabet[F[_]: Applicative, S: {StringType, Show}](alphabet: A)
   : Codec[F, S, Cursor[S], ByteVector] =
     given Codec[F, String, String, ByteVector] = stringCodecBaseStringWithAlphabet[F](alphabet)
     Codec.codecS[F, S, ByteVector]
@@ -47,7 +47,7 @@ trait BasePlatform[A <: Alphabet, B <: Base : ClassTag]:
       baseParserWithAlphabet(alphabet).parseAll(t).left.map(DecodingFailure.apply)
     )
 
-  def codecBaseSWithAlphabet[F[_]: Applicative, S: StringType](alphabet: A): Codec[F, S, Cursor[S], B] =
+  def codecBaseSWithAlphabet[F[_]: Applicative, S: {StringType, Show}](alphabet: A): Codec[F, S, Cursor[S], B] =
     given Codec[F, String, String, B] = stringCodecBaseWithAlphabet[F](alphabet)
     Codec.codecS[F, S, B]
 

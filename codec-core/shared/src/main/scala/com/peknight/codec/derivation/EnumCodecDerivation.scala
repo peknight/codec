@@ -1,6 +1,6 @@
 package com.peknight.codec.derivation
 
-import cats.{Applicative, Functor}
+import cats.{Applicative, Functor, Show}
 import com.peknight.codec.config.Config
 import com.peknight.codec.error.DecodingFailure
 import com.peknight.codec.{Codec, Decoder, Encoder}
@@ -21,13 +21,14 @@ trait EnumCodecDerivation:
     functor: Functor[F],
     stringEncoder: Encoder[F, S, String],
     stringDecoder: Decoder[F, T, String],
+    show: Show[T],
     generic: Generic.Sum[A]
   ): Codec[F, S, T, A] =
     val singletons = summonAllSingletons[generic.Repr](generic.label)
     enumCodecInstance[F, S, T, A](
       a => EnumEncoderDerivation.encodeEnum(a, config, stringEncoder, generic)
     )(
-      t => EnumDecoderDerivation.decodeEnum[F, T, A](t, config, stringDecoder, generic)(singletons)
+      t => EnumDecoderDerivation.decodeEnum[F, T, A](t, config, stringDecoder, generic)(singletons)(_.value(_))
     )(
       self => EnumDecoderDerivation.enumDecodersDict[F, T, A](self, config, generic)
     )
@@ -36,12 +37,13 @@ trait EnumCodecDerivation:
     functor: Functor[F],
     stringEncoder: Encoder[F, S, String],
     stringDecoder: Decoder[F, T, String],
+    show: Show[T],
     generic: Generic.Sum[A]
   ): Codec[F, S, T, A] =
     enumCodecInstance[F, S, T, A](
       a => EnumEncoderDerivation.encodeEnum(a, config, stringEncoder, generic)
     )(
-      t => EnumDecoderDerivation.unsafeDecodeEnum[F, T, A, generic.Repr](t, config, stringDecoder, generic)
+      t => EnumDecoderDerivation.unsafeDecodeEnum[F, T, A, generic.Repr](t, config, stringDecoder, show, generic)
     )(
       self => EnumDecoderDerivation.enumDecodersDict[F, T, A](self, config, generic)
     )

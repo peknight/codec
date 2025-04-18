@@ -25,21 +25,22 @@ trait DecoderDerivation:
     nullType: NullType[S],
     stringDecoder: Decoder[F, Cursor[S], String],
     stringOptionDecoder: Decoder[F, Cursor[S], Option[String]],
+    show: Show[S],
     instances: => Generic.Instances[[X] =>> Decoder[F, Cursor[S], X], A]
   ): Decoder[F, Cursor[S], A] =
     instances.derive(
-      inst ?=> derivedProduct[F, S, A](using config)(using monad, objectType, nullType, inst),
-      inst ?=> derivedSum[F, S, A](using config)(using monad, objectType, stringDecoder, stringOptionDecoder,
-        inst)
+      inst ?=> derivedProduct[F, S, A](using config)(using monad, objectType, nullType, show, inst),
+      inst ?=> derivedSum[F, S, A](using config)(using monad, objectType, stringDecoder, stringOptionDecoder, show, inst)
     )
 
   def derivedProduct[F[_], S, A](using config: DecoderConfig)(using
     monad: Monad[F],
     objectType: ObjectType[S],
     nullType: NullType[S],
+    show: Show[S],
     instances: => Generic.Product.Instances[[X] =>> Decoder[F, Cursor[S], X], A]
   ): Decoder[F, Cursor[S], A] =
-    decodeProduct(_, config, objectType, nullType, instances)
+    decodeProduct(_, config, objectType, nullType, show, instances)
   end derivedProduct
 
   def derivedSum[F[_], S, A](using config: DecoderConfig)(using
@@ -47,9 +48,10 @@ trait DecoderDerivation:
     objectType: ObjectType[S],
     stringDecoder: Decoder[F, Cursor[S], String],
     stringOptionDecoder: Decoder[F, Cursor[S], Option[String]],
+    show: Show[S],
     instances: => Generic.Sum.Instances[[X] =>> Decoder[F, Cursor[S], X], A]
   ): Decoder[F, Cursor[S], A] =
-    handleDerivedSum[F, Cursor[S], A](decodeSum(_, config, objectType, stringOptionDecoder, instances))
+    handleDerivedSum[F, Cursor[S], A](decodeSum(_, config, objectType, stringOptionDecoder, show, instances))(_.cursor(_))
 
   def derivedByKey[F[_], A](using config: DecoderConfig)(using
     monad: Monad[F],
@@ -77,16 +79,16 @@ trait DecoderDerivation:
     stringOptionDecoder: Decoder[F, Key, Option[String]],
     instances: => Generic.Sum.Instances[[X] =>> Decoder[F, Key, X], A]
   ): Decoder[F, Key, A] =
-    handleDerivedSum[F, Key, A](decodeSumByKey(_, config, stringOptionDecoder, instances))
+    handleDerivedSum[F, Key, A](decodeSumByKey(_, config, stringOptionDecoder, instances))(_.value(_))
 
   private[derivation] def decodeProduct[F[_]: Monad, S, A](
     cursor: Cursor[S],
     config: DecoderConfig,
     objectType: ObjectType[S],
     nullType: NullType[S],
+    show: Show[S],
     instances: => Generic.Product.Instances[[X] =>> Decoder[F, Cursor[S], X], A]
   ): F[Either[DecodingFailure, A]] =
-    given Show[S] = Show.fromToString
     val labels = instances.labels.toList.asInstanceOf[List[String]]
     if cursor.focus.exists(objectType.isObject) then
       if config.strictDecoding then
@@ -98,12 +100,13 @@ trait DecoderDerivation:
           val unexpectedFields = cursor.focus.flatMap(objectType.asObject).map(o => objectType.keys(o).toList)
             .map(_.filterNot(expectedFieldsSet)).getOrElse(Nil)
           if unexpectedFields.nonEmpty then
-            UnexpectedFields(unexpectedFields, expectedFields).label(instances.label).cursor(cursor).asLeft[A].pure[F]
+            UnexpectedFields(unexpectedFields, expectedFields).label(instances.label)
+              .cursor(cursor)(using show).asLeft[A].pure[F]
           else
             handleDecodeProduct(cursor, labels, config, objectType, nullType, instances)
       else
         handleDecodeProduct(cursor, labels, config, objectType, nullType, instances)
-    else NotObject.cursor(cursor).asLeft[A].pure[F]
+    else NotObject.cursor(cursor)(using show).asLeft[A].pure[F]
 
   private def handleDecodeProduct[F[_]: Monad, S, A](
     cursor: Cursor[S],
@@ -159,23 +162,21 @@ trait DecoderDerivation:
         case (_, result, Some(d)) => if keyExists then result.toValidated else d.valid[DecodingFailure]
     }
 
-  private def handleDerivedSum[F[_], T, A](decodeSum: T => F[Either[DecodingFailure, A]])(
-    using config: DecoderConfig
-  )(using
-    monad: Monad[F],
-    stringDecoder: Decoder[F, T, String],
-    stringOptionDecoder: Decoder[F, T, Option[String]],
-    instances: => Generic.Sum.Instances[[X] =>> Decoder[F, T, X], A]
-  ): Decoder[F, T, A] =
+  private def handleDerivedSum[F[_], T, A](decodeSum: T => F[Either[DecodingFailure, A]])
+                                          (mapEnumError: (DecodingFailure, T) => DecodingFailure)
+                                          (using config: DecoderConfig)
+                                          (using monad: Monad[F], stringDecoder: Decoder[F, T, String],
+                                           stringOptionDecoder: Decoder[F, T, Option[String]],
+                                           instances: => Generic.Sum.Instances[[X] =>> Decoder[F, T, X], A])
+  : Decoder[F, T, A] =
     val generic: Generic.Sum[A] = instances.generic
     generic.singletons.sequence match
       case Some(singletons) =>
         new EnumDecoder[F, T, A]:
           def decoders: Map[String, Decoder[F, T, ?]] =
             EnumDecoderDerivation.enumDecodersDict[F, T, A](this, config, instances.generic)
-
           def decode(t: T): F[Either[DecodingFailure, A]] =
-            EnumDecoderDerivation.decodeEnum(t, config, stringDecoder, generic)(singletons)
+            EnumDecoderDerivation.decodeEnum(t, config, stringDecoder, generic)(singletons)(mapEnumError)
       case _ =>
         new SumDecoder[F, T, A]:
           def decoders: Map[String, Decoder[F, T, ?]] =
@@ -190,27 +191,27 @@ trait DecoderDerivation:
     config: DecoderConfig,
     objectType: ObjectType[S],
     stringOptionDecoder: Decoder[F, Cursor[S], Option[String]],
+    show: Show[S],
     instances: => Generic.Sum.Instances[[X] =>> Decoder[F, Cursor[S], X], A]
   ): F[Either[DecodingFailure, A]] =
-    given Show[S] = Show.fromToString
     config.discriminator match
       case Some(discriminator) =>
         val discriminatorT = cursor.downField(discriminator)(using objectType)
         decodeSumWithDiscriminator[F, Cursor[S], A](cursor, discriminator, discriminatorT, config,
-          stringOptionDecoder, instances)(_.cursor(_))
+          stringOptionDecoder, instances)(_.cursor(_)(using show))
       case _ =>
         cursor.focus.flatMap(objectType.asObject).map(o => objectType.keys(o).toList) match
-          case None => NotObject.cursor(cursor).asLeft[A].pure[F]
-          case Some(Nil) => NonEmptyObject.label(instances.label).cursor(cursor).asLeft[A].pure[F]
+          case None => NotObject.cursor(cursor)(using show).asLeft[A].pure[F]
+          case Some(Nil) => NonEmptyObject.label(instances.label).cursor(cursor)(using show).asLeft[A].pure[F]
           case Some(sumTypeName :: tail) =>
             if tail.nonEmpty && config.strictDecoding then
               val constructorNames = instances.labels.toList.asInstanceOf[List[String]]
                 .flatMap(label => config.transformConstructorNames(label).toList)
-              NotSingleKeyObject(constructorNames).label(instances.label).cursor(cursor).asLeft[A].pure[F]
+              NotSingleKeyObject(constructorNames).label(instances.label).cursor(cursor)(using show).asLeft[A].pure[F]
             else
               val downCursor = cursor.downField(sumTypeName)(using objectType)
               decodersDict(config, instances).get(sumTypeName).fold(
-                NoSuchType(sumTypeName).label(instances.label).cursor(downCursor).asLeft[A].pure[F]
+                NoSuchType(sumTypeName).label(instances.label).cursor(downCursor)(using show).asLeft[A].pure[F]
               )(_.asInstanceOf[Decoder[F, Cursor[S], A]].decode(downCursor))
   end decodeSum
 
@@ -220,7 +221,6 @@ trait DecoderDerivation:
     stringOptionDecoder: Decoder[F, Key, Option[String]],
     instances: => Generic.Sum.Instances[[X] =>> Decoder[F, Key, X], A]
   ): F[Either[DecodingFailure, A]] =
-    given Show[Key] = Show.fromToString[Key]
     config.discriminator match
       case Some(discriminator) =>
         val discriminatorT = Key(key.keys :+ discriminator)

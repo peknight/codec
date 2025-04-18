@@ -6,7 +6,8 @@ import cats.syntax.apply.*
 import cats.syntax.foldable.*
 import cats.syntax.functor.*
 import cats.syntax.semigroup.*
-import cats.{Applicative, Foldable, Monad, Semigroup}
+import cats.syntax.show.*
+import cats.{Applicative, Foldable, Monad, Semigroup, Show}
 
 trait Object[S] extends Serializable:
   def applyUnsafe(key: String): S = apply(key).getOrElse(throw new NoSuchElementException(s"key not found: $key"))
@@ -91,4 +92,8 @@ object Object:
     def foldLeftM[G[_]: Monad, B](b: B)(f: (B, (String, S)) => G[B]): G[B] =
       orderedKeys.foldLeftM[G, B](b)((z, key) => f(z, (key, fields(key))))
   end MapAndVectorObject
+  given showObject[S](using Show[S]): Show[Object[S]] with
+    def show(t: Object[S]): String =
+      t.toIterable.map((key, value) => s"$key=${value.show}").mkString("Object(", ",", ")")
+  end showObject
 end Object

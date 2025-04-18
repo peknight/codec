@@ -22,11 +22,12 @@ trait EnumDecoderDerivation:
   inline def derived[F[_], T, A](using config: Config)(using
     functor: Functor[F],
     stringDecoder: Decoder[F, T, String],
+    show: Show[T],
     generic: Generic.Sum[A]
   ): EnumDecoder[F, T, A] =
     val singletons = summonAllSingletons[generic.Repr](generic.label)
     enumDecoderInstance[F, T, A](
-      t => decodeEnum[F, T, A](t, config, stringDecoder, generic)(singletons)
+      t => decodeEnum[F, T, A](t, config, stringDecoder, generic)(singletons)(_.value(_))
     )(
       self => enumDecodersDict[F, T, A](self, config, generic)
     )
@@ -35,10 +36,11 @@ trait EnumDecoderDerivation:
   def unsafeDerived[F[_], T, A](using config: Config)(using
     functor: Functor[F],
     stringDecoder: Decoder[F, T, String],
+    show: Show[T],
     generic: Generic.Sum[A]
   ): EnumDecoder[F, T, A] =
     enumDecoderInstance[F, T, A](
-      t => unsafeDecodeEnum[F, T, A, generic.Repr](t, config, stringDecoder, generic)
+      t => unsafeDecodeEnum[F, T, A, generic.Repr](t, config, stringDecoder, show, generic)
     )(
       self => enumDecodersDict[F, T, A](self, config, generic)
     )
@@ -51,10 +53,10 @@ trait EnumDecoderDerivation:
     generic: Generic.Sum[A]
   )(
     singletons: generic.Repr
-  ): F[Either[DecodingFailure, A]] =
+  )(mapEnumError: (DecodingFailure, T) => DecodingFailure): F[Either[DecodingFailure, A]] =
     stringDecoder.decode(t).map {
       case Right(caseName) => 
-        stringDecodeEnum[Id, A](caseName, config, generic)(singletons).left.map(_.value(t)(using Show.fromToString[T]))
+        stringDecodeEnum[Id, A](caseName, config, generic)(singletons).left.map(mapEnumError(_, t))
       case Left(e) => e.asLeft[A]
     }
 
@@ -62,11 +64,12 @@ trait EnumDecoderDerivation:
     t: T,
     config: Config,
     stringDecoder: Decoder[F, T, String],
+    show: Show[T],
     generic: Generic.Sum[A],
   ): F[Either[DecodingFailure, A]] =
     stringDecoder.decode(t).map {
       case Right(caseName) =>
-        unsafeStringDecodeEnum[Id, A](caseName, config, generic).left.map(_.value(t)(using Show.fromToString[T]))
+        unsafeStringDecodeEnum[Id, A](caseName, config, generic).left.map(_.value(t)(using show))
       case Left(e) => e.asLeft[A]
     }
 

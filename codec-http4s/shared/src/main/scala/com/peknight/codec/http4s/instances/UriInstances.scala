@@ -1,6 +1,6 @@
 package com.peknight.codec.http4s.instances
 
-import cats.{Applicative, Id}
+import cats.{Applicative, Id, Show}
 import com.peknight.codec.Codec
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.http4s.iso.decodingFailureIsomorphism0
@@ -13,6 +13,6 @@ trait UriInstances:
       t => Uri.fromString(t).left.map(decodingFailureIsomorphism0[Id](None).from)
     )
 
-  given codecUriS[F[_]: Applicative, S: StringType]: Codec[F, S, Cursor[S], Uri] = Codec.codecS[F, S, Uri]
+  given codecUriS[F[_]: Applicative, S: {StringType, Show}]: Codec[F, S, Cursor[S], Uri] = Codec.codecS[F, S, Uri]
 end UriInstances
 object UriInstances extends UriInstances

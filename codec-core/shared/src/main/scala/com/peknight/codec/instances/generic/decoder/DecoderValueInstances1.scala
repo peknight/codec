@@ -1,6 +1,6 @@
 package com.peknight.codec.instances.generic.decoder
 
-import cats.Applicative
+import cats.{Applicative, Show}
 import com.peknight.codec.Decoder
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.number.Number
@@ -14,8 +14,9 @@ trait DecoderValueInstances1:
     using
     applicative: Applicative[F],
     stringType: StringType[S],
-    classTag: ClassTag[A],
-    decoder: Decoder[F, String, A]
+    decoder: Decoder[F, String, A],
+    show: Show[S],
+    classTag: ClassTag[A]
   ): MidPriority[Decoder[F, Cursor[S], A]] =
     MidPriority(Decoder.decodeS[F, S, A])
 
@@ -23,8 +24,9 @@ trait DecoderValueInstances1:
     using
     applicative: Applicative[F],
     numberType: NumberType[S],
-    classTag: ClassTag[A],
-    decoder: Decoder[F, Number, A]
+    decoder: Decoder[F, Number, A],
+    show: Show[S],
+    classTag: ClassTag[A]
   ): MidPriority[Decoder[F, Cursor[S], A]] =
     MidPriority(Decoder.decodeN[F, S, A])
 end DecoderValueInstances1

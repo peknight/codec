@@ -1,6 +1,6 @@
 package com.peknight.codec.instances.generic.decoder
 
-import cats.Monad
+import cats.{Monad, Show}
 import com.peknight.codec.Decoder
 import com.peknight.codec.config.DecoderConfig
 import com.peknight.codec.cursor.Cursor
@@ -16,6 +16,7 @@ trait DecoderDerivationInstances:
     nullType: NullType[S],
     stringDecoder: Decoder[F, Cursor[S], String],
     stringOptionDecoder: Decoder[F, Cursor[S], Option[String]],
+    show: Show[S],
     instances: => Generic.Instances[[X] =>> Decoder[F, Cursor[S], X], A]
   ): LowPriority[Decoder[F, Cursor[S], A]] =
     LowPriority(Decoder.derived[F, S, A])

@@ -234,8 +234,7 @@ sealed trait Cursor[S]:
   def replay(history: List[CursorOp])(using ObjectType[S], ArrayType[S]): Cursor[S] =
     history.foldRight(this)((op, c) => c.replayOne(op))
 
-  def toDecodingFailure: DecodingFailure =
-    given Show[S] = Show.fromToString
+  def toDecodingFailure(using Show[S]): DecodingFailure =
     this match
       case cursor: FailedCursor[S] if cursor.missingField => MissingField.cursor(this)
       case _ => CursorFailure.cursor(this)

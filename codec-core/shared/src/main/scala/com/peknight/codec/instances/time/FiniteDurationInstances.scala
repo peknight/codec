@@ -1,6 +1,6 @@
 package com.peknight.codec.instances.time
 
-import cats.Applicative
+import cats.{Applicative, Show}
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.number.Number
 import com.peknight.codec.sum.{NumberType, StringType}
@@ -30,13 +30,13 @@ trait FiniteDurationInstances:
   def stringDecodeFiniteDurationOfSeconds[F[_] : Applicative]: Decoder[F, String, FiniteDuration] =
     Decoder.stringDecodeWithNumberDecoder[F, FiniteDuration](using numberDecodeFiniteDurationOfSeconds)
 
-  def decodeFiniteDurationOfSecondsN[F[_] : Applicative, S: NumberType]: Decoder[F, Cursor[S], FiniteDuration] =
+  def decodeFiniteDurationOfSecondsN[F[_] : Applicative, S: {NumberType, Show}]: Decoder[F, Cursor[S], FiniteDuration] =
     Decoder.decodeN[F, S, FiniteDuration](using numberDecodeFiniteDurationOfSeconds)
 
-  def decodeFiniteDurationOfSecondsS[F[_] : Applicative, S: StringType]: Decoder[F, Cursor[S], FiniteDuration] =
+  def decodeFiniteDurationOfSecondsS[F[_] : Applicative, S: {StringType, Show}]: Decoder[F, Cursor[S], FiniteDuration] =
     Decoder.decodeS[F, S, FiniteDuration](using stringDecodeFiniteDurationOfSeconds)
 
-  def decodeFiniteDurationOfSecondsNS[F[_] : Applicative, S: {NumberType, StringType}]
+  def decodeFiniteDurationOfSecondsNS[F[_] : Applicative, S: {NumberType, StringType, Show}]
   : Decoder[F, Cursor[S], FiniteDuration] =
     Decoder.decodeNS[F, S, FiniteDuration](using numberDecodeFiniteDurationOfSeconds)
 
@@ -48,13 +48,13 @@ trait FiniteDurationInstances:
     Codec[F, String, String, FiniteDuration](using stringEncodeFiniteDurationOfSeconds, 
       stringDecodeFiniteDurationOfSeconds)
 
-  def codecFiniteDurationOfSecondsN[F[_] : Applicative, S: NumberType]: Codec[F, S, Cursor[S], FiniteDuration] =
+  def codecFiniteDurationOfSecondsN[F[_] : Applicative, S: {NumberType, Show}]: Codec[F, S, Cursor[S], FiniteDuration] =
     Codec[F, S, Cursor[S], FiniteDuration](using encodeFiniteDurationOfSecondsN, decodeFiniteDurationOfSecondsN)
 
-  def codecFiniteDurationOfSecondsS[F[_] : Applicative, S: StringType]: Codec[F, S, Cursor[S], FiniteDuration] =
+  def codecFiniteDurationOfSecondsS[F[_] : Applicative, S: {StringType, Show}]: Codec[F, S, Cursor[S], FiniteDuration] =
     Codec[F, S, Cursor[S], FiniteDuration](using encodeFiniteDurationOfSecondsS, decodeFiniteDurationOfSecondsS)
 
-  def codecFiniteDurationOfSecondsNS[F[_] : Applicative, S: {NumberType, StringType}]
+  def codecFiniteDurationOfSecondsNS[F[_] : Applicative, S: {NumberType, StringType, Show}]
   : Codec[F, S, Cursor[S], FiniteDuration] =
     Codec[F, S, Cursor[S], FiniteDuration](using encodeFiniteDurationOfSecondsN, decodeFiniteDurationOfSecondsNS)
 
@@ -78,13 +78,13 @@ trait FiniteDurationInstances:
   def stringDecodeFiniteDurationOfMillis[F[_] : Applicative]: Decoder[F, String, FiniteDuration] =
     Decoder.stringDecodeWithNumberDecoder[F, FiniteDuration](using numberDecodeFiniteDurationOfMillis)
 
-  def decodeFiniteDurationOfMillisN[F[_] : Applicative, S: NumberType]: Decoder[F, Cursor[S], FiniteDuration] =
+  def decodeFiniteDurationOfMillisN[F[_] : Applicative, S: {NumberType, Show}]: Decoder[F, Cursor[S], FiniteDuration] =
     Decoder.decodeN[F, S, FiniteDuration](using numberDecodeFiniteDurationOfMillis)
 
-  def decodeFiniteDurationOfMillisS[F[_] : Applicative, S: StringType]: Decoder[F, Cursor[S], FiniteDuration] =
+  def decodeFiniteDurationOfMillisS[F[_] : Applicative, S: {StringType, Show}]: Decoder[F, Cursor[S], FiniteDuration] =
     Decoder.decodeS[F, S, FiniteDuration](using stringDecodeFiniteDurationOfMillis)
 
-  def decodeFiniteDurationOfMillisNS[F[_]: Applicative, S: {NumberType, StringType}]
+  def decodeFiniteDurationOfMillisNS[F[_]: Applicative, S: {NumberType, StringType, Show}]
   : Decoder[F, Cursor[S], FiniteDuration] =
     Decoder.decodeNS[F, S, FiniteDuration](using numberDecodeFiniteDurationOfMillis)
 
@@ -96,13 +96,13 @@ trait FiniteDurationInstances:
     Codec[F, String, String, FiniteDuration](using stringEncodeFiniteDurationOfMillis, 
       stringDecodeFiniteDurationOfMillis)
 
-  def codecFiniteDurationOfMillisN[F[_] : Applicative, S: NumberType]: Codec[F, S, Cursor[S], FiniteDuration] =
+  def codecFiniteDurationOfMillisN[F[_] : Applicative, S: {NumberType, Show}]: Codec[F, S, Cursor[S], FiniteDuration] =
     Codec[F, S, Cursor[S], FiniteDuration](using encodeFiniteDurationOfMillisN, decodeFiniteDurationOfMillisN)
 
-  def codecFiniteDurationOfMillisS[F[_] : Applicative, S: StringType]: Codec[F, S, Cursor[S], FiniteDuration] =
+  def codecFiniteDurationOfMillisS[F[_] : Applicative, S: {StringType, Show}]: Codec[F, S, Cursor[S], FiniteDuration] =
     Codec[F, S, Cursor[S], FiniteDuration](using encodeFiniteDurationOfMillisS, decodeFiniteDurationOfMillisS)
 
-  def codecFiniteDurationOfMillisNS[F[_] : Applicative, S: {NumberType, StringType}]
+  def codecFiniteDurationOfMillisNS[F[_] : Applicative, S: {NumberType, StringType, Show}]
   : Codec[F, S, Cursor[S], FiniteDuration] =
     Codec[F, S, Cursor[S], FiniteDuration](using encodeFiniteDurationOfMillisN, decodeFiniteDurationOfMillisNS)
 
@@ -126,13 +126,13 @@ trait FiniteDurationInstances:
   def stringDecodeFiniteDurationOfMinutes[F[_] : Applicative]: Decoder[F, String, FiniteDuration] =
     Decoder.stringDecodeWithNumberDecoder[F, FiniteDuration](using numberDecodeFiniteDurationOfMinutes)
 
-  def decodeFiniteDurationOfMinutesN[F[_] : Applicative, S: NumberType]: Decoder[F, Cursor[S], FiniteDuration] =
+  def decodeFiniteDurationOfMinutesN[F[_] : Applicative, S: {NumberType, Show}]: Decoder[F, Cursor[S], FiniteDuration] =
     Decoder.decodeN[F, S, FiniteDuration](using numberDecodeFiniteDurationOfMinutes)
 
-  def decodeFiniteDurationOfMinutesS[F[_] : Applicative, S: StringType]: Decoder[F, Cursor[S], FiniteDuration] =
+  def decodeFiniteDurationOfMinutesS[F[_] : Applicative, S: {StringType, Show}]: Decoder[F, Cursor[S], FiniteDuration] =
     Decoder.decodeS[F, S, FiniteDuration](using stringDecodeFiniteDurationOfMinutes)
 
-  def decodeFiniteDurationOfMinutesNS[F[_] : Applicative, S: {NumberType, StringType}]
+  def decodeFiniteDurationOfMinutesNS[F[_] : Applicative, S: {NumberType, StringType, Show}]
   : Decoder[F, Cursor[S], FiniteDuration] =
     Decoder.decodeNS[F, S, FiniteDuration](using numberDecodeFiniteDurationOfMinutes)
 
@@ -144,13 +144,13 @@ trait FiniteDurationInstances:
     Codec[F, String, String, FiniteDuration](using stringEncodeFiniteDurationOfMinutes, 
       stringDecodeFiniteDurationOfMinutes)
 
-  def codecFiniteDurationOfMinutesN[F[_] : Applicative, S: NumberType]: Codec[F, S, Cursor[S], FiniteDuration] =
+  def codecFiniteDurationOfMinutesN[F[_] : Applicative, S: {NumberType, Show}]: Codec[F, S, Cursor[S], FiniteDuration] =
     Codec[F, S, Cursor[S], FiniteDuration](using encodeFiniteDurationOfMinutesN, decodeFiniteDurationOfMinutesN)
 
-  def codecFiniteDurationOfMinutesS[F[_] : Applicative, S: StringType]: Codec[F, S, Cursor[S], FiniteDuration] =
+  def codecFiniteDurationOfMinutesS[F[_] : Applicative, S: {StringType, Show}]: Codec[F, S, Cursor[S], FiniteDuration] =
     Codec[F, S, Cursor[S], FiniteDuration](using encodeFiniteDurationOfMinutesS, decodeFiniteDurationOfMinutesS)
 
-  def codecFiniteDurationOfMinutesNS[F[_] : Applicative, S: {NumberType, StringType}]
+  def codecFiniteDurationOfMinutesNS[F[_] : Applicative, S: {NumberType, StringType, Show}]
   : Codec[F, S, Cursor[S], FiniteDuration] =
     Codec[F, S, Cursor[S], FiniteDuration](using encodeFiniteDurationOfMinutesN, decodeFiniteDurationOfMinutesNS)
 
@@ -174,13 +174,13 @@ trait FiniteDurationInstances:
   def stringDecodeFiniteDurationOfDays[F[_] : Applicative]: Decoder[F, String, FiniteDuration] =
     Decoder.stringDecodeWithNumberDecoder[F, FiniteDuration](using numberDecodeFiniteDurationOfDays)
 
-  def decodeFiniteDurationOfDaysN[F[_] : Applicative, S: NumberType]: Decoder[F, Cursor[S], FiniteDuration] =
+  def decodeFiniteDurationOfDaysN[F[_] : Applicative, S: {NumberType, Show}]: Decoder[F, Cursor[S], FiniteDuration] =
     Decoder.decodeN[F, S, FiniteDuration](using numberDecodeFiniteDurationOfDays)
 
-  def decodeFiniteDurationOfDaysS[F[_] : Applicative, S: StringType]: Decoder[F, Cursor[S], FiniteDuration] =
+  def decodeFiniteDurationOfDaysS[F[_] : Applicative, S: {StringType, Show}]: Decoder[F, Cursor[S], FiniteDuration] =
     Decoder.decodeS[F, S, FiniteDuration](using stringDecodeFiniteDurationOfDays)
 
-  def decodeFiniteDurationOfDaysNS[F[_] : Applicative, S: {NumberType, StringType}]
+  def decodeFiniteDurationOfDaysNS[F[_] : Applicative, S: {NumberType, StringType, Show}]
   : Decoder[F, Cursor[S], FiniteDuration] =
     Decoder.decodeNS[F, S, FiniteDuration](using numberDecodeFiniteDurationOfDays)
 
@@ -190,13 +190,13 @@ trait FiniteDurationInstances:
   def stringCodecDurationOfDays[F[_] : Applicative]: Codec[F, String, String, FiniteDuration] =
     Codec[F, String, String, FiniteDuration](using stringEncodeFiniteDurationOfDays, stringDecodeFiniteDurationOfDays)
 
-  def codecFiniteDurationOfDaysN[F[_] : Applicative, S: NumberType]: Codec[F, S, Cursor[S], FiniteDuration] =
+  def codecFiniteDurationOfDaysN[F[_] : Applicative, S: {NumberType, Show}]: Codec[F, S, Cursor[S], FiniteDuration] =
     Codec[F, S, Cursor[S], FiniteDuration](using encodeFiniteDurationOfDaysN, decodeFiniteDurationOfDaysN)
 
-  def codecFiniteDurationOfDaysS[F[_] : Applicative, S: StringType]: Codec[F, S, Cursor[S], FiniteDuration] =
+  def codecFiniteDurationOfDaysS[F[_] : Applicative, S: {StringType, Show}]: Codec[F, S, Cursor[S], FiniteDuration] =
     Codec[F, S, Cursor[S], FiniteDuration](using encodeFiniteDurationOfDaysS, decodeFiniteDurationOfDaysS)
 
-  def codecFiniteDurationOfDaysNS[F[_] : Applicative, S: {NumberType, StringType}]
+  def codecFiniteDurationOfDaysNS[F[_] : Applicative, S: {NumberType, StringType, Show}]
   : Codec[F, S, Cursor[S], FiniteDuration] =
     Codec[F, S, Cursor[S], FiniteDuration](using encodeFiniteDurationOfDaysN, decodeFiniteDurationOfDaysNS)
 end FiniteDurationInstances

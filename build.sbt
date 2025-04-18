@@ -89,6 +89,7 @@ lazy val codecCirce = (crossProject(JSPlatform, JVMPlatform) in file("codec-circ
     name := "codec-circe",
     libraryDependencies ++= Seq(
       "com.peknight" %%% "circe-ext" % pekExtVersion,
+      "com.peknight" %%% "cats-instances-circe" % pekInstancesVersion % Test,
       "org.scalatest" %%% "scalatest" % scalaTestVersion % Test,
     ),
   )
@@ -192,6 +193,7 @@ val pekVersion = "0.1.0-SNAPSHOT"
 val pekGenericVersion = pekVersion
 val pekCommonsVersion = pekVersion
 val pekExtVersion = pekVersion
+val pekInstancesVersion = pekVersion
 val pekErrorVersion = pekVersion
 
 val doobieCore = "org.tpolecat" %% "doobie-core" % doobieVersion

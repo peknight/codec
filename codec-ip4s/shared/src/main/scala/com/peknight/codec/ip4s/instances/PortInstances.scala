@@ -1,6 +1,6 @@
 package com.peknight.codec.ip4s.instances
 
-import cats.Applicative
+import cats.{Applicative, Show}
 import com.comcast.ip4s.Port
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.number.Number
@@ -14,6 +14,6 @@ trait PortInstances extends PortInstances1:
 
   given encodePortN[F[_]: Applicative, S: NumberType]: Encoder[F, S, Port] = Encoder.encodeN[F, S, Port]
 
-  given decodePortNS[F[_]: Applicative, S: {NumberType, StringType}]: Decoder[F, Cursor[S], Port] =
+  given decodePortNS[F[_]: Applicative, S: {NumberType, StringType, Show}]: Decoder[F, Cursor[S], Port] =
     Decoder.decodeNS[F, S, Port]
 end PortInstances

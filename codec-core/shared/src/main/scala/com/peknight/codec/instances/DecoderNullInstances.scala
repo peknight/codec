@@ -19,9 +19,9 @@ trait DecoderNullInstances extends DecoderNullInstances1:
     decoder: Decoder[F, Cursor[S], A],
     objectType: ObjectType[S],
     arrayType: ArrayType[S],
-    nullType: NullType[S]
+    nullType: NullType[S],
+    show: Show[S]
   ): Decoder[F, Cursor[S], Option[A]] =
-    given Show[S] = Show.fromToString
     Decoder.instance[F, Cursor[S], Option[A]] {
       case cursor: SuccessCursor[S] if nullType.isNull(cursor.value) => none.asRight.pure
       case cursor: SuccessCursor[S] if f.isDefinedAt(cursor.value) => f(cursor.value).map(_.left.map(_.cursor(cursor)))
@@ -37,7 +37,8 @@ trait DecoderNullInstances extends DecoderNullInstances1:
     decoder: Decoder[F, Cursor[S], A],
     objectType: ObjectType[S],
     arrayType: ArrayType[S],
-    nullType: NullType[S]
+    nullType: NullType[S],
+    show: Show[S]
   ): Decoder[F, Cursor[S], Option[A]] =
     handleDecodeOptionAOU[F, S, A]()
   end decodeOptionAOU
@@ -54,16 +55,9 @@ trait DecoderNullInstances extends DecoderNullInstances1:
   given decodeSome[F[_], T, A](using functor: Functor[F], decoder: Decoder[F, T, A]): Decoder[F, T, Some[A]] =
     Decoder.instance[F, T, Some[A]](t => decoder.decode(t).map(_.map(Some(_))))
 
-  given decodeNoneAOU[F[_], S](
-    using
-    applicative: Applicative[F],
-    objectType: ObjectType[S],
-    arrayType: ArrayType[S],
-    nullType: NullType[S]
-  ): Decoder[F, Cursor[S], None.type] =
-    given Show[S] = Show.fromToString
+  given decodeNoneAOU[F[_]: Applicative, S: {ObjectType, ArrayType, NullType, Show}]: Decoder[F, Cursor[S], None.type] =
     Decoder.applicative[F, Cursor[S], None.type] {
-      case cursor: SuccessCursor[S] if nullType.isNull(cursor.value) => None.asRight
+      case cursor: SuccessCursor[S] if NullType[S].isNull(cursor.value) => None.asRight
       case cursor: SuccessCursor[S] => NotNull.cursor(cursor).asLeft
       case cursor: FailedCursor[S] if !cursor.incorrectFocus => None.asRight
       case cursor: FailedCursor[S] => MissingField.cursor(cursor).asLeft

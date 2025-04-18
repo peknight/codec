@@ -1,6 +1,6 @@
 package com.peknight.codec.instances.time
 
-import cats.Applicative
+import cats.{Applicative, Show}
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.number.Number
 import com.peknight.codec.sum.{NumberType, StringType}
@@ -32,13 +32,13 @@ trait JavaDurationInstances:
   def stringDecodeJavaDurationOfSeconds[F[_] : Applicative]: Decoder[F, String, Duration] =
     Decoder.stringDecodeWithNumberDecoder[F, Duration](using numberDecodeJavaDurationOfSeconds)
 
-  def decodeJavaDurationOfSecondsN[F[_] : Applicative, S: NumberType]: Decoder[F, Cursor[S], Duration] =
+  def decodeJavaDurationOfSecondsN[F[_] : Applicative, S: {NumberType, Show}]: Decoder[F, Cursor[S], Duration] =
     Decoder.decodeN[F, S, Duration](using numberDecodeJavaDurationOfSeconds)
 
-  def decodeJavaDurationOfSecondsS[F[_] : Applicative, S: StringType]: Decoder[F, Cursor[S], Duration] =
+  def decodeJavaDurationOfSecondsS[F[_] : Applicative, S: {StringType, Show}]: Decoder[F, Cursor[S], Duration] =
     Decoder.decodeS[F, S, Duration](using stringDecodeJavaDurationOfSeconds)
 
-  def decodeJavaDurationOfSecondsNS[F[_] : Applicative, S: {NumberType, StringType}]: Decoder[F, Cursor[S], Duration] =
+  def decodeJavaDurationOfSecondsNS[F[_] : Applicative, S: {NumberType, StringType, Show}]: Decoder[F, Cursor[S], Duration] =
     Decoder.decodeNS[F, S, Duration](using numberDecodeJavaDurationOfSeconds)
 
   def numberCodecJavaDurationOfSeconds[F[_] : Applicative]: Codec[F, Number, Number, Duration] =
@@ -47,13 +47,13 @@ trait JavaDurationInstances:
   def stringCodecJavaDurationOfSeconds[F[_] : Applicative]: Codec[F, String, String, Duration] =
     Codec[F, String, String, Duration](using stringEncodeJavaDurationOfSeconds, stringDecodeJavaDurationOfSeconds)
 
-  def codecJavaDurationOfSecondsN[F[_] : Applicative, S: NumberType]: Codec[F, S, Cursor[S], Duration] =
+  def codecJavaDurationOfSecondsN[F[_] : Applicative, S: {NumberType, Show}]: Codec[F, S, Cursor[S], Duration] =
     Codec[F, S, Cursor[S], Duration](using encodeJavaDurationOfSecondsN, decodeJavaDurationOfSecondsN)
 
-  def codecJavaDurationOfSecondsS[F[_] : Applicative, S: StringType]: Codec[F, S, Cursor[S], Duration] =
+  def codecJavaDurationOfSecondsS[F[_] : Applicative, S: {StringType, Show}]: Codec[F, S, Cursor[S], Duration] =
     Codec[F, S, Cursor[S], Duration](using encodeJavaDurationOfSecondsS, decodeJavaDurationOfSecondsS)
 
-  def codecJavaDurationOfSecondsNS[F[_] : Applicative, S: {NumberType, StringType}]: Codec[F, S, Cursor[S], Duration] =
+  def codecJavaDurationOfSecondsNS[F[_] : Applicative, S: {NumberType, StringType, Show}]: Codec[F, S, Cursor[S], Duration] =
     Codec[F, S, Cursor[S], Duration](using encodeJavaDurationOfSecondsN, decodeJavaDurationOfSecondsNS)
 
   def numberEncodeJavaDurationOfMillis[F[_] : Applicative]: Encoder[F, Number, Duration] =
@@ -76,13 +76,13 @@ trait JavaDurationInstances:
   def stringDecodeJavaDurationOfMillis[F[_] : Applicative]: Decoder[F, String, Duration] =
     Decoder.stringDecodeWithNumberDecoder[F, Duration](using numberDecodeJavaDurationOfMillis)
 
-  def decodeJavaDurationOfMillisN[F[_] : Applicative, S: NumberType]: Decoder[F, Cursor[S], Duration] =
+  def decodeJavaDurationOfMillisN[F[_] : Applicative, S: {NumberType, Show}]: Decoder[F, Cursor[S], Duration] =
     Decoder.decodeN[F, S, Duration](using numberDecodeJavaDurationOfMillis)
 
-  def decodeJavaDurationOfMillisS[F[_] : Applicative, S: StringType]: Decoder[F, Cursor[S], Duration] =
+  def decodeJavaDurationOfMillisS[F[_] : Applicative, S: {StringType, Show}]: Decoder[F, Cursor[S], Duration] =
     Decoder.decodeS[F, S, Duration](using stringDecodeJavaDurationOfMillis)
 
-  def decodeJavaDurationOfMillisNS[F[_]: Applicative, S: {NumberType, StringType}]: Decoder[F, Cursor[S], Duration] =
+  def decodeJavaDurationOfMillisNS[F[_]: Applicative, S: {NumberType, StringType, Show}]: Decoder[F, Cursor[S], Duration] =
     Decoder.decodeNS[F, S, Duration](using numberDecodeJavaDurationOfMillis)
 
   def numberCodecJavaDurationOfMillis[F[_] : Applicative]: Codec[F, Number, Number, Duration] =
@@ -91,13 +91,14 @@ trait JavaDurationInstances:
   def stringCodecJavaDurationOfMillis[F[_] : Applicative]: Codec[F, String, String, Duration] =
     Codec[F, String, String, Duration](using stringEncodeJavaDurationOfMillis, stringDecodeJavaDurationOfMillis)
 
-  def codecJavaDurationOfMillisN[F[_] : Applicative, S: NumberType]: Codec[F, S, Cursor[S], Duration] =
+  def codecJavaDurationOfMillisN[F[_] : Applicative, S: {NumberType, Show}]: Codec[F, S, Cursor[S], Duration] =
     Codec[F, S, Cursor[S], Duration](using encodeJavaDurationOfMillisN, decodeJavaDurationOfMillisN)
 
-  def codecJavaDurationOfMillisS[F[_] : Applicative, S: StringType]: Codec[F, S, Cursor[S], Duration] =
+  def codecJavaDurationOfMillisS[F[_] : Applicative, S: {StringType, Show}]: Codec[F, S, Cursor[S], Duration] =
     Codec[F, S, Cursor[S], Duration](using encodeJavaDurationOfMillisS, decodeJavaDurationOfMillisS)
 
-  def codecJavaDurationOfMillisNS[F[_] : Applicative, S: {NumberType, StringType}]: Codec[F, S, Cursor[S], Duration] =
+  def codecJavaDurationOfMillisNS[F[_] : Applicative, S: {NumberType, StringType, Show}]
+  : Codec[F, S, Cursor[S], Duration] =
     Codec[F, S, Cursor[S], Duration](using encodeJavaDurationOfMillisN, decodeJavaDurationOfMillisNS)
 end JavaDurationInstances
 object JavaDurationInstances extends JavaDurationInstances

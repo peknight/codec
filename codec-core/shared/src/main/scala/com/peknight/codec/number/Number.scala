@@ -1,6 +1,6 @@
 package com.peknight.codec.number
 
-import cats.Eq
+import cats.{Eq, Show}
 
 /**
  * A number with optimization by cases.
@@ -191,5 +191,7 @@ object Number:
       case (BigDecimalNumber(x), BigDecimalNumber(y)) => x == y
       case (a, b) => a.toBiggerDecimal == b.toBiggerDecimal
   end eqNumber
+
+  given showNumber: Show[Number] = Show.fromToString[Number]
 
 end Number

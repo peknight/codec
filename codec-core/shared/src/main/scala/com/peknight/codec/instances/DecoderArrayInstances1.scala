@@ -1,7 +1,7 @@
 package com.peknight.codec.instances
 
-import cats.Applicative
 import cats.data.OneAnd
+import cats.{Applicative, Show}
 import com.peknight.codec.Decoder
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.sum.ArrayType
@@ -16,6 +16,7 @@ trait DecoderArrayInstances1 extends DecoderArrayInstances2:
     applicative: Applicative[F],
     decoder: Decoder[F, Cursor[S], A],
     arrayType: ArrayType[S],
+    show: Show[S],
     factory: Factory[A, Array[A]]
   ): Decoder[F, Cursor[S], Array[A]] =
     Decoder.decodeSeq[F, S, A, Array](factory.newBuilder)
@@ -25,6 +26,7 @@ trait DecoderArrayInstances1 extends DecoderArrayInstances2:
     applicative: Applicative[F],
     decoder: Decoder[F, Cursor[S], A],
     arrayType: ArrayType[S],
+    show: Show[S],
     factory: Factory[A, C[A]]
   ): Decoder[F, Cursor[S], OneAnd[C, A]] =
     Decoder.decodeNonEmptySeq[F, S, A, C, OneAnd[C, A]](factory.newBuilder)(OneAnd.apply)
@@ -34,6 +36,7 @@ trait DecoderArrayInstances1 extends DecoderArrayInstances2:
     applicative: Applicative[F],
     decoder: Decoder[F, Cursor[S], A],
     arrayType: ArrayType[S],
+    show: Show[S],
     classTag: ClassTag[A]
   ): Decoder[F, Cursor[S], ArraySeq[A]] =
     Decoder.decodeSeq[F, S, A, ArraySeq](ArraySeq.newBuilder[A])
@@ -42,6 +45,7 @@ trait DecoderArrayInstances1 extends DecoderArrayInstances2:
     applicative: Applicative[F],
     decoder: Decoder[F, Cursor[S], A],
     arrayType: ArrayType[S],
+    show: Show[S],
     factory: Factory[A, C[A]]
   ): Decoder[F, Cursor[S], C[A]] =
     Decoder.decodeSeq[F, S, A, C](factory.newBuilder)
