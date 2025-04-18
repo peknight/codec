@@ -11,7 +11,7 @@ import com.peknight.generic.priority.HighPriority
 
 import java.net.URI
 import java.time.{Duration as JDuration, *}
-import java.util.{Currency, UUID}
+import java.util.{Currency, Locale, UUID}
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.reflect.ClassTag
 
@@ -181,10 +181,9 @@ trait DecoderValueInstances extends DecoderValueInstances1:
   given decodeZoneOffsetS[F[_]: Applicative, S: StringType]: HighPriority[Decoder[F, Cursor[S], ZoneOffset]] =
     HighPriority(Decoder.decodeS[F, S, ZoneOffset])
 
-  given stringDecodeCurrency[F[_] : Applicative]: HighPriority[Decoder[F, String, Currency]] =
+  given stringDecodeCurrency[F[_]: Applicative]: HighPriority[Decoder[F, String, Currency]] =
     HighPriority(Decoder.parse[F, String, Currency](Currency.getInstance))
 
   given decodeCurrencyS[F[_]: Applicative, S: StringType]: HighPriority[Decoder[F, Cursor[S], Currency]] =
     HighPriority(Decoder.decodeS[F, S, Currency])
-
 end DecoderValueInstances
