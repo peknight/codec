@@ -1,11 +1,11 @@
-package com.peknight.codec.configuration
+package com.peknight.codec.config
 
 import cats.data.NonEmptyList
 
-trait Configuration:
-  type This <: Configuration
+trait Config:
+  type This <: Config
   def transformConstructorNames: String => NonEmptyList[String]
   def withTransformConstructorName(f: String => String): This =
     withTransformConstructorNames(name => NonEmptyList.one(f(name)))
   def withTransformConstructorNames(f: String => NonEmptyList[String]): This
-end Configuration
+end Config

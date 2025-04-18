@@ -2,14 +2,14 @@ package com.peknight.codec.instances.generic.encoder
 
 import cats.Applicative
 import com.peknight.codec.Encoder
-import com.peknight.codec.configuration.EncoderConfiguration
+import com.peknight.codec.config.EncoderConfig
 import com.peknight.codec.sum.ObjectType
 import com.peknight.generic.Generic
 import com.peknight.generic.priority.LowPriority
 
 trait EncoderDerivationInstances:
   given derivedEncoder[F[_], S, A](using
-    configuration: EncoderConfiguration,
+    config: EncoderConfig,
     applicative: Applicative[F],
     objectType: ObjectType[S],
     stringEncoder: Encoder[F, S, String],

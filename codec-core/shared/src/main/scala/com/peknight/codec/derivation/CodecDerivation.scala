@@ -1,7 +1,7 @@
 package com.peknight.codec.derivation
 
 import cats.Monad
-import com.peknight.codec.configuration.CodecConfiguration
+import com.peknight.codec.config.CodecConfig
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.error.DecodingFailure
 import com.peknight.codec.sum.{NullType, ObjectType}
@@ -10,7 +10,7 @@ import com.peknight.generic.Generic
 import com.peknight.generic.tuple.syntax.sequence
 
 trait CodecDerivation:
-  def derived[F[_], S, A](using configuration: CodecConfiguration)(using
+  def derived[F[_], S, A](using config: CodecConfig)(using
     monad: Monad[F],
     objectType: ObjectType[S],
     nullType: NullType[S],
@@ -22,13 +22,13 @@ trait CodecDerivation:
     decoders: => Generic.Instances[[X] =>> Decoder[F, Cursor[S], X], A]
   ): Codec[F, S, Cursor[S], A] =
     if generic.isProduct then
-      derivedProduct[F, S, A](using configuration)(using monad, objectType, nullType, encoders.asInstanceOf,
+      derivedProduct[F, S, A](using config)(using monad, objectType, nullType, encoders.asInstanceOf,
         decoders.asInstanceOf)
     else
-      derivedSum[F, S, A](using configuration)(using monad, objectType, stringEncoder, stringDecoder,
+      derivedSum[F, S, A](using config)(using monad, objectType, stringEncoder, stringDecoder,
         stringOptionDecoder, generic.asInstanceOf, encoders.asInstanceOf, decoders.asInstanceOf)
 
-  def derivedProduct[F[_], S, A](using configuration: CodecConfiguration)(using
+  def derivedProduct[F[_], S, A](using config: CodecConfig)(using
     monad: Monad[F],
     objectType: ObjectType[S],
     nullType: NullType[S],
@@ -36,12 +36,12 @@ trait CodecDerivation:
     decoders: => Generic.Product.Instances[[X] =>> Decoder[F, Cursor[S], X], A]
   ): Codec[F, S, Cursor[S], A] =
     new Codec[F, S, Cursor[S], A]:
-      def encode(a: A): F[S] = EncoderDerivation.encodeProduct(a, configuration, objectType, encoders)
+      def encode(a: A): F[S] = EncoderDerivation.encodeProduct(a, config, objectType, encoders)
       def decode(cursor: Cursor[S]): F[Either[DecodingFailure, A]] =
-        DecoderDerivation.decodeProduct(cursor, configuration, objectType, nullType, decoders)
+        DecoderDerivation.decodeProduct(cursor, config, objectType, nullType, decoders)
   end derivedProduct
 
-  def derivedSum[F[_], S, A](using configuration: CodecConfiguration)(using
+  def derivedSum[F[_], S, A](using config: CodecConfig)(using
     monad: Monad[F],
     objectType: ObjectType[S],
     stringEncoder: Encoder[F, S, String],
@@ -55,19 +55,19 @@ trait CodecDerivation:
       case Some(singletons) =>
         new Codec[F, S, Cursor[S], A] with EnumDecoder[F, Cursor[S], A]:
           def decoders: Map[String, Decoder[F, Cursor[S], ?]] =
-            EnumDecoderDerivation.enumDecodersDict[F, Cursor[S], A](this, configuration, generic)
-          def encode(a: A): F[S] = EnumEncoderDerivation.encodeEnum(a, configuration, stringEncoder, generic)
+            EnumDecoderDerivation.enumDecodersDict[F, Cursor[S], A](this, config, generic)
+          def encode(a: A): F[S] = EnumEncoderDerivation.encodeEnum(a, config, stringEncoder, generic)
           def decode(cursor: Cursor[S]): F[Either[DecodingFailure, A]] =
-            EnumDecoderDerivation.decodeEnum(cursor, configuration, stringDecoder, generic)(singletons)
+            EnumDecoderDerivation.decodeEnum(cursor, config, stringDecoder, generic)(singletons)
       case _ =>
         new Codec[F, S, Cursor[S], A] with SumEncoder[F, S, A]
           with SumDecoder[F, Cursor[S], A]:
           def decoders: Map[String, Decoder[F, Cursor[S], ?]] =
-            DecoderDerivation.decodersDict[F, Cursor[S], A](configuration, decoders0)
+            DecoderDerivation.decodersDict[F, Cursor[S], A](config, decoders0)
           def encode(a: A): F[S] =
-            EncoderDerivation.encodeSum(a, configuration, objectType, stringEncoder, encoders)
+            EncoderDerivation.encodeSum(a, config, objectType, stringEncoder, encoders)
           def decode(cursor: Cursor[S]): F[Either[DecodingFailure, A]] =
-            DecoderDerivation.decodeSum(cursor, configuration, objectType, stringOptionDecoder, decoders0)
+            DecoderDerivation.decodeSum(cursor, config, objectType, stringOptionDecoder, decoders0)
   end derivedSum
 end CodecDerivation
 object CodecDerivation extends CodecDerivation

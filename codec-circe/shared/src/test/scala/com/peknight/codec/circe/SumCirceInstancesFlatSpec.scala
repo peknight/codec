@@ -3,7 +3,7 @@ package com.peknight.codec.circe
 import cats.syntax.either.*
 import com.peknight.codec.circe.OuterSum.*
 import com.peknight.codec.circe.instances.all.given
-import com.peknight.codec.configuration.CodecConfiguration
+import com.peknight.codec.config.CodecConfig
 import com.peknight.codec.instances.generic.decoder.derivation.given
 import com.peknight.codec.instances.generic.encoder.derivation.given
 import io.circe.Decoder.Result
@@ -18,7 +18,7 @@ class SumCirceInstancesFlatSpec extends AnyFlatSpec:
     val d: OuterSum = D("dddd")
     val e: OuterSum = E
     val f: OuterSum = F("ffffff")
-    given CodecConfiguration = CodecConfiguration(discriminator = Some("type"))
+    given CodecConfig = CodecConfig(discriminator = Some("type"))
     given CanEqual[Result[OuterSum], Result[OuterSum]] = CanEqual.derived
     val decoder: Decoder[OuterSum] = Decoder[OuterSum]
     val encoder: Encoder[OuterSum] = Encoder[OuterSum]

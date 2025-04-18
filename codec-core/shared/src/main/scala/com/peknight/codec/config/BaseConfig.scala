@@ -1,9 +1,9 @@
-package com.peknight.codec.configuration
+package com.peknight.codec.config
 
 import cats.data.NonEmptyList
 
-trait BaseConfiguration extends Configuration:
-  type This <: BaseConfiguration
+trait BaseConfig extends Config:
+  type This <: BaseConfig
   def transformMemberNames: String => NonEmptyList[String]
   def discriminator: Option[String]
   def sumTypeOnNone: Option[String]
@@ -17,4 +17,4 @@ trait BaseConfiguration extends Configuration:
   def withoutSumTypeOnNone: This
   def withExtField(extField: String): This
   def withoutExtField: This
-end BaseConfiguration
+end BaseConfig

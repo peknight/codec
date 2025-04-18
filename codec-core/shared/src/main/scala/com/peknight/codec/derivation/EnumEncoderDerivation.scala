@@ -2,54 +2,54 @@ package com.peknight.codec.derivation
 
 import cats.Applicative
 import com.peknight.codec.Encoder
-import com.peknight.codec.configuration.Configuration
+import com.peknight.codec.config.Config
 import com.peknight.generic.Generic
 import com.peknight.generic.compiletime.summonAllSingletons
 
 trait EnumEncoderDerivation:
-  inline def derived[F[_], S, A](using configuration: Configuration)(using
+  inline def derived[F[_], S, A](using config: Config)(using
     stringEncoder: Encoder[F, S, String],
     generic: Generic.Sum[A]
   ): Encoder[F, S, A] =
     // Only used to validate if all cases are singletons
     summonAllSingletons[generic.Repr](generic.label)
-    Encoder.instance[F, S, A](a => encodeEnum(a, configuration, stringEncoder, generic))
+    Encoder.instance[F, S, A](a => encodeEnum(a, config, stringEncoder, generic))
 
-  def unsafeDerived[F[_], S, A](using configuration: Configuration)
+  def unsafeDerived[F[_], S, A](using config: Config)
                                (using stringEncoder: Encoder[F, S, String], generic: Generic.Sum[A]): Encoder[F, S, A] =
-    Encoder.instance[F, S, A](a => encodeEnum(a, configuration, stringEncoder, generic))
+    Encoder.instance[F, S, A](a => encodeEnum(a, config, stringEncoder, generic))
 
   private[derivation] def encodeEnum[F[_], S, A](
     a: A,
-    configuration: Configuration,
+    config: Config,
     stringEncoder: Encoder[F, S, String],
     generic: Generic.Sum[A]
   ): F[S] =
-    stringEncoder.encode(configuration.transformConstructorNames(generic.label(a)).head)
+    stringEncoder.encode(config.transformConstructorNames(generic.label(a)).head)
 
-  inline def derivedStringEncodeEnum[F[_], A](using configuration: Configuration)(using
+  inline def derivedStringEncodeEnum[F[_], A](using config: Config)(using
     applicative: Applicative[F],
     generic: Generic.Sum[A]
   ): Encoder[F, String, A] =
     // Only used to validate if all cases are singletons
     summonAllSingletons[generic.Repr](generic.label)
-    Encoder.instance[F, String, A](a => stringEncodeEnum[F, A](a, configuration, applicative, generic))
+    Encoder.instance[F, String, A](a => stringEncodeEnum[F, A](a, config, applicative, generic))
 
-  def unsafeDerivedStringEncodeEnum[F[_], A](using configuration: Configuration)(using
+  def unsafeDerivedStringEncodeEnum[F[_], A](using config: Config)(using
     applicative: Applicative[F],
     generic: Generic.Sum[A]
   ): Encoder[F, String, A] =
     partialDerivedStringEncodeEnum[F, A]()
 
   def partialDerivedStringEncodeEnum[F[_], A](f: PartialFunction[A, String] = PartialFunction.empty)
-                                             (using configuration: Configuration)
+                                             (using config: Config)
                                              (using applicative: Applicative[F], generic: Generic.Sum[A])
   : Encoder[F, String, A] =
-    Encoder.instance[F, String, A](a => stringEncodeEnum[F, A](a, configuration, applicative, generic, f))
+    Encoder.instance[F, String, A](a => stringEncodeEnum[F, A](a, config, applicative, generic, f))
 
-  private[derivation] def stringEncodeEnum[F[_], A](a: A, configuration: Configuration, applicative: Applicative[F],
+  private[derivation] def stringEncodeEnum[F[_], A](a: A, config: Config, applicative: Applicative[F],
                                                     generic: Generic.Sum[A],
                                                     f: PartialFunction[A, String] = PartialFunction.empty): F[String] =
-    applicative.pure(if f.isDefinedAt(a) then f(a) else configuration.transformConstructorNames(generic.label(a)).head)
+    applicative.pure(if f.isDefinedAt(a) then f(a) else config.transformConstructorNames(generic.label(a)).head)
 end EnumEncoderDerivation
 object EnumEncoderDerivation extends EnumEncoderDerivation

@@ -4,7 +4,7 @@ import cats.{Applicative, Id, Monad}
 import com.peknight.codec.Codec
 import com.peknight.codec.circe.iso.codec
 import com.peknight.codec.circe.sum.jsonType.given
-import com.peknight.codec.configuration.given
+import com.peknight.codec.config.given
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.instances.time.instant.{codecInstantOfEpochMilliNS, codecInstantOfEpochSecondNS}
 import com.peknight.codec.sum.{NullType, NumberType, ObjectType, StringType}

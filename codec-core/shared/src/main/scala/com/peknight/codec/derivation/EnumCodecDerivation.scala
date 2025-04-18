@@ -1,7 +1,7 @@
 package com.peknight.codec.derivation
 
 import cats.{Applicative, Functor}
-import com.peknight.codec.configuration.Configuration
+import com.peknight.codec.config.Config
 import com.peknight.codec.error.DecodingFailure
 import com.peknight.codec.{Codec, Decoder, Encoder}
 import com.peknight.generic.Generic
@@ -17,7 +17,7 @@ trait EnumCodecDerivation:
       def decode(t: T): F[Either[DecodingFailure, A]] = decode0(t)
   end enumCodecInstance
 
-  inline def derived[F[_], S, T, A](using configuration: Configuration)(using
+  inline def derived[F[_], S, T, A](using config: Config)(using
     functor: Functor[F],
     stringEncoder: Encoder[F, S, String],
     stringDecoder: Decoder[F, T, String],
@@ -25,43 +25,43 @@ trait EnumCodecDerivation:
   ): Codec[F, S, T, A] =
     val singletons = summonAllSingletons[generic.Repr](generic.label)
     enumCodecInstance[F, S, T, A](
-      a => EnumEncoderDerivation.encodeEnum(a, configuration, stringEncoder, generic)
+      a => EnumEncoderDerivation.encodeEnum(a, config, stringEncoder, generic)
     )(
-      t => EnumDecoderDerivation.decodeEnum[F, T, A](t, configuration, stringDecoder, generic)(singletons)
+      t => EnumDecoderDerivation.decodeEnum[F, T, A](t, config, stringDecoder, generic)(singletons)
     )(
-      self => EnumDecoderDerivation.enumDecodersDict[F, T, A](self, configuration, generic)
+      self => EnumDecoderDerivation.enumDecodersDict[F, T, A](self, config, generic)
     )
   end derived
-  def unsafeDerived[F[_], S, T, A](using configuration: Configuration)(using
+  def unsafeDerived[F[_], S, T, A](using config: Config)(using
     functor: Functor[F],
     stringEncoder: Encoder[F, S, String],
     stringDecoder: Decoder[F, T, String],
     generic: Generic.Sum[A]
   ): Codec[F, S, T, A] =
     enumCodecInstance[F, S, T, A](
-      a => EnumEncoderDerivation.encodeEnum(a, configuration, stringEncoder, generic)
+      a => EnumEncoderDerivation.encodeEnum(a, config, stringEncoder, generic)
     )(
-      t => EnumDecoderDerivation.unsafeDecodeEnum[F, T, A, generic.Repr](t, configuration, stringDecoder, generic)
+      t => EnumDecoderDerivation.unsafeDecodeEnum[F, T, A, generic.Repr](t, config, stringDecoder, generic)
     )(
-      self => EnumDecoderDerivation.enumDecodersDict[F, T, A](self, configuration, generic)
+      self => EnumDecoderDerivation.enumDecodersDict[F, T, A](self, config, generic)
     )
   end unsafeDerived
 
-  inline def derivedStringCodecEnum[F[_], A](using configuration: Configuration)(using
+  inline def derivedStringCodecEnum[F[_], A](using config: Config)(using
     applicative: Applicative[F],
     generic: Generic.Sum[A]
   ): Codec[F, String, String, A] =
     val singletons = summonAllSingletons[generic.Repr](generic.label)
     enumCodecInstance[F, String, String, A](
-      a => EnumEncoderDerivation.stringEncodeEnum(a, configuration, applicative, generic)
+      a => EnumEncoderDerivation.stringEncodeEnum(a, config, applicative, generic)
     )(
-      t => EnumDecoderDerivation.stringDecodeEnum[F, A](t, configuration, generic)(singletons)
+      t => EnumDecoderDerivation.stringDecodeEnum[F, A](t, config, generic)(singletons)
     )(
-      self => EnumDecoderDerivation.enumDecodersDict[F, String, A](self, configuration, generic)
+      self => EnumDecoderDerivation.enumDecodersDict[F, String, A](self, config, generic)
     )
   end derivedStringCodecEnum
 
-  def unsafeDerivedStringCodecEnum[F[_], A](using configuration: Configuration)(using
+  def unsafeDerivedStringCodecEnum[F[_], A](using config: Config)(using
     applicative: Applicative[F],
     generic: Generic.Sum[A]
   ): Codec[F, String, String, A] =
@@ -69,15 +69,15 @@ trait EnumCodecDerivation:
   end unsafeDerivedStringCodecEnum
   def partialDerivedStringCodecEnum[F[_], A](f: PartialFunction[A, String] = PartialFunction.empty)
                                             (g: String => Option[A] = _ => None)
-                                            (using configuration: Configuration)
+                                            (using config: Config)
                                             (using applicative: Applicative[F], generic: Generic.Sum[A])
   : Codec[F, String, String, A] =
     enumCodecInstance[F, String, String, A](
-      a => EnumEncoderDerivation.stringEncodeEnum(a, configuration, applicative, generic, f)
+      a => EnumEncoderDerivation.stringEncodeEnum(a, config, applicative, generic, f)
     )(
-      t => EnumDecoderDerivation.unsafeStringDecodeEnum(t, configuration, generic, g)
+      t => EnumDecoderDerivation.unsafeStringDecodeEnum(t, config, generic, g)
     )(
-      self => EnumDecoderDerivation.enumDecodersDict[F, String, A](self, configuration, generic)
+      self => EnumDecoderDerivation.enumDecodersDict[F, String, A](self, config, generic)
     )
   end partialDerivedStringCodecEnum
 end EnumCodecDerivation

@@ -2,7 +2,7 @@ package com.peknight.codec.instances.generic.decoder
 
 import cats.Monad
 import com.peknight.codec.Decoder
-import com.peknight.codec.configuration.DecoderConfiguration
+import com.peknight.codec.config.DecoderConfig
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.sum.{NullType, ObjectType}
 import com.peknight.generic.Generic
@@ -10,7 +10,7 @@ import com.peknight.generic.priority.LowPriority
 
 trait DecoderDerivationInstances:
   given derivedDecoder[F[_], S, A](using
-    configuration: DecoderConfiguration,
+    config: DecoderConfig,
     monad: Monad[F],
     objectType: ObjectType[S],
     nullType: NullType[S],
