@@ -70,7 +70,7 @@ trait DecoderDerivation:
     case Key(keys) => instances.constructWithLabelDefault[[X] =>> F[Validated[DecodingFailure, X]]] {
       [X] => (decoder: Decoder[F, Key, X], label: String, defaultOpt: Option[X]) =>
         val ks = config.transformMemberNames(label).map(key => Key(keys :+ key))
-        decodeProductMember[F, Key, X](ks, decoder, defaultOpt, false, config)(_ => false)(_ => true)(true)
+        decodeProductMember[F, Key, X](ks, decoder, defaultOpt, false, true, config)(_ => false)(_ => true)(true)
     }.map(_.toEither)
 
   def derivedSumByKey[F[_], A](using config: DecoderConfig)(using
@@ -126,7 +126,7 @@ trait DecoderDerivation:
               labels.flatMap(label => config.transformMemberNames(label).toList)
             NonEmptyList.one(cursor.remove(removeFields)(using objectType))
           else keys.map(key => cursor.downField(key)(using objectType))
-        decodeProductMember[F, Cursor[S], X](cursors, decoder, defaultOpt, extField, config)(
+        decodeProductMember[F, Cursor[S], X](cursors, decoder, defaultOpt, extField, false, config)(
           _.focus.exists(nullType.isNull)
         )(
           _.focus.flatMap(objectType.asObject).exists(objectType.isEmpty)
@@ -136,7 +136,7 @@ trait DecoderDerivation:
     }.map(_.toEither)
 
   private def decodeProductMember[F[_]: Monad, T, X](ts: NonEmptyList[T], decoder: Decoder[F, T, X],
-                                                     defaultOpt: Option[X], extField: Boolean,
+                                                     defaultOpt: Option[X], extField: Boolean, readByKey: Boolean,
                                                      config: DecoderConfig)
                                                     (isNull: T => Boolean)(isExtEmpty: T => Boolean)
                                                     (keyExists: => Boolean)
@@ -159,6 +159,7 @@ trait DecoderDerivation:
           d.valid[DecodingFailure]
         case (current, result, Some(d)) if extField =>
           if isExtEmpty(current) then d.valid[DecodingFailure] else result.toValidated
+        case (_, Right(None), Some(d)) if readByKey => d.valid[DecodingFailure]
         case (_, result, Some(d)) => if keyExists then result.toValidated else d.valid[DecodingFailure]
     }
 
