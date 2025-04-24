@@ -9,9 +9,6 @@ import com.peknight.codec.{Decoder, Encoder}
 trait DecoderSyntax:
   extension [F[_], T] (ft: F[T])
     def decodeTo[A](using functor: Functor[F], encoder: Encoder[Id, A, T]): F[A] = ft.map(encoder.encode)
-    def decodeTo[A](f: F[T] => (T => A) => F[A])(using encoder: Encoder[Id, A, T]): F[A] = f(ft)(encoder.encode)
-    def eitherDecodeTo[A](f: F[T] => (T => Either[DecodingFailure, A]) => F[A])(using decoder: Decoder[Id, T, A]): F[A] =
-      f(ft)(decoder.decode)
   end extension
 
   extension [T] (t: T)
