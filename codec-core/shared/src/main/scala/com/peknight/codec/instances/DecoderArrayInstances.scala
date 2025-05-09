@@ -45,7 +45,7 @@ trait DecoderArrayInstances extends DecoderArrayInstances1:
                                        arrayType: ArrayType[S], show: Show[S], order: Order[A])
   : Decoder[F, Cursor[S], NonEmptySet[A]] =
     Decoder.decodeNonEmptySeq[F, S, A, SortedSet, NonEmptySet[A]](
-      SortedSet.newBuilder[A](Order.catsKernelOrderingForOrder(order))
+      SortedSet.newBuilder[A](using Order.catsKernelOrderingForOrder(using order))
     )(NonEmptySet.apply)
 
   given decodeNonEmptyChainA[F[_], S, A](using applicative: Applicative[F], decoder: Decoder[F, Cursor[S], A],

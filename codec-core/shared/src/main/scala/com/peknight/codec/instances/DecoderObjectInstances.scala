@@ -43,6 +43,6 @@ trait DecoderObjectInstances extends DecoderObjectInstances1:
     show: Show[S],
     order: Order[K]
   ): Decoder[F, Cursor[S], NonEmptyMap[K, V]] =
-    Decoder.decodeMap[F, S, K, V, SortedMap](SortedMap.newBuilder[K, V](Order.catsKernelOrderingForOrder(order)))
+    Decoder.decodeMap[F, S, K, V, SortedMap](SortedMap.newBuilder[K, V](using Order.catsKernelOrderingForOrder(using order)))
       .emap(map => cursor => NonEmptyMap.fromMap(map).toRight(EmptyMap.cursor(cursor)))
 end DecoderObjectInstances
