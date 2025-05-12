@@ -8,9 +8,7 @@ import com.peknight.codec.derivation.{EnumCodecDerivation, EnumDecoderDerivation
 import com.peknight.codec.{Codec, Decoder, Encoder}
 import com.peknight.generic.Generic
 
-trait Unknown:
-  def name: String
-end Unknown
+trait Unknown
 object Unknown:
   val sumType = "Unknown"
   def constructorNameMap[A](f: A => String = (a: A) => a.toString, unknownType: String = sumType,
