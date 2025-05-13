@@ -13,6 +13,7 @@ object CodecConfig:
     discriminator: Option[String],
     sumTypeOnNone: Option[String],
     extField: Option[String],
+    flattenFields: List[String],
     useDefaults: Boolean,
     strictDecoding: Boolean
   ) extends CodecConfig:
@@ -25,6 +26,8 @@ object CodecConfig:
     def withoutSumTypeOnNone: Config = copy(sumTypeOnNone = None)
     def withExtField(extField: String): Config = copy(extField = Some(extField))
     def withoutExtField: Config = copy(extField = None)
+    def withFlattenFields(flattenFields: List[String]): Config = copy(flattenFields = flattenFields)
+    def withoutFlattenFields: Config = copy(flattenFields = Nil)
     def withDefaults: Config = copy(useDefaults = true)
     def withoutDefaults: Config = copy(useDefaults = false)
     def withStrictDecoding: Config = copy(strictDecoding = true)
@@ -37,11 +40,12 @@ object CodecConfig:
     discriminator: Option[String] = None,
     sumTypeOnNone: Option[String] = None,
     extField: Option[String] = None,
+    flattenFields: List[String] = Nil,
     useDefaults: Boolean = true,
     strictDecoding: Boolean = false
   ): CodecConfig =
-    Config(transformMemberNames, transformConstructorNames, discriminator, sumTypeOnNone, extField, useDefaults,
-      strictDecoding)
+    Config(transformMemberNames, transformConstructorNames, discriminator, sumTypeOnNone, extField, flattenFields,
+      useDefaults, strictDecoding)
 
   val default: com.peknight.codec.config.CodecConfig = apply()
 

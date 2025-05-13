@@ -8,6 +8,7 @@ trait BaseConfig extends Config:
   def discriminator: Option[String]
   def sumTypeOnNone: Option[String]
   def extField: Option[String]
+  def flattenFields: List[String]
   def withTransformMemberName(f: String => String): This =
     withTransformMemberNames(name => NonEmptyList.one(f(name)))
   def withTransformMemberNames(f: String => NonEmptyList[String]): This
@@ -17,4 +18,8 @@ trait BaseConfig extends Config:
   def withoutSumTypeOnNone: This
   def withExtField(extField: String): This
   def withoutExtField: This
+  def withFlattenField(flattenField: String): This = withFlattenFields(List(flattenField))
+  def withFlattenFields(flattenFields: String*): This = withFlattenFields(flattenFields.toList)
+  def withFlattenFields(flattenFields: List[String]): This
+  def withoutFlattenFields: This
 end BaseConfig
