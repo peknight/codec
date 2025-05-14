@@ -1,5 +1,6 @@
 package com.peknight.codec.base
 
+import cats.kernel.Monoid
 import cats.parse.Parser0
 import cats.{Applicative, Eq, Show}
 import com.peknight.codec.Codec
@@ -43,6 +44,11 @@ trait BaseAlphabetPlatform[A <: Alphabet, B <: Base : ClassTag] extends BasePlat
   given showBase: Show[B] with
     def show(t: B): String = t.value
   end showBase
+
+  given baseMonoid: Monoid[B] with
+    override def empty: B = toBase("")
+    override def combine(x: B, y: B): B = toBase(s"${x.value}${y.value}")
+  end baseMonoid
 
   def fromString(value: String): Either[ParsingFailure, B] = fromString(value, alphabet)
   def unsafeFromString(value: String): B = unsafeFromString(value, alphabet)
