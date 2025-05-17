@@ -29,4 +29,4 @@ Java虽然也能写Codec，但是没有隐式参数加持的Codec就不是个好
 5. 支持derive，使用自己照着shapeless手撸的generic库实现的，Circe不支持case class A(a: Option[A])这样的递归结构，我手撸的generic库用: =>解决掉了。
 6. 照抄Circe为Java和Scala的基本类型实现了一套基本的Codec
 7. 为自己常用的http4s，doobie等库实现了codec转换，也为一些常用库的数据类型提供了基本的Codec实现
-8. 为了将http请求的query参数和urlForm参数解析了实体对象，基本此库实现了query库实现了这个功能，Query和Json可以共用同一个Codec，美滋滋。
+8. 为了将http请求的query参数和urlForm参数解析了实体对象，基于此库实现了query库实现了这个功能，Query和Json可以共用同一个Codec，美滋滋。
