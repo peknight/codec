@@ -1,8 +1,24 @@
 ThisBuild / version := "0.1.0-SNAPSHOT"
 
-ThisBuild / scalaVersion := "3.7.0"
+ThisBuild / scalaVersion := "3.7.1"
 
 ThisBuild / organization := "com.peknight"
+
+ThisBuild / publishTo := {
+  val nexus = "https://nexus.peknight.com/repository"
+  if (isSnapshot.value)
+    Some("snapshot" at s"$nexus/maven-snapshots/")
+  else
+    Some("releases" at s"$nexus/maven-releases/")
+}
+
+ThisBuild / credentials ++= Seq(
+  Credentials(Path.userHome / ".sbt" / ".credentials")
+)
+
+ThisBuild / resolvers ++= Seq(
+  "Pek Nexus" at "https://nexus.peknight.com/repository/maven-public/",
+)
 
 lazy val commonSettings = Seq(
   scalacOptions ++= Seq(
@@ -185,15 +201,15 @@ val fs2Version = "3.12.0"
 val scodecVersion = "1.2.1"
 val doobieVersion = "1.0.0-RC9"
 val http4sVersion = "1.0.0-M34"
-val cirisVersion = "3.8.0"
+val cirisVersion = "3.9.0"
 val ip4sCoreVersion = "3.7.0"
 val squantsVersion = "1.8.3"
 val scalaTestVersion = "3.2.19"
 val pekVersion = "0.1.0-SNAPSHOT"
-val pekGenericVersion = pekVersion
 val pekCommonsVersion = pekVersion
 val pekExtVersion = pekVersion
 val pekInstancesVersion = pekVersion
+val pekGenericVersion = pekVersion
 val pekErrorVersion = pekVersion
 
 val doobieCore = "org.tpolecat" %% "doobie-core" % doobieVersion
