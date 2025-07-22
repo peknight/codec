@@ -1,7 +1,9 @@
 package com.peknight.codec.http4s.instances
 
+import cats.{Applicative, Show}
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.error.DecodingFailure
+import com.peknight.codec.sum.StringType
 import com.peknight.codec.{Codec, Decoder, Encoder}
 import org.http4s.Header
 
@@ -16,7 +18,7 @@ trait HeaderInstances:
     Encoder.encodeS[F, S, A]
 
   given decodeHeaderS[F[_], S, A, T <: Header.Type](using
-    applicative: Applicative[F], stringType: StringType[S], header: Header[A, T]
+    applicative: Applicative[F], stringType: StringType[S], show: Show[S], header: Header[A, T]
   ): Decoder[F, Cursor[S], A] =
     Decoder.decodeS[F, S, A]
 end HeaderInstances
