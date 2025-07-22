@@ -1,6 +1,7 @@
 package com.peknight.codec.http4s
 
 package object instances:
+  object header extends HeaderInstances
   object host extends HostInstances
   object path extends PathInstances
   object queryParamCodec extends QueryParamEncoderInstances with QueryParamDecoderInstances
