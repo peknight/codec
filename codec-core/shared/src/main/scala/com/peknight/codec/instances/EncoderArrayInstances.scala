@@ -8,9 +8,6 @@ import com.peknight.codec.sum.ArrayType
 import com.peknight.generic.Generic
 
 trait EncoderArrayInstances extends EncoderArrayInstances1:
-  def vectorEncode[F[_], S, A](using Applicative[F], Encoder[F, S, A]): Encoder[F, Vector[S], A] =
-    Encoder.vectorEncoder[F, S, A].contramap(Vector(_))
-
   given vectorEncodeSeq[F[_], S, A](using Applicative[F], Encoder[F, S, A]): Encoder[F, Vector[S], Seq[A]] =
     Encoder.vectorEncoder[F, S, A].contramap(_.toVector)
 
