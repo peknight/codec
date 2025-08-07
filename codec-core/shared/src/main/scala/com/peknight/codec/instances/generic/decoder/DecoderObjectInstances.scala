@@ -11,8 +11,8 @@ trait DecoderObjectInstances:
   given decodeOM[F[_], S, A](
     using
     applicative: Applicative[F],
-    objectType: ObjectType.Aux[S, Object[S]],
-    decoder: Decoder[F, Object[S], A],
+    objectType: ObjectType.Aux[S, Object[String, S]],
+    decoder: Decoder[F, Object[String, S], A],
     show: Show[S]
   ): MidPriority[Decoder[F, Cursor[S], A]] =
     MidPriority(Decoder.decodeO[F, S, A])

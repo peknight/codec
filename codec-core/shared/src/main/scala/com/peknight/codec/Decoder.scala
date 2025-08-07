@@ -573,10 +573,10 @@ object Decoder extends DecoderDerivation
           case None => WrongClassTag[A].asLeft.pure
     }
 
-  def decodeO[F[_], S, A](using decoder: Decoder[F, Object[S], A])(
+  def decodeO[F[_], S, A](using decoder: Decoder[F, Object[String, S], A])(
     using
     applicative: Applicative[F],
-    objectType: ObjectType.Aux[S, Object[S]],
+    objectType: ObjectType.Aux[S, Object[String, S]],
     show: Show[S]
   ): Decoder[F, Cursor[S], A] =
     cursorValue[F, S, A] { t =>

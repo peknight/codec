@@ -98,14 +98,14 @@ object Encoder extends EncoderDerivation
 
   def objectEncodeEither[F[_], S, A, B](leftKey: String = "Left", rightKey: String = "Right")
                                        (using functor: Functor[F], encodeA: Encoder[F, S, A], encodeB: Encoder[F, S, B])
-  : Encoder[F, Object[S], Either[A, B]] = {
+  : Encoder[F, Object[String, S], Either[A, B]] = {
     case Left(left) => encodeA.encode(left).map(l => Object.singleton(leftKey, l))
     case Right(right) => encodeB.encode(right).map(r => Object.singleton(rightKey, r))
   }
 
   def objectEncodeValidated[F[_], S, E, A](failureKey: String = "Invalid", successKey: String = "Valid")(
     using functor: Functor[F], encodeE: Encoder[F, S, E], encodeA: Encoder[F, S, A]
-  ): Encoder[F, Object[S], Validated[E, A]] = {
+  ): Encoder[F, Object[String, S], Validated[E, A]] = {
     case Validated.Invalid(invalid) => encodeE.encode(invalid).map(l => Object.singleton(failureKey, l))
     case Validated.Valid(valid) => encodeA.encode(valid).map(r => Object.singleton(successKey, r))
   }
@@ -121,7 +121,7 @@ object Encoder extends EncoderDerivation
   : Encoder[F, S, A] =
     encoder.encode(_).map(numberType.to)
 
-  def encodeO[F[_], S, A](using encoder: Encoder[F, Object[S], A])(using functor: Functor[F], objectType: ObjectType[S])
+  def encodeO[F[_], S, A](using encoder: Encoder[F, Object[String, S], A])(using functor: Functor[F], objectType: ObjectType[S])
   : Encoder[F, S, A] =
     encoder.encode(_).map(obj => objectType.to(objectType.fromObject(obj)))
 

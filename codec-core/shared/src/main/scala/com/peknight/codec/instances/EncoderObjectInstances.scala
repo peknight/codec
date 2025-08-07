@@ -17,15 +17,15 @@ trait EncoderObjectInstances:
   : Encoder[F, S, O] =
     Encoder.map(objectType.to)
 
-  given objectEncodeUnit[F[_] : Applicative, S]: Encoder[F, Object[S], Unit] =
-    Encoder.const[F, Object[S], Unit](Object.empty[S])
+  given objectEncodeUnit[F[_] : Applicative, S]: Encoder[F, Object[String, S], Unit] =
+    Encoder.const[F, Object[String, S], Unit](Object.empty[String, S])
 
   given encodeUnitO[F[_]: Applicative, S: ObjectType]: Encoder[F, S, Unit] =
     Encoder.encodeO[F, S, Unit]
 
   given objectEncodeNonEmptyMap[F[_], S, K, V](
     using applicative: Applicative[F], keyEncoder: Encoder[F, String, K], valueEncoder: Encoder[F, S, V]
-  ): Encoder[F, Object[S], NonEmptyMap[K, V]] =
+  ): Encoder[F, Object[String, S], NonEmptyMap[K, V]] =
     objectEncodeMap[F, S, K, V].contramap(_.toSortedMap)
 
   given encodeNonEmptyMapO[F[_], S, K, V](using Applicative[F], Encoder[F, String, K], Encoder[F, S, V], ObjectType[S])
@@ -34,7 +34,7 @@ trait EncoderObjectInstances:
 
   given objectEncodeMap[F[_], S, K, V](
     using applicative: Applicative[F], keyEncoder: Encoder[F, String, K], valueEncoder: Encoder[F, S, V]
-  ): Encoder[F, Object[S], ImmutableMap[K, V]] =
+  ): Encoder[F, Object[String, S], ImmutableMap[K, V]] =
     objectEncodeMapLike[F, S, K, V, ImmutableMap](using applicative, keyEncoder, valueEncoder, identity)
 
   given encodeMapO[F[_], S, K, V](using Applicative[F], Encoder[F, String, K], Encoder[F, S, V], ObjectType[S])
@@ -47,8 +47,8 @@ trait EncoderObjectInstances:
     keyEncoder: Encoder[F, String, K],
     valueEncoder: Encoder[F, S, V],
     ev: M[K, V] => Iterable[(K, V)]
-  ): Encoder[F, Object[S], M[K, V]] with
-    def encode(a: M[K, V]): F[Object[S]] =
+  ): Encoder[F, Object[String, S], M[K, V]] with
+    def encode(a: M[K, V]): F[Object[String, S]] =
       ev(a).toVector.traverse[F, (String, S)] {
         case (k, v) => (keyEncoder.encode(k), valueEncoder.encode(v)).mapN((_, _))
       }.map(Object.fromIterable)

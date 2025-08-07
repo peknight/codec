@@ -21,8 +21,8 @@ trait DecoderObjectInstances extends DecoderObjectInstances1:
         case None => NotObject.asLeft
     }
 
-  given objectDecodeUnit[F[_]: Applicative, S: Show]: Decoder[F, Object[S], Unit] =
-    Decoder.applicative[F, Object[S], Unit](t => if t.isEmpty then ().asRight else NotUnit.value(t).asLeft)
+  given objectDecodeUnit[F[_]: Applicative, S: Show]: Decoder[F, Object[String, S], Unit] =
+    Decoder.applicative[F, Object[String, S], Unit](t => if t.isEmpty then ().asRight else NotUnit.value(t).asLeft)
 
   given decodeUnitAOU[F[_]: Applicative, S: {ObjectType, ArrayType, NullType, Show}]: Decoder[F, Cursor[S], Unit] =
     Decoder.cursor[F, S, Unit](Decoder.decodeUnit(_)(
