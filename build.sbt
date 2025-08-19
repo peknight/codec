@@ -1,154 +1,121 @@
-ThisBuild / version := "0.1.0-SNAPSHOT"
+import com.peknight.build.gav.*
+import com.peknight.build.sbt.*
 
-ThisBuild / scalaVersion := "3.7.1"
-
-ThisBuild / organization := "com.peknight"
-
-ThisBuild / versionScheme := Some("early-semver")
-
-ThisBuild / publishTo := {
-  val nexus = "https://nexus.peknight.com/repository"
-  if (isSnapshot.value)
-    Some("snapshot" at s"$nexus/maven-snapshots/")
-  else
-    Some("releases" at s"$nexus/maven-releases/")
-}
-
-ThisBuild / credentials ++= Seq(
-  Credentials(Path.userHome / ".sbt" / ".credentials")
-)
-
-ThisBuild / resolvers ++= Seq(
-  "Pek Nexus" at "https://nexus.peknight.com/repository/maven-public/",
-)
-
-lazy val commonSettings = Seq(
-  scalacOptions ++= Seq(
-    "-feature",
-    "-deprecation",
-    "-unchecked",
-    "-Xfatal-warnings",
-    "-language:strictEquality",
-    "-Xmax-inlines:64"
-  ),
-)
+commonSettings
 
 lazy val codec = (project in file("."))
   .aggregate(
     codecCore.jvm,
     codecCore.js,
+    codecCore.native,
     codecEffect.jvm,
     codecEffect.js,
     codecBase.jvm,
     codecBase.js,
+    codecBase.native,
     codecCirce.jvm,
     codecCirce.js,
+    codecCirce.native,
     codecCirceParser.jvm,
     codecCirceParser.js,
+    codecCirceParser.native,
     codecDoobie.jvm,
     codecDoobie.js,
+    codecDoobie.native,
     codecFs2IO.jvm,
     codecFs2IO.js,
     codecHttp4s.jvm,
     codecHttp4s.js,
+    codecHttp4s.native,
     codecHttp4sCirce.jvm,
     codecHttp4sCirce.js,
+    codecHttp4sCirce.native,
     codecCiris.jvm,
     codecCiris.js,
+    codecCiris.native,
     codecIp4s.jvm,
     codecIp4s.js,
+    codecIp4s.native,
     codecSquants.jvm,
     codecSquants.js,
+    codecSquants.native,
   )
-  .settings(commonSettings)
   .settings(
     name := "codec"
   )
 
-lazy val codecCore = (crossProject(JSPlatform, JVMPlatform) in file("codec-core"))
-  .settings(commonSettings)
+lazy val codecCore = (crossProject(JVMPlatform, JSPlatform, NativePlatform) in file("codec-core"))
+  .settings(crossDependencies(
+    peknight.generic.migration,
+    peknight.ext.cats,
+    peknight.error,
+    peknight.commons.text,
+    typelevel.catsParse,
+  ))
+  .settings(crossTestDependencies(
+    scalaTest
+  ))
   .settings(
     name := "codec-core",
-    libraryDependencies ++= Seq(
-      "com.peknight" %%% "generic-migration" % pekGenericVersion,
-      "com.peknight" %%% "cats-ext" % pekExtVersion,
-      "com.peknight" %%% "error-core" % pekErrorVersion,
-      "com.peknight" %%% "commons-text" % pekCommonsVersion,
-      "org.typelevel" %%% "cats-parse" % catsParseVersion,
-      "org.scalatest" %%% "scalatest" % scalaTestVersion % Test,
-    ),
   )
 
-lazy val codecEffect = (crossProject(JSPlatform, JVMPlatform) in file("codec-effect"))
+lazy val codecEffect = (crossProject(JVMPlatform, JSPlatform) in file("codec-effect"))
   .dependsOn(codecCore)
-  .settings(commonSettings)
+  .settings(crossDependencies(
+    typelevel.catsEffect,
+    peknight.commons.text,
+  ))
   .settings(
     name := "codec-effect",
-    libraryDependencies ++= Seq(
-      "org.typelevel" %%% "cats-effect" % catsEffectVersion,
-      "com.peknight" %%% "commons-text" % pekCommonsVersion,
-    ),
   )
 
-lazy val codecBase = (crossProject(JSPlatform, JVMPlatform) in file("codec-base"))
+lazy val codecBase = (crossProject(JVMPlatform, JSPlatform, NativePlatform) in file("codec-base"))
   .dependsOn(codecCore)
-  .settings(commonSettings)
+  .settings(crossDependencies(peknight.ext.scodec.bits))
   .settings(
     name := "codec-base",
-    libraryDependencies ++= Seq(
-      "com.peknight" %%% "scodec-bits-ext" % pekExtVersion,
-    ),
   )
 
-lazy val codecCirce = (crossProject(JSPlatform, JVMPlatform) in file("codec-circe"))
+lazy val codecCirce = (crossProject(JVMPlatform, JSPlatform, NativePlatform) in file("codec-circe"))
   .dependsOn(codecCore)
-  .settings(commonSettings)
+  .settings(crossDependencies(peknight.ext.circe))
+  .settings(crossTestDependencies(
+    peknight.instances.cats.circe,
+    scalaTest,
+  ))
   .settings(
     name := "codec-circe",
-    libraryDependencies ++= Seq(
-      "com.peknight" %%% "circe-ext" % pekExtVersion,
-      "com.peknight" %%% "cats-instances-circe" % pekInstancesVersion % Test,
-      "org.scalatest" %%% "scalatest" % scalaTestVersion % Test,
-    ),
   )
 
-lazy val codecCirceParser = (crossProject(JSPlatform, JVMPlatform) in file("codec-circe-parser"))
+lazy val codecCirceParser = (crossProject(JVMPlatform, JSPlatform, NativePlatform) in file("codec-circe-parser"))
   .dependsOn(codecCirce)
-  .settings(commonSettings)
+  .settings(crossDependencies(peknight.ext.circeParser))
+  .settings(crossTestDependencies(scalaTest))
   .settings(
     name := "codec-circe-parser",
-    libraryDependencies ++= Seq(
-      "com.peknight" %%% "circe-parser-ext" % pekExtVersion,
-      "org.scalatest" %%% "scalatest" % scalaTestVersion % Test,
-    ),
   )
 
-lazy val codecDoobie = (crossProject(JSPlatform, JVMPlatform) in file("codec-doobie"))
+lazy val codecDoobie = (crossProject(JVMPlatform, JSPlatform, NativePlatform) in file("codec-doobie"))
   .dependsOn(codecCore)
-  .settings(commonSettings)
   .settings(
     name := "codec-doobie",
-    libraryDependencies ++= Seq(
-    )
   )
   .jvmSettings(
     libraryDependencies ++= Seq(
-      doobieCore,
+      jvmDependency(tpolecat.doobie),
     ),
   )
 
-lazy val codecFs2IO = (crossProject(JSPlatform, JVMPlatform) in file("codec-fs2-io"))
+lazy val codecFs2IO = (crossProject(JVMPlatform, JSPlatform, NativePlatform) in file("codec-fs2-io"))
   .dependsOn(codecCore)
-  .settings(commonSettings)
   .settings(
     name := "codec-fs2-io",
     libraryDependencies ++= Seq(
       "co.fs2" %%% "fs2-io" % fs2Version,
     )
   )
-lazy val codecHttp4s = (crossProject(JSPlatform, JVMPlatform) in file("codec-http4s"))
+lazy val codecHttp4s = (crossProject(JVMPlatform, JSPlatform, NativePlatform) in file("codec-http4s"))
   .dependsOn(codecCore)
-  .settings(commonSettings)
   .settings(
     name := "codec-http4s",
     libraryDependencies ++= Seq(
@@ -156,9 +123,8 @@ lazy val codecHttp4s = (crossProject(JSPlatform, JVMPlatform) in file("codec-htt
     )
   )
 
-lazy val codecHttp4sCirce = (crossProject(JSPlatform, JVMPlatform) in file("codec-http4s-circe"))
+lazy val codecHttp4sCirce = (crossProject(JVMPlatform, JSPlatform, NativePlatform) in file("codec-http4s-circe"))
   .dependsOn(codecCirce)
-  .settings(commonSettings)
   .settings(
     name := "codec-http4s-circe",
     libraryDependencies ++= Seq(
@@ -166,9 +132,8 @@ lazy val codecHttp4sCirce = (crossProject(JSPlatform, JVMPlatform) in file("code
     )
   )
 
-lazy val codecCiris = (crossProject(JSPlatform, JVMPlatform) in file("codec-ciris"))
+lazy val codecCiris = (crossProject(JVMPlatform, JSPlatform, NativePlatform) in file("codec-ciris"))
   .dependsOn(codecCore)
-  .settings(commonSettings)
   .settings(
     name := "codec-ciris",
     libraryDependencies ++= Seq(
@@ -177,9 +142,8 @@ lazy val codecCiris = (crossProject(JSPlatform, JVMPlatform) in file("codec-ciri
     )
   )
 
-lazy val codecIp4s = (crossProject(JSPlatform, JVMPlatform) in file("codec-ip4s"))
+lazy val codecIp4s = (crossProject(JVMPlatform, JSPlatform, NativePlatform) in file("codec-ip4s"))
   .dependsOn(codecCore)
-  .settings(commonSettings)
   .settings(
     name := "codec-ip4s",
     libraryDependencies ++= Seq(
@@ -187,9 +151,8 @@ lazy val codecIp4s = (crossProject(JSPlatform, JVMPlatform) in file("codec-ip4s"
     )
   )
 
-lazy val codecSquants = (crossProject(JSPlatform, JVMPlatform) in file("codec-squants"))
+lazy val codecSquants = (crossProject(JVMPlatform, JSPlatform, NativePlatform) in file("codec-squants"))
   .dependsOn(codecCore)
-  .settings(commonSettings)
   .settings(
     name := "codec-squants",
     libraryDependencies ++= Seq(
