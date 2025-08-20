@@ -79,7 +79,7 @@ lazy val codecCirce = (crossProject(JVMPlatform, JSPlatform) in file("codec-circ
 
 lazy val codecCirceParser = (crossProject(JVMPlatform, JSPlatform) in file("codec-circe-parser"))
   .dependsOn(codecCirce)
-  .settings(crossDependencies(peknight.ext.circeParser))
+  .settings(crossDependencies(peknight.ext.circe.parser))
   .settings(crossTestDependencies(scalaTest))
   .settings(
     name := "codec-circe-parser",
