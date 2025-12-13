@@ -1,6 +1,6 @@
 package com.peknight.codec.path
 
-sealed trait PathElem
+sealed trait PathElem derives CanEqual
 object PathElem:
   case class ObjectKey(keyName: String) extends PathElem
   case class ArrayIndex(index: Long) extends PathElem
