@@ -3,7 +3,7 @@ package com.peknight.codec.circe
 import cats.Applicative
 import cats.syntax.applicative.*
 import cats.syntax.either.*
-import com.peknight.circe.parser.ext.parse
+import com.peknight.circe.parser.parse
 import com.peknight.codec.Decoder
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.error.DecodingFailure

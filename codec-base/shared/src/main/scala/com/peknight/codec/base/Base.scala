@@ -3,7 +3,7 @@ package com.peknight.codec.base
 import cats.Applicative
 import cats.syntax.functor.*
 import com.peknight.codec.error.DecodingFailure
-import com.peknight.scodec.bits.ext.syntax.byteVector.toUnsignedBigInt
+import com.peknight.scodec.bits.syntax.byteVector.toUnsignedBigInt
 import scodec.bits.Bases.Alphabet
 import scodec.bits.ByteVector
 

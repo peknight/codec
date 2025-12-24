@@ -5,8 +5,8 @@ import cats.syntax.applicative.*
 import cats.syntax.either.*
 import cats.syntax.functor.*
 import cats.{Applicative, Order, Show}
-import com.peknight.cats.ext.data.ChainBuilder
-import com.peknight.cats.ext.instances.applicative.given
+import com.peknight.cats.data.ChainBuilder
+import com.peknight.cats.instances.applicative.given
 import com.peknight.codec.Decoder
 import com.peknight.codec.cursor.Cursor
 import com.peknight.codec.cursor.Cursor.{FailedCursor, SuccessCursor}

@@ -8,7 +8,7 @@ import cats.syntax.functor.*
 import cats.syntax.option.*
 import cats.syntax.validated.*
 import cats.{Monad, Show}
-import com.peknight.cats.ext.instances.applicative.given
+import com.peknight.cats.instances.applicative.given
 import com.peknight.codec.Decoder
 import com.peknight.codec.config.DecoderConfig
 import com.peknight.codec.cursor.Cursor
