@@ -17,7 +17,7 @@ class InstantDecoderFlatSpec extends AnyFlatSpec:
 
   case class Box(time: Instant)
 
-  "Instant Decoder" should "succeed with epoch second" in {
+  "Instant Decoder" should "pass for epoch second" in {
     given codecInstant[F[_] : Applicative, S: {NumberType, StringType, Show}]: Codec[F, S, Cursor[S], Instant] =
       codecInstantOfEpochSecondNS[F, S]
     given codecBox[F[_]: Monad, S: {ObjectType, NullType, NumberType, StringType, Show}]: Codec[F, S, Cursor[S], Box] =
@@ -27,7 +27,7 @@ class InstantDecoderFlatSpec extends AnyFlatSpec:
     )
   }
 
-  "Instant Decoder" should "succeed with epoch milli" in {
+  "Instant Decoder" should "pass for epoch milli" in {
     given codecInstant[F[_] : Applicative, S: {NumberType, StringType, Show}]: Codec[F, S, Cursor[S], Instant] =
       codecInstantOfEpochMilliNS[F, S]
     given codecBox[F[_]: Monad, S: {ObjectType, NullType, NumberType, StringType, Show}]: Codec[F, S, Cursor[S], Box] =
