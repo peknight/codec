@@ -97,7 +97,7 @@ lazy val codecCiris = (crossProject(JVMPlatform, JSPlatform) in file("codec-ciri
 lazy val codecIp4s = (crossProject(JVMPlatform, JSPlatform) in file("codec-ip4s"))
   .dependsOn(codecCore)
   .settings(name := "codec-ip4s")
-  .settings(crossDependencies(comcast.ip4s))
+  .settings(crossDependencies(peknight.ip4s))
 
 lazy val codecSquants = (crossProject(JVMPlatform, JSPlatform) in file("codec-squants"))
   .dependsOn(codecCore)
