@@ -3,12 +3,14 @@ package com.peknight.codec.derivation
 import cats.syntax.applicative.*
 import cats.syntax.either.*
 import cats.syntax.functor.*
-import cats.{Applicative, Functor, Id, Monad, Show}
+import cats.{Applicative, Functor, Id, Show}
 import com.peknight.codec.Decoder
 import com.peknight.codec.config.Config
 import com.peknight.codec.error.{DecodingFailure, NoSuchEnum}
 import com.peknight.generic.Generic
 import com.peknight.generic.compiletime.summonAllSingletons
+
+import scala.annotation.tailrec
 
 trait EnumDecoderDerivation:
   def enumDecoderInstance[F[_], T, A](decode0: T => F[Either[DecodingFailure, A]])
@@ -141,14 +143,14 @@ trait EnumDecoderDerivation:
       .map { case ((label, singletonOpt), sumOpt) => (label, singletonOpt, sumOpt) }
 
   private def singletons[A](generic: Generic.Sum[A]): Map[String, A] =
-    Monad[List].tailRecM[(Map[String, A], List[(String, Option[A], Option[Generic.Sum[? <: A]])]), Map[String, A]]((
-      Map.empty, labelSingletonSums[A](generic)
-    )) {
-      case (acc, Nil) => List(acc.asRight)
-      case (acc, (label, _, _) :: tail) if acc.contains(label) => List((acc, tail).asLeft)
-      case (acc, (label, Some(singleton), _) :: tail) => List((acc + (label -> singleton), tail).asLeft)
-      case (acc, (_, _, Some(sum)) :: tail) => List((acc, labelSingletonSums[A](sum) ::: tail).asLeft)
-      case (acc, _ :: tail) => List((acc, tail).asLeft)
-    }.headOption.getOrElse(Map.empty)
+    @tailrec def go(acc: Map[String, A], list: List[(String, Option[A], Option[Generic.Sum[? <: A]])]): Map[String, A] =
+      list match
+        case Nil => acc
+        case (label, _, _) :: tail if acc.contains(label) => go(acc, tail)
+        case (label, Some(singleton), _) :: tail => go(acc + (label -> singleton), tail)
+        case (_, _, Some(sum)) :: tail => go(acc, labelSingletonSums[A](sum) ::: tail)
+        case _ :: tail => go(acc, tail)
+    go(Map.empty, labelSingletonSums[A](generic))
+  end singletons
 end EnumDecoderDerivation
 object EnumDecoderDerivation extends EnumDecoderDerivation
