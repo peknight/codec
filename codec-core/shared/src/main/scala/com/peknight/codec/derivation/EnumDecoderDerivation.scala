@@ -3,7 +3,7 @@ package com.peknight.codec.derivation
 import cats.syntax.applicative.*
 import cats.syntax.either.*
 import cats.syntax.functor.*
-import cats.{Applicative, Functor, Id, Show}
+import cats.{Applicative, Functor, Id, Monad, Show}
 import com.peknight.codec.Decoder
 import com.peknight.codec.config.Config
 import com.peknight.codec.error.{DecodingFailure, NoSuchEnum}
@@ -129,12 +129,26 @@ trait EnumDecoderDerivation:
     generic: Generic.Sum[A],
     f: String => Option[A] = _ => None
   ): F[Either[DecodingFailure, A]] =
-    generic.labels.zip(generic.singletons).toList.asInstanceOf[List[(String, Option[A])]]
-      .find(tuple => config.transformConstructorNames(tuple._1).toList.contains(caseName))
-      .flatMap(_._2)
+    singletons[A](generic).find((label, _) => config.transformConstructorNames(label).toList.contains(caseName))
+      .map((_, singleton) => singleton)
       .orElse(f(caseName))
       .toRight(NoSuchEnum(caseName).label(generic.label))
       .pure[F]
 
+  private def labelSingletonSums[A](generic: Generic.Sum[? <: A]): List[(String, Option[A], Option[Generic.Sum[? <: A]])] =
+    generic.labels.zip(generic.singletons).zip(generic.sums).toList
+      .asInstanceOf[List[((String, Option[A]), Option[Generic.Sum[? <: A]])]]
+      .map { case ((label, singletonOpt), sumOpt) => (label, singletonOpt, sumOpt) }
+
+  private def singletons[A](generic: Generic.Sum[A]): Map[String, A] =
+    Monad[List].tailRecM[(Map[String, A], List[(String, Option[A], Option[Generic.Sum[? <: A]])]), Map[String, A]]((
+      Map.empty, labelSingletonSums[A](generic)
+    )) {
+      case (acc, Nil) => List(acc.asRight)
+      case (acc, (label, _, _) :: tail) if acc.contains(label) => List((acc, tail).asLeft)
+      case (acc, (label, Some(singleton), _) :: tail) => List((acc + (label -> singleton), tail).asLeft)
+      case (acc, (_, _, Some(sum)) :: tail) => List((acc, labelSingletonSums[A](sum) ::: tail).asLeft)
+      case (acc, _ :: tail) => List((acc, tail).asLeft)
+    }.headOption.getOrElse(Map.empty)
 end EnumDecoderDerivation
 object EnumDecoderDerivation extends EnumDecoderDerivation
