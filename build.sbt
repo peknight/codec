@@ -12,6 +12,8 @@ lazy val codec = (project in file("."))
     codecEffect.js,
     codecBase.jvm,
     codecBase.js,
+    codecCaseInsensitive.jvm,
+    codecCaseInsensitive.js,
     codecCirce.jvm,
     codecCirce.js,
     codecCirceParser.jvm,
