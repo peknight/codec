@@ -55,6 +55,11 @@ lazy val codecBase = (crossProject(JVMPlatform, JSPlatform) in file("codec-base"
   .settings(name := "codec-base")
   .settings(crossDependencies(peknight.scodec.bits))
 
+lazy val codecCaseInsensitive = (crossProject(JVMPlatform, JSPlatform) in file("codec-case-insensitive"))
+  .dependsOn(codecCore)
+  .settings(name := "codec-case-insensitive")
+  .settings(crossDependencies(typelevel.caseInsensitive))
+
 lazy val codecCirce = (crossProject(JVMPlatform, JSPlatform) in file("codec-circe"))
   .dependsOn(codecCore)
   .settings(name := "codec-circe")
@@ -78,7 +83,7 @@ lazy val codecFs2IO = (crossProject(JVMPlatform, JSPlatform) in file("codec-fs2-
   .settings(crossDependencies(fs2.io))
 
 lazy val codecHttp4s = (crossProject(JVMPlatform, JSPlatform) in file("codec-http4s"))
-  .dependsOn(codecCore)
+  .dependsOn(codecCaseInsensitive)
   .settings(name := "codec-http4s")
   .settings(crossDependencies(http4s))
 
