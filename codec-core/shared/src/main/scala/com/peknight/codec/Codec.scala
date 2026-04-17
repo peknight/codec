@@ -13,6 +13,8 @@ import com.peknight.codec.sum.{NullType, NumberType, ObjectType, StringType}
 import com.peknight.generic.Generic
 import com.peknight.generic.tuple.Map
 
+import java.time.format.DateTimeFormatter
+import java.time.temporal.TemporalAccessor
 import scala.reflect.ClassTag
 import scala.util.Try
 
@@ -131,4 +133,14 @@ object Codec extends CodecDerivation:
   def stringCodecWithNumberCodec[F[_], A](using Encoder[F, Number, A], Decoder[F, Number, A])(using Applicative[F])
   : Codec[F, String, String, A] =
     Codec[F, String, String, A](using Encoder.stringEncodeWithNumberEncoder[F, A], Decoder.stringDecodeWithNumberDecoder[F, A])
+
+  def stringCodecJavaTime[F[_]: Applicative, A <: TemporalAccessor: ClassTag](formatter: DateTimeFormatter)
+                                                                             (f: (String, DateTimeFormatter) => A)
+  : Codec[F, String, String, A] =
+    apply(using Encoder.stringEncodeJavaTime[F, A](formatter), Decoder.stringDecodeJavaTime[F, A](formatter)(f))
+
+  def codecJavaTimeS[F[_]: Applicative, S: {StringType, Show}, A <: TemporalAccessor: ClassTag](formatter: DateTimeFormatter)
+                                                                                               (f: (String, DateTimeFormatter) => A)
+  : Codec[F, S, Cursor[S], A] =
+    codecS[F, S, A](using Encoder.stringEncodeJavaTime[F, A](formatter), Decoder.stringDecodeJavaTime[F, A](formatter)(f))
 end Codec
