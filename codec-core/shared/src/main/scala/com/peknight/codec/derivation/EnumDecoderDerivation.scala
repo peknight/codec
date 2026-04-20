@@ -10,8 +10,6 @@ import com.peknight.codec.error.{DecodingFailure, NoSuchEnum}
 import com.peknight.generic.Generic
 import com.peknight.generic.compiletime.summonAllSingletons
 
-import scala.annotation.tailrec
-
 trait EnumDecoderDerivation:
   def enumDecoderInstance[F[_], T, A](decode0: T => F[Either[DecodingFailure, A]])
                                      (decoders0: Decoder[F, T, A] => Map[String, Decoder[F, T, ?]])
@@ -131,26 +129,10 @@ trait EnumDecoderDerivation:
     generic: Generic.Sum[A],
     f: String => Option[A] = _ => None
   ): F[Either[DecodingFailure, A]] =
-    singletons[A](generic).find((label, _) => config.transformConstructorNames(label).toList.contains(caseName))
+    generic.labeledSingletons.find((label, _) => config.transformConstructorNames(label).toList.contains(caseName))
       .map((_, singleton) => singleton)
       .orElse(f(caseName))
       .toRight(NoSuchEnum(caseName).label(generic.label))
       .pure[F]
-
-  private def labelSingletonSums[A](generic: Generic.Sum[? <: A]): List[(String, Option[A], Option[Generic.Sum[? <: A]])] =
-    generic.labels.zip(generic.singletons).zip(generic.sums).toList
-      .asInstanceOf[List[((String, Option[A]), Option[Generic.Sum[? <: A]])]]
-      .map { case ((label, singletonOpt), sumOpt) => (label, singletonOpt, sumOpt) }
-
-  private def singletons[A](generic: Generic.Sum[A]): Map[String, A] =
-    @tailrec def go(acc: Map[String, A], list: List[(String, Option[A], Option[Generic.Sum[? <: A]])]): Map[String, A] =
-      list match
-        case Nil => acc
-        case (label, _, _) :: tail if acc.contains(label) => go(acc, tail)
-        case (label, Some(singleton), _) :: tail => go(acc + (label -> singleton), tail)
-        case (_, _, Some(sum)) :: tail => go(acc, labelSingletonSums[A](sum) ::: tail)
-        case _ :: tail => go(acc, tail)
-    go(Map.empty, labelSingletonSums[A](generic))
-  end singletons
 end EnumDecoderDerivation
 object EnumDecoderDerivation extends EnumDecoderDerivation
