@@ -1,4 +1,4 @@
-package com.peknight.codec.squants.instances.market
+package com.peknight.codec.squants.instances
 
 import cats.Applicative
 import com.peknight.codec.Codec

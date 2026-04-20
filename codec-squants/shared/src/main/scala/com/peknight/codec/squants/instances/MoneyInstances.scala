@@ -1,4 +1,4 @@
-package com.peknight.codec.squants.instances.market
+package com.peknight.codec.squants.instances
 
 import cats.{Applicative, Show}
 import com.peknight.codec.cursor.Cursor
