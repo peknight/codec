@@ -302,6 +302,10 @@ object Decoder extends DecoderDerivation
       case None => NotUnit.cursor(t).asLeft.pure
   end decodeUnit
 
+  def stringDecodeSum[F[_]: Applicative, A](f: (String, String, A) => Boolean)
+                                           (using generic: Generic.Sum[A], classTag: ClassTag[A]): Decoder[F, String, A] =
+    mapOption[F, String, A](t => generic.labeledSingletons.find((label, value) => f(t, label, value)).map(_._2))
+
   def numberDecodeNumber[F[_]: Applicative, A](f: Number => A): Decoder[F, Number, A] = map[F, Number, A](f)
 
   def numberDecodeNumberOption[F[_]: Applicative, A: ClassTag](f: Number => Option[A]): Decoder[F, Number, A] =

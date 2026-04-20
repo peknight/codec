@@ -126,6 +126,12 @@ object Codec extends CodecDerivation:
                         (using Applicative[F], StringType[S], Show[S], ClassTag[A]): Codec[F, S, Cursor[S], A] =
     Codec[F, S, Cursor[S], A](using Encoder.encodeS[F, S, A], Decoder.decodeS[F, S, A])
 
+
+  def stringCodecSum[F[_]: Applicative, A](f: A => String)(g: (String, String, A) => Boolean)
+                                          (using generic: Generic.Sum[A], classTag: ClassTag[A])
+  : Codec[F, String, String, A] =
+    mapOption[F, String, String, A](f)(t => generic.labeledSingletons.find((label, value) => g(t, label, value)).map(_._2))
+
   def stringCodecWithNumberDecoder[F[_], A](using Decoder[F, Number, A])(using Applicative[F])
   : Codec[F, String, String, A] =
     Codec[F, String, String, A](using Encoder.encodeWithToString[F, A], Decoder.stringDecodeWithNumberDecoder[F, A])
