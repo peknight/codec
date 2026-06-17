@@ -4,8 +4,8 @@ import cats.Id
 import com.peknight.codec.Encoder
 import com.peknight.codec.number.Number
 import com.peknight.codec.syntax.encoder.asS
-import doobie.{Meta, Put}
 import org.tpolecat.typename.TypeName
+import org.typelevel.doobie.{Meta, Put}
 
 trait PutInstances extends PutInstances1:
   given byteEncodeWithTypeNameAsPut[A](using Encoder[Id, Byte, A], TypeName[A]): Put[A] = Meta[Byte].encodeTo[A]

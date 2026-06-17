@@ -77,7 +77,7 @@ lazy val codecCirceParser = (crossProject(JVMPlatform, JSPlatform) in file("code
 lazy val codecDoobie = (crossProject(JVMPlatform, JSPlatform) in file("codec-doobie"))
   .dependsOn(codecCore)
   .settings(name := "codec-doobie")
-  .jvmSettings(libraryDependencies ++= Seq(dependency(tpolecat.doobie)))
+  .jvmSettings(libraryDependencies ++= Seq(dependency(typelevel.doobie)))
 
 lazy val codecFs2IO = (crossProject(JVMPlatform, JSPlatform) in file("codec-fs2-io"))
   .dependsOn(codecCore)

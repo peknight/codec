@@ -2,8 +2,8 @@ package com.peknight.codec.doobie.instances
 
 import cats.Id
 import com.peknight.codec.Encoder
-import doobie.{Meta, Put}
 import org.tpolecat.typename.TypeName
+import org.typelevel.doobie.{Meta, Put}
 
 trait PutInstances1:
   extension [S] (meta: Meta[S])

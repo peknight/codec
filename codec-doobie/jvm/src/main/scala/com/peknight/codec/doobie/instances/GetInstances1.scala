@@ -4,8 +4,8 @@ import cats.{Id, Show}
 import com.peknight.codec.Decoder
 import com.peknight.codec.number.Number
 import com.peknight.codec.syntax.decoder.asA
-import doobie.{Get, Meta}
 import org.tpolecat.typename.TypeName
+import org.typelevel.doobie.{Get, Meta}
 
 trait GetInstances1:
   extension[T] (meta: Meta[T])
