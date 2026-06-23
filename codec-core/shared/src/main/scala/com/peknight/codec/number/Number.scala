@@ -1,5 +1,6 @@
 package com.peknight.codec.number
 
+import cats.parse.Parser0
 import cats.{Eq, Show}
 
 /**
@@ -163,6 +164,8 @@ object Number:
 
   def fromStringUnsafe(value: String): Number =
     BiggerDecimalNumber(BiggerDecimal.parseBiggerDecimalUnsafe(value))
+
+  val parser: Parser0[Number] = BiggerDecimal.parser.map(fromBiggerDecimal)
 
   private val bigDecimalMinLong: BigDecimal = BigDecimal(Long.MinValue)
   private val bigDecimalMaxLong: BigDecimal = BigDecimal(Long.MaxValue)

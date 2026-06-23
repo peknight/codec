@@ -1,7 +1,7 @@
 package com.peknight.codec.number
 
 import cats.parse.Numbers.digits0
-import cats.parse.Parser
+import cats.parse.{Parser, Parser0}
 import cats.syntax.either.*
 import cats.syntax.option.*
 import com.peknight.error.parse.ParsingFailure
@@ -205,52 +205,55 @@ object BiggerDecimal:
     val bound = if s.charAt(0) == '-' then MinLongString else MaxLongString
     s.length < bound.length || (s.length == bound.length && s.compareTo(bound) <= 0)
 
+  private val negativeParser: Parser0[Boolean] =
+    (Parser.char('-').as(true) | Parser.char('+').as(false)).?.map(_.getOrElse(false))
+  private val percentScaleParser: Parser0[Int] =
+    Parser.charIn("%‰‱").map {
+      case '%' => 2
+      case '‰' => 3
+      case '‱' => 4
+    }.?.map(_.getOrElse(0))
+
+  val parser: Parser0[BiggerDecimal] =
+    for
+      negativeFlag <- negativeParser
+      integral <- digits0
+      fractional <- (Parser.char('.') *> digits0).?.map(_.filter(_.nonEmpty))
+      exponent <- (Parser.charIn("eE") *> (negativeParser ~ digits0)).?
+      percentScale <- percentScaleParser
+    yield
+      val negativeStr = if negativeFlag then "-" else ""
+      val integralStr = if integral.nonEmpty then integral else "0"
+      val fractionalStr = fractional.getOrElse("")
+      val unsignedStr = s"$integralStr$fractionalStr"
+      val zeros: Int = unsignedStr
+        .zipWithIndex
+        .findLast(_._1 != '0')
+        .map(unsignedStr.length - 1 - _._2)
+        .getOrElse(0)
+      if unsignedStr.length == zeros then
+        if negativeFlag then NegativeZero else UnsignedZero
+      else
+        val unscaledStr =
+          if zeros == 0 then s"$negativeStr$unsignedStr"
+          else s"$negativeStr${unsignedStr.substring(0, unsignedStr.length - zeros)}"
+        val unscaled = BigInt(unscaledStr)
+        if unscaled == ZeroInt then
+          if negativeFlag then NegativeZero else UnsignedZero
+        else
+          val rescale = BigInt(fractionalStr.length - zeros + percentScale)
+          val scale =
+            exponent match
+              case Some((expNeg, exp)) => rescale - (if expNeg then BigInt(s"-$exp") else BigInt(exp))
+              case None => rescale
+          SigAndExp(unscaled, scale)
+
   /**
    * Parse string into [[BiggerDecimal]].
    */
   def parseBiggerDecimal(input: String): Either[ParsingFailure, Option[BiggerDecimal]] =
     if input.isEmpty then none[BiggerDecimal].asRight[ParsingFailure]
-    else
-      val negativeParser = (Parser.char('-').as(true) | Parser.char('+').as(false)).?.map(_.getOrElse(false))
-      val percentScaleParser = Parser.charIn("%‰‱").map {
-        case '%' => 2
-        case '‰' => 3
-        case '‱' => 4
-      }.?.map(_.getOrElse(0))
-      val parser =
-        for
-          negativeFlag <- negativeParser
-          integral <- digits0
-          fractional <- (Parser.char('.') *> digits0).?.map(_.filter(_.nonEmpty))
-          exponent <- (Parser.charIn("eE") *> (negativeParser ~ digits0)).?
-          percentScale <- percentScaleParser
-        yield
-          val negativeStr = if negativeFlag then "-" else ""
-          val integralStr = if integral.nonEmpty then integral else "0"
-          val fractionalStr = fractional.getOrElse("")
-          val unsignedStr = s"$integralStr$fractionalStr"
-          val zeros: Int = unsignedStr
-            .zipWithIndex
-            .findLast(_._1 != '0')
-            .map(unsignedStr.length - 1 - _._2)
-            .getOrElse(0)
-          if unsignedStr.length == zeros then
-            if negativeFlag then NegativeZero else UnsignedZero
-          else
-            val unscaledStr =
-              if zeros == 0 then s"$negativeStr$unsignedStr"
-              else s"$negativeStr${unsignedStr.substring(0, unsignedStr.length - zeros)}"
-            val unscaled = BigInt(unscaledStr)
-            if unscaled == ZeroInt then
-              if negativeFlag then NegativeZero else UnsignedZero
-            else
-              val rescale = BigInt(fractionalStr.length - zeros + percentScale)
-              val scale =
-                exponent match
-                  case Some((expNeg, exp)) => rescale - (if expNeg then BigInt(s"-$exp") else BigInt(exp))
-                  case None => rescale
-              SigAndExp(unscaled, scale)
-      parser.parseAll(input).left.map(ParsingFailure.apply).map(_.some)
+    else parser.parseAll(input).left.map(ParsingFailure.apply).map(_.some)
 
   /**
    * Parse string into [[BiggerDecimal]]. throw exception on parsing failure.
