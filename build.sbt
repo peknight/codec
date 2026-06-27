@@ -5,108 +5,119 @@ commonSettings
 
 lazy val codec = (project in file("."))
   .settings(name := "codec")
-  .aggregate(
-    codecCore.jvm,
-    codecCore.js,
-    codecEffect.jvm,
-    codecEffect.js,
-    codecBase.jvm,
-    codecBase.js,
-    codecCaseInsensitive.jvm,
-    codecCaseInsensitive.js,
-    codecCirce.jvm,
-    codecCirce.js,
-    codecCirceParser.jvm,
-    codecCirceParser.js,
-    codecDoobie.jvm,
-    codecDoobie.js,
-    codecFs2IO.jvm,
-    codecFs2IO.js,
-    codecHttp4s.jvm,
-    codecHttp4s.js,
-    codecHttp4sCirce.jvm,
-    codecHttp4sCirce.js,
-    codecCiris.jvm,
-    codecCiris.js,
-    codecIp4s.jvm,
-    codecIp4s.js,
-    codecSquants.jvm,
-    codecSquants.js,
-  )
+  .aggregate(codecCore.projectRefs *)
+  .aggregate(codecEffect.projectRefs *)
+  .aggregate(codecBase.projectRefs *)
+  .aggregate(codecCaseInsensitive.projectRefs *)
+  .aggregate(codecCirce.projectRefs *)
+  .aggregate(codecCirceParser.projectRefs *)
+  .aggregate(codecDoobie.projectRefs *)
+  .aggregate(codecFs2IO.projectRefs *)
+  .aggregate(codecHttp4s.projectRefs *)
+  .aggregate(codecHttp4sCirce.projectRefs *)
+  .aggregate(codecCiris.projectRefs *)
+  .aggregate(codecIp4s.projectRefs *)
+  .aggregate(codecSquants.projectRefs *)
 
-lazy val codecCore = (crossProject(JVMPlatform, JSPlatform) in file("codec-core"))
+lazy val codecCore = (projectMatrix in file("codec-core"))
   .settings(name := "codec-core")
-  .settings(crossDependencies(
+  .settings(libraryDependencies ++= dependencies(
     peknight.generic.migration,
     peknight.cats,
     peknight.error,
     peknight.commons.text,
     typelevel.catsParse,
   ))
-  .settings(crossTestDependencies(scalaTest))
+  .settings(libraryDependencies ++= testDependencies(scalaTest))
+  .jvmPlatform(scalaVersions = Seq(scala.scala3.version))
+  .jsPlatform(scalaVersions = Seq(scala.scala3.version))
 
-lazy val codecEffect = (crossProject(JVMPlatform, JSPlatform) in file("codec-effect"))
+lazy val codecEffect = (projectMatrix in file("codec-effect"))
   .dependsOn(codecCore)
   .settings(name := "codec-effect")
-  .settings(crossDependencies(
-    typelevel.catsEffect,
-  ))
+  .settings(libraryDependencies ++= dependencies(typelevel.catsEffect))
+  .jvmPlatform(scalaVersions = Seq(scala.scala3.version))
+  .jsPlatform(scalaVersions = Seq(scala.scala3.version))
 
-lazy val codecBase = (crossProject(JVMPlatform, JSPlatform) in file("codec-base"))
+lazy val codecBase = (projectMatrix in file("codec-base"))
   .dependsOn(codecCore)
   .settings(name := "codec-base")
-  .settings(crossDependencies(peknight.scodec.bits))
+  .settings(libraryDependencies ++= dependencies(peknight.scodec.bits))
+  .jvmPlatform(scalaVersions = Seq(scala.scala3.version))
+  .jsPlatform(scalaVersions = Seq(scala.scala3.version))
 
-lazy val codecCaseInsensitive = (crossProject(JVMPlatform, JSPlatform) in file("codec-case-insensitive"))
+lazy val codecCaseInsensitive = (projectMatrix in file("codec-case-insensitive"))
   .dependsOn(codecCore)
   .settings(name := "codec-case-insensitive")
-  .settings(crossDependencies(typelevel.caseInsensitive))
+  .settings(libraryDependencies ++= dependencies(typelevel.caseInsensitive))
+  .jvmPlatform(scalaVersions = Seq(scala.scala3.version))
+  .jsPlatform(scalaVersions = Seq(scala.scala3.version))
 
-lazy val codecCirce = (crossProject(JVMPlatform, JSPlatform) in file("codec-circe"))
+lazy val codecCirce = (projectMatrix in file("codec-circe"))
   .dependsOn(codecCore)
   .settings(name := "codec-circe")
-  .settings(crossDependencies(peknight.circe))
-  .settings(crossTestDependencies(scalaTest))
+  .settings(libraryDependencies ++= dependencies(peknight.circe))
+  .settings(libraryDependencies ++= testDependencies(scalaTest))
+  .jvmPlatform(scalaVersions = Seq(scala.scala3.version))
+  .jsPlatform(scalaVersions = Seq(scala.scala3.version))
 
-lazy val codecCirceParser = (crossProject(JVMPlatform, JSPlatform) in file("codec-circe-parser"))
+lazy val codecCirceParser = (projectMatrix in file("codec-circe-parser"))
   .dependsOn(codecCirce)
   .settings(name := "codec-circe-parser")
-  .settings(crossDependencies(peknight.circe.parser))
-  .settings(crossTestDependencies(scalaTest))
+  .settings(libraryDependencies ++= dependencies(peknight.circe.parser))
+  .settings(libraryDependencies ++= testDependencies(scalaTest))
+  .jvmPlatform(scalaVersions = Seq(scala.scala3.version))
+  .jsPlatform(scalaVersions = Seq(scala.scala3.version))
 
-lazy val codecDoobie = (crossProject(JVMPlatform, JSPlatform) in file("codec-doobie"))
+lazy val codecDoobie = (projectMatrix in file("codec-doobie"))
   .dependsOn(codecCore)
   .settings(name := "codec-doobie")
-  .jvmSettings(libraryDependencies ++= Seq(dependency(typelevel.doobie)))
+  .jvmPlatform(
+    scalaVersions = Seq(scala.scala3.version),
+    settings = Seq(
+      libraryDependencies ++= dependencies(typelevel.doobie)
+    )
+  )
+  .jsPlatform(scalaVersions = Seq(scala.scala3.version))
 
-lazy val codecFs2IO = (crossProject(JVMPlatform, JSPlatform) in file("codec-fs2-io"))
+lazy val codecFs2IO = (projectMatrix in file("codec-fs2-io"))
   .dependsOn(codecCore)
   .settings(name := "codec-fs2-io")
-  .settings(crossDependencies(fs2.io))
+  .settings(libraryDependencies ++= dependencies(fs2.io))
+  .jvmPlatform(scalaVersions = Seq(scala.scala3.version))
+  .jsPlatform(scalaVersions = Seq(scala.scala3.version))
 
-lazy val codecHttp4s = (crossProject(JVMPlatform, JSPlatform) in file("codec-http4s"))
+lazy val codecHttp4s = (projectMatrix in file("codec-http4s"))
   .dependsOn(codecCaseInsensitive)
   .settings(name := "codec-http4s")
-  .settings(crossDependencies(http4s))
+  .settings(libraryDependencies ++= dependencies(http4s))
+  .jvmPlatform(scalaVersions = Seq(scala.scala3.version))
+  .jsPlatform(scalaVersions = Seq(scala.scala3.version))
 
-lazy val codecHttp4sCirce = (crossProject(JVMPlatform, JSPlatform) in file("codec-http4s-circe"))
+lazy val codecHttp4sCirce = (projectMatrix in file("codec-http4s-circe"))
   .dependsOn(codecCirce)
   .settings(name := "codec-http4s-circe")
-  .settings(crossDependencies(http4s.circe))
+  .settings(libraryDependencies ++= dependencies(http4s.circe))
+  .jvmPlatform(scalaVersions = Seq(scala.scala3.version))
+  .jsPlatform(scalaVersions = Seq(scala.scala3.version))
 
-lazy val codecCiris = (crossProject(JVMPlatform, JSPlatform) in file("codec-ciris"))
+lazy val codecCiris = (projectMatrix in file("codec-ciris"))
   .dependsOn(codecCore)
   .settings(name := "codec-ciris")
-  .settings(crossDependencies(
-    cir.ciris,
-  ))
+  .settings(libraryDependencies ++= dependencies(cir.ciris))
+  .jvmPlatform(scalaVersions = Seq(scala.scala3.version))
+  .jsPlatform(scalaVersions = Seq(scala.scala3.version))
 
-lazy val codecIp4s = (crossProject(JVMPlatform, JSPlatform) in file("codec-ip4s"))
+lazy val codecIp4s = (projectMatrix in file("codec-ip4s"))
   .dependsOn(codecCore)
   .settings(name := "codec-ip4s")
-  .settings(crossDependencies(peknight.ip4s))
+  .settings(libraryDependencies ++= dependencies(peknight.ip4s))
+  .jvmPlatform(scalaVersions = Seq(scala.scala3.version))
+  .jsPlatform(scalaVersions = Seq(scala.scala3.version))
 
-lazy val codecSquants = (crossProject(JVMPlatform, JSPlatform) in file("codec-squants"))
+lazy val codecSquants = (projectMatrix in file("codec-squants"))
   .dependsOn(codecCore)
   .settings(name := "codec-squants")
-  .settings(crossDependencies(typelevel.squants))
+  .settings(libraryDependencies ++= dependencies(typelevel.squants))
+  .jvmPlatform(scalaVersions = Seq(scala.scala3.version))
+  .jsPlatform(scalaVersions = Seq(scala.scala3.version))
