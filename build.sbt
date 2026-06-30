@@ -3,8 +3,9 @@ import com.peknight.build.sbt.*
 
 commonSettings
 
-lazy val codec = (project in file("."))
+lazy val codec = rootProject
   .settings(name := "codec")
+  .settings(publish / skip := true)
   .aggregate(codecCore.projectRefs *)
   .aggregate(codecEffect.projectRefs *)
   .aggregate(codecBase.projectRefs *)
