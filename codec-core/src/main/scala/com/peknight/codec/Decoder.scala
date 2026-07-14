@@ -281,6 +281,11 @@ object Decoder extends DecoderDerivation
     else if List("0", "f", "no", "n", "off", "否").exists(t.equalsIgnoreCase) then Some(false)
     else None
 
+  def toBooleanOption(t: Any): Option[Boolean] =
+    t match
+      case value: Boolean => value.some
+      case value => toBooleanOption(value.toString)
+
   def parseNumber(input: String): Either[DecodingFailure, Number] =
     BiggerDecimal.parseBiggerDecimal(input)
       .left.map(DecodingFailure.apply)
