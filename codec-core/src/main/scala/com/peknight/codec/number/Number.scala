@@ -1,7 +1,10 @@
 package com.peknight.codec.number
 
 import cats.parse.Parser0
+import cats.syntax.either.*
+import cats.syntax.option.*
 import cats.{Eq, Show}
+import com.peknight.error.parse.ParsingFailure
 
 /**
  * A number with optimization by cases.
@@ -156,6 +159,22 @@ object Number:
       if bigDecimalIsValidLong(asBigDecimal) then Some(asBigDecimal.longValue) else None
     override def toString: String = value.toString
   end FloatNumber
+
+  def parse(value: Any): Either[ParsingFailure, Option[Number]] =
+    value match
+      case v: Number => v.some.asRight
+      case v: BiggerDecimal => fromBiggerDecimal(v).some.asRight
+      case v: BigDecimal => fromBigDecimal(v).some.asRight
+      case v: Long => fromLong(v).some.asRight
+      case v: Double => fromDouble(v).some.asRight
+      case v: Float => fromFloat(v).some.asRight
+      case v: Int => fromInt(v).some.asRight
+      case v: Byte => fromByte(v).some.asRight
+      case v: Short => fromShort(v).some.asRight
+      case v: BigInt => fromBigInt(v).some.asRight
+      case v => BiggerDecimal.parseBiggerDecimal(v.toString).map(_.map(BiggerDecimalNumber.apply))
+
+  def from(value: Any): Option[Number] = parse(value).toOption.flatten
 
   def fromString(value: String): Option[Number] =
     BiggerDecimal.parseBiggerDecimal(value) match
