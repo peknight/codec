@@ -607,7 +607,7 @@ object Decoder extends DecoderDerivation
         case None => WrongClassTag[A].cursor(t).asLeft.pure
     }
 
-  def decodeK[F[_], A](using decoder: Decoder[F, String, A], reader: Reader[F, String])(using Monad[F])
+  def decodeK[F[_], A](using reader: Reader[F, String])(using decoder: Decoder[F, String, A], monad: Monad[F])
   : Decoder[F, Key, A] =
     Decoder.instance[F, Key, A] { key =>
       reader.run(key).flatMap {
